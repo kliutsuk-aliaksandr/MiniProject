@@ -38,4 +38,9 @@ class MainActivity : Activity() {
         if (::gameView.isInitialized) gameView.pauseGame()
         super.onPause()
     }
+
+    override fun onDestroy() {
+        if (::gameView.isInitialized) gameView.disposeGame()
+        super.onDestroy()
+    }
 }

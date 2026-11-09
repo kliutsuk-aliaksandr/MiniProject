@@ -1,6 +1,7 @@
 package com.miniproject.marbleshooter.game
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -12,7 +13,8 @@ class GameEngineTest {
     fun newGameStartsWithAChainAndZeroScore() {
         val engine = GameEngine(Random(7))
 
-        assertEquals(14, engine.ballCount)
+        assertEquals(12, engine.ballCount)
+        assertEquals(1, engine.level)
         assertEquals(0, engine.score)
         assertEquals(GameStatus.RUNNING, engine.status)
     }
@@ -40,6 +42,7 @@ class GameEngineTest {
 
         assertEquals(1, engine.projectileCount)
         assertNotEquals(previousAmmo, engine.ammoColor)
+        assertTrue(engine.drainEvents().contains(GameEvent.ShotFired))
     }
 
     @Test
@@ -62,16 +65,125 @@ class GameEngineTest {
     }
 
     @Test
-    fun startNewGameResetsScoreAndProjectiles() {
+    fun insertingBehindHitBallRemovesThreeMatchingMarbles() {
         val engine = GameEngine(Random(21))
+        setChain(engine, listOf(0, 0, 1, 1, 2))
+
+        engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
+
+        assertEquals(3, engine.ballCount)
+        assertEquals(30, engine.score)
+        assertEquals(listOf(0, 0, 2), engine.balls.map { it.colorIndex })
+        assertEquals(3, engine.drainEvents().filterIsInstance<GameEvent.MatchCleared>().single().count)
+    }
+
+    @Test
+    fun insertingInFrontOfHitBallPreservesOrderAndResolvesMatch() {
+        val engine = GameEngine(Random(22))
+        setChain(engine, listOf(0, 1, 1, 2))
+
+        engine.insertBallAt(hitIndex = 1, colorIndex = 1, insertInFront = true)
+
+        assertEquals(listOf(0, 2), engine.balls.map { it.colorIndex })
+        assertEquals(30, engine.score)
+        assertTrue(engine.balls[0].progress > engine.balls[1].progress)
+    }
+
+    @Test
+    fun removingAGroupCanTriggerACascadeOnTheNewlyJoinedGroups() {
+        val engine = GameEngine(Random(23))
+        setChain(engine, listOf(0, 0, 1, 1, 0, 0))
+
+        engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
+
+        assertEquals(0, engine.ballCount)
+        assertEquals(70, engine.score)
+        assertEquals(GameStatus.WON, engine.status)
+        assertEquals(
+            listOf(3, 4),
+            engine.drainEvents().filterIsInstance<GameEvent.MatchCleared>().map { it.count }
+        )
+    }
+
+    @Test
+    fun pauseStopsSimulationAndSnapshotCanBeRestored() {
+        val engine = GameEngine(Random(24))
+        engine.update(0.05f)
+        engine.pauseRound()
+        val progressAtPause = engine.headProgress
+        val snapshot = engine.saveState()
+
+        engine.update(0.05f)
+        assertEquals(progressAtPause, engine.headProgress, 0.001f)
+
+        val restored = GameEngine(Random(25))
+        assertTrue(restored.restoreState(snapshot))
+        assertEquals(GameStatus.PAUSED, restored.status)
+        assertEquals(engine.level, restored.level)
+        assertEquals(engine.score, restored.score)
+        assertEquals(
+            engine.balls.map { it.colorIndex to it.progress },
+            restored.balls.map { it.colorIndex to it.progress }
+        )
+        restored.resumeRound()
+        assertEquals(GameStatus.RUNNING, restored.status)
+    }
+
+    @Test
+    fun eachNewLevelIncreasesChainLengthAndSpeed() {
+        val engine = GameEngine(Random(26))
+        val firstSpeed = engine.chainSpeed
+        val firstCount = engine.targetBallCount
+
+        repeat(3) {
+            engine.balls.clear()
+            engine.update(0.01f)
+            assertEquals(GameStatus.WON, engine.status)
+            assertTrue(engine.startNextLevel())
+        }
+
+        assertEquals(4, engine.level)
+        assertEquals(firstCount + 6, engine.targetBallCount)
+        assertTrue(engine.chainSpeed > firstSpeed)
+        assertEquals(5, engine.activeColorCount)
+        assertEquals(GameStatus.RUNNING, engine.status)
+    }
+
+    @Test
+    fun startNewGameResetsScoreLevelAndProjectiles() {
+        val engine = GameEngine(Random(27))
         engine.onTap(Vec2(150f, 380f))
         engine.update(0.01f)
 
         engine.startNewGame()
 
         assertEquals(0, engine.score)
+        assertEquals(1, engine.level)
         assertEquals(0, engine.projectileCount)
-        assertEquals(14, engine.ballCount)
+        assertEquals(12, engine.ballCount)
         assertEquals(GameStatus.RUNNING, engine.status)
+    }
+
+    @Test
+    fun invalidSnapshotIsRejected() {
+        val engine = GameEngine(Random(28))
+        val invalid = GameSaveState(
+            level = 0,
+            score = 0,
+            ammoColor = 0,
+            nextColor = 1,
+            aimTarget = Vec2(210f, 500f),
+            isPaused = true,
+            balls = listOf(Ball(0, 100f))
+        )
+
+        assertFalse(engine.restoreState(invalid))
+    }
+
+    private fun setChain(engine: GameEngine, colors: List<Int>) {
+        engine.balls.clear()
+        colors.forEachIndexed { index, color ->
+            engine.balls += Ball(color, 800f - index * GameEngine.BALL_SPACING)
+        }
     }
 }
