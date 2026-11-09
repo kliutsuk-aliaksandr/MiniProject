@@ -43,13 +43,22 @@ class GameEngineTest {
     }
 
     @Test
-    fun updateMovesTheLeadBallForward() {
+    fun updateMovesEveryBallAndPreservesSpacing() {
         val engine = GameEngine(Random(15))
-        val initialProgress = engine.headProgress
+        val initialProgress = engine.balls.map { it.progress }
 
         engine.update(0.05f)
 
-        assertTrue(engine.headProgress > initialProgress)
+        engine.balls.forEachIndexed { index, ball ->
+            assertTrue(ball.progress > initialProgress[index])
+            if (index > 0) {
+                assertEquals(
+                    GameEngine.BALL_SPACING,
+                    engine.balls[index - 1].progress - ball.progress,
+                    0.01f
+                )
+            }
+        }
     }
 
     @Test

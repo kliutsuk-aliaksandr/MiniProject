@@ -102,7 +102,7 @@ class GameEngine(private val random: Random = Random.Default) {
         score = 0
         status = GameStatus.RUNNING
         ammoColor = random.nextInt(COLOR_COUNT)
-        nextColor = random.nextInt(COLOR_COUNT)
+        nextColor = randomDifferentColor(ammoColor)
 
         var previousColor = -1
         var sameColorCount = 0
@@ -130,7 +130,7 @@ class GameEngine(private val random: Random = Random.Default) {
             return
         }
 
-        // The small NEXT panel doubles as an ammo-swap control.
+        // The NEXT panel doubles as an ammo-swap control.
         if (target.x in 300f..410f && target.y in 90f..150f) {
             swapAmmo()
             return
@@ -151,7 +151,7 @@ class GameEngine(private val random: Random = Random.Default) {
         )
 
         ammoColor = nextColor
-        nextColor = random.nextInt(COLOR_COUNT)
+        nextColor = randomDifferentColor(ammoColor)
     }
 
     fun swapAmmo() {
@@ -186,7 +186,9 @@ class GameEngine(private val random: Random = Random.Default) {
             return
         }
 
-        balls[0].progress += CHAIN_SPEED * delta
+        // All balls advance together; spacing constraints keep the chain connected.
+        val movement = CHAIN_SPEED * delta
+        balls.forEach { it.progress += movement }
         enforceSpacing(1)
         updateProjectiles(delta)
 
@@ -196,6 +198,12 @@ class GameEngine(private val random: Random = Random.Default) {
             status = GameStatus.LOST
             projectiles.clear()
         }
+    }
+
+    private fun randomDifferentColor(excluded: Int): Int {
+        var color = random.nextInt(COLOR_COUNT)
+        while (color == excluded) color = random.nextInt(COLOR_COUNT)
+        return color
     }
 
     private fun updateProjectiles(delta: Float) {
