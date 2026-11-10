@@ -99,6 +99,32 @@ class GameSaveRepositoryTest {
         assertNull(preferences.getString("saved_balls", null))
     }
 
+
+    @Test
+    fun wrongTypeBallPayloadIsHandledAndCleared() {
+        preferences.edit().putInt("saved_balls", 42).commit()
+
+        assertFalse(repository.hasSavedGame())
+        assertFalse(repository.restore(GameEngine(Random(110))))
+
+        assertFalse(preferences.contains("saved_balls"))
+    }
+
+    @Test
+    fun wrongTypeSnapshotMetadataIsRejectedAtomically() {
+        val source = GameEngine(Random(111))
+        assertTrue(repository.save(source))
+        preferences.edit().putString("saved_score", "not-an-integer").commit()
+        val target = GameEngine(Random(112))
+        val originalBalls = target.saveState().balls
+
+        assertFalse(repository.restore(target))
+
+        assertEquals(originalBalls, target.saveState().balls)
+        assertFalse(repository.hasSavedGame())
+        assertFalse(preferences.contains("saved_balls"))
+    }
+
     @Test
     fun tutorialSaveCannotOverwriteCampaignSnapshot() {
         val campaign = GameEngine(Random(108))

@@ -81,7 +81,7 @@ UI не должен дублировать игровые правила: он 
 
 - GameEngineTest.kt: движение, столкновения/вставка, совпадения/каскады, pause/restore, progression, маршруты, бустеры и запрет структурной мутации публичных collection views.
 - GameSaveCodecTest.kt: legacy round-trip, malformed tokens, blank payload и полнота цепочки.
-- GameSaveRepositoryTest.kt: save/restore, upgrade неверсированной schema 0, повреждённые payload, будущая schema и защита tutorial save.
+- GameSaveRepositoryTest.kt: save/restore, upgrade неверсированной schema 0, повреждённые payload/типы SharedPreferences, будущая schema и защита tutorial save.
 - LevelProgressRepositoryTest.kt: monotonic unlock/stars/score, валидация входа, legacy fallback и повреждённые SharedPreferences values.
 - Repository tests используют Robolectric 4.17 на API 35; запуск: ./gradlew testDebugUnitTest и ./gradlew lintDebug.
 

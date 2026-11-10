@@ -13,7 +13,11 @@ import com.miniproject.marbleshooter.game.domain.model.Vec2
 class GameSaveRepository(context: Context) {
     private val preferences = context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
 
-    fun hasSavedGame(): Boolean = !preferences.getString(KEY_BALLS, null).isNullOrBlank()
+    fun hasSavedGame(): Boolean = try {
+        !preferences.getString(KEY_BALLS, null).isNullOrBlank()
+    } catch (_: ClassCastException) {
+        false
+    }
 
     /** Saves a settled campaign snapshot; training rounds are intentionally excluded. */
     fun save(engine: GameEngine): Boolean {
@@ -48,7 +52,15 @@ class GameSaveRepository(context: Context) {
     }
 
     /** Restores only complete supported snapshots; malformed saves are discarded as a unit. */
-    fun restore(engine: GameEngine): Boolean {
+    fun restore(engine: GameEngine): Boolean = try {
+        restoreSnapshot(engine)
+    } catch (_: ClassCastException) {
+        // SharedPreferences typed getters throw when a stored value has the wrong type.
+        clear()
+        false
+    }
+
+    private fun restoreSnapshot(engine: GameEngine): Boolean {
         val encoded = preferences.getString(KEY_BALLS, null) ?: return false
         val schemaVersion = preferences.getInt(KEY_SCHEMA_VERSION, GameSaveCodec.LEGACY_SCHEMA_VERSION)
         if (schemaVersion !in GameSaveCodec.LEGACY_SCHEMA_VERSION..GameSaveCodec.CURRENT_SCHEMA_VERSION) {
