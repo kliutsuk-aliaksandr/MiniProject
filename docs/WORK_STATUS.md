@@ -1,61 +1,61 @@
 # Технический аудит — текущее состояние Marble Frog
 
-**Снимок состояния:** 10 ноября 2026 года  
-**Рабочая ветка:** `fix`  
-**Кодовый срез, описанный в этом отчёте:** `c762f3759134b12199c49da0518ce7850fbea0c3`. Последующие изменения в этой ветке после данного среза — только документы статуса/ссылки; production code не менялся.
+**Снимок:** 10 ноября 2026 года  
+**Рабочая ветка:** fix  
+**Production refactor commit:** c6342c2372056ad5ab329fac66daae79c1c2f6eb  
+**База:** main = 20ce0d75928c3988628de93a784683a411307ff2
 
-Этот документ фиксирует фактическое состояние исходного кода и GitHub CI. Отметка «сделано» означает, что изменение уже есть в ветке; она не означает, что каждое поведение проверено на физическом устройстве.
+Этот документ фиксирует состояние кода и проверок. Успешный CI подтверждает сборку и автоматические тесты, но не заменяет проверку на физическом устройстве.
 
 ## 1. Git и Pull Request
 
-| Объект | Текущее состояние |
+| Объект | Состояние |
 |---|---|
-| `main` | `20ce0d75928c3988628de93a784683a411307ff2` |
-| `fix` (кодовый срез этого отчёта) | `c762f3759134b12199c49da0518ce7850fbea0c3` |
-| PR №2 | открыт, Draft, направление `fix → main` |
-| Сравнение веток на кодовом срезе | `fix` впереди на 17 коммитов, отставание — 0 |
-| Merge | не выполнялся и не должен выполняться без отдельного подтверждения |
+| main | не изменялся; SHA 20ce0d75928c3988628de93a784683a411307ff2 |
+| fix на production refactor commit | c6342c2372056ad5ab329fac66daae79c1c2f6eb |
+| Сравнение с main на этом commit | впереди на 22 commit, позади на 0 |
+| PR №2 | открыт, Draft, fix → main |
+| Merge / force push | не выполнялись |
 
-Удалённые ветки `main`, `fix` и feature-ветка сохранены. История не переписывалась, force push не применялся.
+История ветки сохранялась fast-forward коммитами. PR остаётся Draft до завершения остальных аудитов. Merge не выполнять без отдельного подтверждения.
 
-PR: [Fix: harden Marble Frog gameplay, saves and accessibility](https://github.com/kliutsuk-aliaksandr/MiniProject/pull/2)
+PR: https://github.com/kliutsuk-aliaksandr/MiniProject/pull/2
 
-## 2. Что уже сделано
+## 2. Выполнено
 
-### 2.1. Функциональность версии 0.5.0 в main
+### Функциональность 0.5.0
+- 30 уровней, карта, разблокировка и звёзды.
+- Отдельное обучение и тренировочная партия.
+- Бустеры Slow Time, Bomb, Color Change и Reverse Chain.
+- Маршруты Classic, Double Loop, Switchback и Spiral; препятствия Mud, Ice и Rock.
+- Локальное сохранение партии и прогресса.
 
-В `main` находится объединённая версия 0.5.0:
+### Технический hardening в fix
+- Исправлена мировая цель Bomb и изоляция tutorial от campaign save/progression.
+- Бустер не списывает заряд, если действие неприменимо.
+- Добавлены строгий GameSaveCodec, schema version 1 и migration для legacy schema 0.
+- Повреждённый payload, будущая схема и неверные типы SharedPreferences безопасно отклоняются.
+- LevelProgressRepository отклоняет invalid level/stars/score и сохраняет монотонность unlock/stars/score.
+- Route geometry и progression presentation кешируются.
+- Публичные коллекции GameEngine balls/projectiles закрыты unmodifiable live views.
+- Fixed-step loop выделен в GameLoopController: 60 Hz, frame delta clamp, bounded catch-up.
+- Добавлены виртуальные accessibility nodes для Canvas controls.
+- Исправлен crash при старте Activity: immersive mode настраивается после установки content view и повторно применяется при возврате фокуса.
+- Добавлены regression tests и Android lint в CI.
 
-- 30 уровней и карта прогресса со звёздами и разблокировкой;
-- четыре типа маршрутов: Classic, Double Loop, Switchback и Spiral;
-- препятствия Mud, Ice и Rock;
-- четыре бустера;
-- отдельное обучение и тренировочная партия;
-- локальное сохранение партии и прогресса;
-- разделение исходников на domain, data, render, ui и audio.
+### Завершённый рефакторинг GameView
+- GameView.kt уменьшен с **712 до 145 строк**. Теперь это Android View adapter: lifecycle, Canvas rendering, coordinate transform и делегирование callbacks.
+- GameSessionController.kt (306 строк) владеет GameEngine session lifecycle, GameLoopController, save/progress repositories, audio, GameEvent side effects и transient effects.
+- GameNavigationController.kt (372 строки) владеет GameScreen/tutorial page, hit areas, переходами, booster/menu/settings actions и virtual accessibility targets.
+- GameInputRouter.kt (68 строк) обрабатывает DOWN/MOVE/UP/CANCEL и маршрутизирует aim/fire/booster/screen tap без Android-зависимостей.
+- ProgressPresentationCache.kt остаётся владельцем cached progression snapshot.
+- GameRenderer не менял контракт и продолжает получать GameRenderState.
 
-### 2.2. Технические исправления в fix
+## 3. Автоматические тесты
 
-- Исправлена цель Bomb: используется мировая точка прицеливания.
-- Обучение изолировано от кампании: тренировочная партия не перезаписывает сохранение, рекорд или progression; tutorial не переводит на следующий campaign level.
-- Бустер списывает заряд только после проверки применимости действия.
-- Обновление clearing effects оптимизировано до линейного прохода.
-- Добавлены строгий GameSaveCodec, schema version 1 и совместимость с legacy schema 0.
-- Повреждённый payload, неизвестная схема и неверные типы значений SharedPreferences отклоняются; некорректный snapshot очищается без необработанного ClassCastException.
-- LevelProgressRepository отклоняет недопустимые level/stars/score вместо принудительного ограничения ID, которое могло открыть последний уровень.
-- Кешируются геометрия маршрута, длина маршрута и проекции препятствий.
-- Публичные коллекции `GameEngine.balls` и `projectiles` доступны как unmodifiable live views; внешняя структурная мутация запрещена.
-- Fixed-step loop вынесен из GameView в `GameLoopController`: 60 Hz, ограничение frame delta и ограниченный catch-up.
-- Кеш представления прогресса вынесен в `ProgressPresentationCache`; preference reads не выполняются на каждом кадре.
-- Добавлены виртуальные accessibility nodes для Canvas-кнопок.
-- Обновлены Back navigation и immersive/system UI с fallback для старых API.
-- Обновлены README и техническая документация; добавлен CODE_REFERENCE.
+В текущем test source — **55 JVM-тестов в 8 файлах**:
 
-### 2.3. Тесты
-
-В текущем дереве — **51 JVM-тест в 6 test-файлах**:
-
-| Test class | Количество |
+| Test class | Тестов |
 |---|---:|
 | GameEngineTest | 28 |
 | GameSaveCodecTest | 4 |
@@ -63,77 +63,48 @@ PR: [Fix: harden Marble Frog gameplay, saves and accessibility](https://github.c
 | LevelProgressRepositoryTest (Robolectric) | 6 |
 | GameLoopControllerTest | 3 |
 | ProgressPresentationCacheTest | 3 |
-| **Всего** | **51** |
+| MainActivityTest (Robolectric) | 1 |
+| GameInputRouterTest | 3 |
+| **Итого** | **55** |
 
-Robolectric repository tests запускаются на test runtime API 35. Это не меняет app minSdk 23 и targetSdk 36.
+GameInputRouter tests проверяют drag-to-aim, fire only on release, изоляцию booster gesture и отмену pointer gesture. MainActivityTest фиксирует регрессию startup DecorView.
 
-## 3. Что ещё не сделано
+Robolectric repository/Activity tests используют API 35 test runtime. Настройки приложения остаются minSdk 23 / targetSdk 36.
 
-### Высокий приоритет — архитектура и качество
+## 4. Размер ключевых файлов
 
-- [ ] Разделить оставшиеся обязанности GameView: GameSessionController, InputRouter, NavigationController и GameEventHandler.
-- [ ] Разделить GameRenderer на ScreenRenderer, TrackRenderer, HudRenderer, EffectsRenderer и OverlayRenderer. Разделение должно идти по ответственности, не механическим переносом методов.
-- [ ] Перенести пользовательские строки из Kotlin в Android resources: `res/values/strings.xml` и `res/values-en/strings.xml`. Сейчас `strings.xml` содержит только app_name; пары RU/EN и accessibility labels в основном заданы в коде.
-- [ ] Завершить allocation audit hot path. В GameRenderer ещё есть повторные RectF/list/Triple и другие временные объекты; необходимо измерить реальные allocations, а не добавлять кеши без профилирования.
+| Файл | Строк |
+|---|---:|
+| GameView.kt | 145 |
+| GameSessionController.kt | 306 |
+| GameNavigationController.kt | 372 |
+| GameInputRouter.kt | 68 |
+| GameRenderer.kt | 752 |
+| GameLoopController.kt | отдельный класс |
+| ProgressPresentationCache.kt | отдельный класс |
 
-### Высокий приоритет — проверки
+Рефакторинг выполнен по зонам ответственности, без изменения контракта GameRenderer и без переноса Android framework в domain layer.
 
-- [ ] Добавить UI/instrumentation tests ключевых сценариев: запуск уровня, tutorial, pause/resume, победа/поражение, settings/language и accessibility actions.
-- [ ] Добавить автоматические accessibility checks там, где это поддерживается тестовым стеком; отдельно проверить семантику виртуальных узлов.
-- [ ] Проверить lifecycle/background/foreground, touch coordinate mapping, TalkBack, звук и вибрацию на Android-устройствах.
-- [ ] Проверить совместимость на реальных/эмуляторных API 23, промежуточных версиях и API 36.
-- [ ] Измерить FPS/frame time и allocations на слабом устройстве; проверить отсутствие деградации после рефакторинга.
+## 5. CI и проверка устройства
 
-### Средний приоритет — документация и релиз
+На production refactor commit c6342c2372056ad5ab329fac66daae79c1c2f6eb push workflow завершился success:
 
-- [ ] После каждого архитектурного этапа синхронизировать CODE_REFERENCE и TECHNICAL_DESIGN с фактическим кодом.
-- [ ] Подготовить реальные screenshots и feature graphic.
-- [ ] Проверить публичный HTTPS URL privacy policy.
-- [ ] Подписать release AAB приватным upload key.
-- [ ] Заполнить Play Console Data safety, content rating и target audience, пройти требуемое тестирование и review.
+- push CI: https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42842083727 — assembleDebug, testDebugUnitTest, lintDebug, bundleRelease и uploads успешны.
+- PR CI: https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42842100543 — success: assembleDebug, testDebugUnitTest, lintDebug, bundleRelease и uploads завершились успешно.
 
-Онлайн-функции, реклама, покупки и серверная аналитика не входят в текущий offline hardening и остаются отдельным будущим этапом.
+Не выполнены физические проверки на реальном Android-устройстве: запуск после immersive-mode fix, touch mapping, TalkBack, background/foreground lifecycle, звук/вибрация, FPS и frame time. CI и Robolectric не подтверждают эти сценарии на Xiaomi/MIUI.
 
-## 4. Размер ключевых файлов сейчас
+## 6. Что осталось
 
-| Файл | Строк | Состояние |
-|---|---:|---|
-| `GameView.kt` | 712 | Часть ответственности уже вынесена, но класс всё ещё крупный |
-| `GameRenderer.kt` | 752 | Разделение на renderer-компоненты ещё не выполнено |
-| `GameLoopController.kt` | отдельный класс | Выделен и покрыт 3 JVM-тестами |
-| `ProgressPresentationCache.kt` | отдельный класс | Выделен и покрыт 3 JVM-тестами |
+- [ ] Разбить GameRenderer на screen, track, HUD, effects и overlay renderers; сохранить общий draw contract и добавить доступные screenshot/golden tests.
+- [ ] Перенести весь пользовательский текст RU/EN и accessibility labels в Android string resources.
+- [ ] Добавить полноценные UI/instrumentation tests для level start, tutorial, pause/resume, win/loss, settings и accessibility actions.
+- [ ] Выполнить physical-device проверку lifecycle, touch, TalkBack, sound/haptics и производительности.
+- [ ] Проверить minSdk 23 и API 36 на эмуляторах/устройствах.
+- [ ] Завершить performance allocation audit и измерить frame time на слабом устройстве.
+- [ ] Подготовить screenshots/feature graphic, проверить HTTPS privacy URL, подписать AAB и завершить Play Console release gates.
 
-Текущие размеры не являются самостоятельной метрикой качества; важнее уменьшить связанность и обеспечить тестируемые контракты.
-
-## 5. CI: что именно подтверждено
-
-Последний полностью зелёный PR workflow до последнего исправления GameView был на commit `6e751f7165a73224fa64609ddc438d2ed79c8667`:
-
-- [GitHub Actions run 42834116310](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42834116310) — success;
-- [GitHub Actions run 42834106713](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42834106713) — success.
-
-На commit `8f0061c4462f0f749e481a50bef1d482841a94d0` CI обнаружил compile error: при извлечении ProgressPresentationCache из GameView было удалено поле `preferences`, хотя настройки языка, звука и вибрации продолжали его использовать. Это исправлено отдельным commit `bda872de2c2a429cc2d3e6e0708f46f4cb8bb5ac`.
-
-На commit `bda872de2c2a429cc2d3e6e0708f46f4cb8bb5ac` PR workflow [42838489410](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42838489410) завершился `success`: `assembleDebug`, `testDebugUnitTest`, `lintDebug`, `bundleRelease` и загрузка APK/AAB artifacts прошли.
-
-**Проверка кодового среза `c762f3759134b12199c49da0518ce7850fbea0c3`:** PR workflow [42838777475](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42838777475) и push workflow [42838762914](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42838762914) прошли `assembleDebug` и `testDebugUnitTest`; `lintDebug` выполнялся на момент последней проверки, `bundleRelease` ещё не стартовал. Итог этих workflow пока не считается зелёным.
-
-Следующий документальный commit `4b138a22f334cc6d915922649e148bd800757947` не меняет production source; его push workflow [42839023787](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42839023787) был в очереди/подготовке runner на момент последней проверки. Перед следующим кодовым этапом нужно проверить актуальный PR workflow на HEAD; если он красный — сначала исправить причину.
-
-Предыдущие зелёные результаты не заменяют проверку более нового commit.
-
-## 6. Порядок дальнейших действий
-
-1. **Закрыть текущий CI gate.** Проверить актуальный PR workflow на HEAD после документальных коммитов; убедиться, что assembleDebug, testDebugUnitTest, lintDebug и bundleRelease завершились success. Если упадёт — исправить причину и повторить полный CI.
-2. **Довести GameView до управляемого coordinator.** Сначала выделить event handling и session lifecycle, затем input routing и navigation. Для каждого выделения добавить тесты и сравнить поведение до/после.
-3. **Разделить GameRenderer.** Начать с TrackRenderer и EffectsRenderer, затем HUD и overlays, последним — маршрутизацию экранов. Сохранить общий draw contract и добавить screenshot/golden или доступные Robolectric проверки.
-4. **Вынести локализацию.** Создать полный RU и EN набор resources, включая tutorial, HUD, boosters, pause/end screens, privacy и accessibility labels. Проверить полноту обоих наборов автоматически.
-5. **Добавить UI и accessibility tests.** Покрыть ключевые end-to-end сценарии и проверить, что виртуальные Canvas targets имеют правильные labels, bounds и click actions.
-6. **Закончить performance audit.** Убрать подтверждённые временные allocations из горячих участков, проверить геометрию и particle updates, измерить frame time/allocations на эмуляторе и физическом устройстве.
-7. **Закончить Android compatibility pass.** Проверить minSdk 23, Back gesture, WindowInsets, lifecycle callbacks, TalkBack и audio release/resume.
-8. **Сделать финальный release review.** Обновить документацию, выполнить все четыре Gradle-команды, проверить последний GitHub Actions workflow и release checklist. Только после этого предложить снять Draft; merge — исключительно по отдельному подтверждению.
-
-## 7. Обязательные команды финальной проверки
+## 7. Финальные команды
 
 ```bash
 ./gradlew testDebugUnitTest
@@ -142,4 +113,4 @@ Robolectric repository tests запускаются на test runtime API 35. Э
 ./gradlew bundleRelease
 ```
 
-Статус CI должен быть привязан к тому же commit SHA, который указан в HEAD PR. Успешная сборка не считается заменой физическому тестированию TalkBack, touch, аудио, lifecycle и frame performance.
+Текущий PR остаётся Draft; main не менялся.

@@ -61,7 +61,7 @@
 - [x] Синхронизировать README, game/technical docs, privacy и release checklist.
 - [x] Извлечь fixed-step loop из GameView в GameLoopController и покрыть независимыми JVM-тестами.
 - [x] Извлечь ProgressPresentationCache из GameView и покрыть snapshot/update logic unit tests.
-- [ ] Разбить оставшуюся ответственность GameView на session/input/navigation/event controllers.
+- [x] Разделить GameView на GameSessionController (сессия, события, сохранения/прогресс, эффекты), GameNavigationController (экраны, переходы, hit areas и accessibility targets) и GameInputRouter (pointer gestures). GameView оставлен тонким Android View adapter; добавлены JVM-тесты роутинга ввода.
 - [ ] Разбить GameRenderer на отдельные screen/field/HUD/effects renderers.
 - [ ] Перенести весь UI copy из RU/EN пар в Android string resources.
 - [x] Добавить Robolectric tests для SharedPreferences repositories: save/restore, schema migration, corrupted payload/typed values и progression unlock rules.

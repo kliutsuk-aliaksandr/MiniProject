@@ -2,6 +2,8 @@
 
 ## Unreleased — fix branch
 
+- Завершён рефакторинг GameView: session/event/save/progress/audio/effects перенесены в GameSessionController, экраны/hit areas/accessibility targets — в GameNavigationController, жесты — в platform-independent GameInputRouter. GameView сокращён с 712 до 145 строк и оставлен Android View/Canvas adapter.
+- Добавлены 3 JVM regression tests для drag-to-aim/fire-on-release, booster gesture isolation и cancellation в GameInputRouter.
 - Fixed startup crash when configuring immersive system bars before the Window DecorView existed; immersive mode is now applied after content setup and restored when the Activity regains focus.
 - Added a Robolectric API 35 regression test for MainActivity startup and content/decor initialization.
 - ProgressPresentationCache extracted from GameView to isolate cached campaign presentation data and avoid preference reads during rendering.

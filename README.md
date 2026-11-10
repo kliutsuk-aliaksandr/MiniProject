@@ -92,13 +92,16 @@ app/src/main/java/com/miniproject/marbleshooter/
     │   └── model/GameModels.kt              # values, state and domain events
     ├── render/GameRenderer.kt               # Canvas screens and gameplay renderer
     └── ui/
-        ├── GameView.kt                     # UI coordinator, touch routing and side effects
+        ├── GameView.kt                     # Android View, Canvas and coordinate adapter
+        ├── GameSessionController.kt        # gameplay lifecycle, events, saves, audio and effects
+        ├── GameNavigationController.kt     # screens, transitions, hit areas and accessibility targets
+        ├── GameInputRouter.kt               # pointer gesture routing without Android dependencies
         ├── GameLoopController.kt           # bounded fixed-step frame timing
         ├── ProgressPresentationCache.kt    # cached stars, unlocks and best score
         └── GameAccessibilityNodeProvider.kt # virtual Canvas accessibility buttons
 ```
 
-domain не зависит от Android. data владеет SharedPreferences. render отвечает только за Canvas. ui связывает игровой движок, ввод, навигацию и side effects. audio изолирует платформенные звуковые сигналы.
+domain не зависит от Android. data владеет SharedPreferences. render отвечает только за Canvas. ui разделяет Android View adapter, session/persistence, navigation and pointer input controllers. audio изолирует платформенные звуковые сигналы.
 
 ## Сохранения
 

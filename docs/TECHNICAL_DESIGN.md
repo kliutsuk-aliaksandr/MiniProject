@@ -22,15 +22,18 @@
 
 ```text
 MainActivity
-  └── GameView (Android View / UI coordinator)
-       ├── GameLoopController (fixed-step frame timing)
-       ├── ProgressPresentationCache (cached campaign presentation)
-       ├── GameEngine (pure Kotlin domain aggregate)
+  └── GameView (Android View adapter)
+       ├── GameSessionController
+       │    ├── GameEngine (pure Kotlin domain aggregate)
+       │    ├── GameLoopController (fixed-step frame timing)
+       │    ├── GameSaveRepository ── GameSaveCodec
+       │    ├── ProgressPresentationCache ── LevelProgressRepository
+       │    ├── GameAudio
+       │    └── transient particles / clearing effects / GameEvent side effects
+       ├── GameNavigationController (screens, transitions, hit areas, accessibility targets)
+       ├── GameInputRouter (pointer gesture state and callback routing)
        ├── GameRenderer (Canvas presentation)
-       ├── GameSaveRepository ── GameSaveCodec
-       ├── LevelProgressRepository
-       ├── GameAudio
-       └── GameAccessibilityNodeProvider
+       └── GameAccessibilityNodeProvider (Android virtual-node adapter)
 ```
 
 ### Domain: game/domain
@@ -53,7 +56,14 @@ GameRenderer рисует меню, карту уровней, обучение,
 
 ### UI: game/ui
 
-GameView преобразует координаты касаний, управляет экранами и жизненным циклом игры, обрабатывает события и создаёт GameRenderState. GameLoopController отдельно владеет accumulator, фиксированным шагом 1/60 секунды, ограничением frame delta и catch-up. ProgressPresentationCache хранит snapshot best score, unlocked level и stars; обновление репозитория происходит при изменении прогресса, а не в onDraw. GameAccessibilityNodeProvider представляет Canvas-кнопки как виртуальные узлы AccessibilityNodeProvider с названием, bounds и click action.
+GameView — тонкий Android View adapter: управляет View lifecycle, рисует Canvas, преобразует MotionEvent в мировые координаты и связывает Android callback с контроллерами.
+
+- GameSessionController владеет экземпляром GameEngine, игровым loop, save/progress repositories, настройками, аудио, обработкой доменных событий и временными эффектами. Он создаёт presentation snapshot, не обращаясь к Canvas.
+- GameNavigationController владеет активным экраном, страницей обучения, hit areas, переходами, а также формирует виртуальные accessibility targets. Навигационные действия едины для обычного touch и accessibility.
+- GameInputRouter не зависит от Android API. Он управляет жестами DOWN/MOVE/UP/CANCEL и делегирует aim/fire/booster/screen tap через callbacks.
+- GameLoopController отдельно владеет accumulator, фиксированным шагом 1/60 секунды, ограничением frame delta и catch-up.
+- ProgressPresentationCache хранит snapshot best score, unlocked level и stars; обновление репозитория происходит при изменении прогресса, а не в onDraw.
+- GameAccessibilityNodeProvider остаётся тонким Android-адаптером, который публикует targets из GameNavigationController как виртуальные AccessibilityNodeInfo.
 
 ### Audio: game/audio
 
@@ -61,9 +71,9 @@ GameAudio оборачивает ToneGenerator. Сигналы генериру�
 
 ## 3. Координаты и кадровый цикл
 
-Логический мир — 420 × 900. Canvas сохраняет пропорции и центрирует поле. Ввод переводится обратным преобразованием offset/scale.
+Логический мир — 420 × 900. Canvas сохраняет пропорции и центрирует поле. GameView переводит координаты касаний обратным преобразованием offset/scale, затем передаёт их в GameInputRouter. Router не знает о физических пикселях или Android MotionEvent.
 
-GameLoopController использует accumulator и фиксированный шаг 1/60 секунды. Время одного кадра ограничено 250 мс, catch-up — максимум 16 шагов. При pause/resume accumulator сбрасывается, поэтому время в фоне не симулируется как игровое.
+GameSessionController делегирует frame timing в GameLoopController, который использует accumulator и фиксированный шаг 1/60 секунды. Время одного кадра ограничено 250 мс, catch-up — максимум 16 шагов. При pause/resume accumulator сбрасывается, поэтому время в фоне не симулируется как игровое. После шага контроллер обрабатывает очередь GameEvent и обновляет визуальные эффекты.
 
 GameEngine.update() дополнительно ограничивает delta до 50 мс. Отрисовка и время симуляции таким образом не зависят напрямую от колебаний частоты кадров.
 
