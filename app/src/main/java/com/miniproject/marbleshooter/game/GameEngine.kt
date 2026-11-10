@@ -44,7 +44,12 @@ data class GameSaveState(
 
 sealed interface GameEvent {
     data object ShotFired : GameEvent
-    data class MatchCleared(val center: Vec2, val colorIndex: Int, val count: Int) : GameEvent
+    data class MatchCleared(
+        val center: Vec2,
+        val colorIndex: Int,
+        val count: Int,
+        val removedPositions: List<Vec2> = emptyList()
+    ) : GameEvent
     data class LevelStarted(val level: Int) : GameEvent
     data class LevelCompleted(val level: Int) : GameEvent
     data object GameLost : GameEvent
@@ -55,6 +60,15 @@ sealed interface GameEvent {
  * The world is 420 x 900 logical units; progress increases toward the finish.
  */
 class GameEngine(private val random: Random = Random.Default) {
+
+    private data class RetractionMove(val ball: Ball, val fromProgress: Float, val targetProgress: Float)
+    private data class RetractionAnimation(
+        val moves: List<RetractionMove>,
+        val durationSeconds: Float,
+        val cascadeProbe: Int,
+        var elapsedSeconds: Float = 0f
+    )
+    private var retractionAnimation: RetractionAnimation? = null
 
     companion object {
         const val WORLD_WIDTH = 420f
@@ -132,6 +146,7 @@ class GameEngine(private val random: Random = Random.Default) {
         balls.clear()
         projectiles.clear()
         pendingEvents.clear()
+        retractionAnimation = null
         status = GameStatus.RUNNING
         ammoColor = random.nextInt(activeColorCount)
         nextColor = randomDifferentColor(ammoColor)
@@ -251,7 +266,13 @@ class GameEngine(private val random: Random = Random.Default) {
         nextColor = nextColor,
         aimTarget = aimTarget,
         isPaused = status == GameStatus.PAUSED,
-        balls = balls.map { Ball(it.colorIndex, it.progress) }
+        // Restore a settled chain even if the app is closed mid-animation.
+        balls = balls.map { ball ->
+            val target = retractionAnimation?.moves
+                ?.firstOrNull { it.ball === ball }
+                ?.targetProgress ?: ball.progress
+            Ball(ball.colorIndex, target)
+        }
     )
 
     fun restoreState(state: GameSaveState): Boolean {
@@ -277,6 +298,7 @@ class GameEngine(private val random: Random = Random.Default) {
         balls.addAll(state.balls.map { Ball(it.colorIndex, it.progress) })
         projectiles.clear()
         pendingEvents.clear()
+        retractionAnimation = null
         status = if (state.isPaused) GameStatus.PAUSED else GameStatus.RUNNING
         return true
     }
@@ -315,6 +337,12 @@ class GameEngine(private val random: Random = Random.Default) {
         val delta = deltaSeconds.coerceIn(0f, 0.05f)
         if (delta <= 0f) return
 
+        // Freeze the chain while a match plays. Only the frog-side/front balls retreat.
+        if (retractionAnimation != null) {
+            updateRetraction(delta)
+            return
+        }
+
         if (balls.isEmpty()) {
             completeLevel()
             return
@@ -337,6 +365,7 @@ class GameEngine(private val random: Random = Random.Default) {
     private fun completeLevel() {
         if (status == GameStatus.WON) return
         status = GameStatus.WON
+        retractionAnimation = null
         projectiles.clear()
         pendingEvents += GameEvent.LevelCompleted(level)
     }
@@ -401,6 +430,7 @@ class GameEngine(private val random: Random = Random.Default) {
      * Kept internal so the chain rules can be unit-tested without Android UI.
      */
     internal fun insertBallAt(hitIndex: Int, colorIndex: Int, insertInFront: Boolean) {
+        if (retractionAnimation != null) return
         if (balls.isEmpty() || hitIndex !in balls.indices) return
         if (colorIndex !in 0 until activeColorCount) return
 
@@ -437,38 +467,68 @@ class GameEngine(private val random: Random = Random.Default) {
     }
 
     private fun resolveMatches(initialIndex: Int) {
-        var probe = initialIndex
-        while (probe in balls.indices) {
-            val color = balls[probe].colorIndex
-            var start = probe
-            var end = probe
+        resolveMatchAt(initialIndex)
+    }
 
-            while (start > 0 && balls[start - 1].colorIndex == color) start -= 1
-            while (end < balls.lastIndex && balls[end + 1].colorIndex == color) end += 1
+    private fun resolveMatchAt(probe: Int) {
+        if (probe !in balls.indices || retractionAnimation != null) return
+        val color = balls[probe].colorIndex
+        var start = probe
+        var end = probe
+        while (start > 0 && balls[start - 1].colorIndex == color) start -= 1
+        while (end < balls.lastIndex && balls[end + 1].colorIndex == color) end += 1
 
-            val removedCount = end - start + 1
-            if (removedCount < 3) return
+        val removedCount = end - start + 1
+        if (removedCount < 3) return
 
-            val centerProgress = (start..end).map { balls[it].progress }.average().toFloat()
-            pendingEvents += GameEvent.MatchCleared(
-                center = positionOnRoute(centerProgress),
-                colorIndex = color,
-                count = removedCount
+        val removed = balls.subList(start, end + 1).toList()
+        val centerProgress = removed.map { it.progress }.average().toFloat()
+        pendingEvents += GameEvent.MatchCleared(
+            center = positionOnRoute(centerProgress),
+            colorIndex = color,
+            count = removedCount,
+            removedPositions = removed.map { positionOnRoute(it.progress) }
+        )
+        score += removedCount * 10 * level
+        balls.subList(start, end + 1).clear()
+
+        if (balls.isEmpty()) {
+            completeLevel()
+            return
+        }
+
+        // Chain order goes from the frog-side/front to the far-side/rear.
+        // Retract the front segment by the exact size of the removed interval.
+        val hasFront = start > 0
+        val hasRear = start < balls.size
+        if (hasFront && hasRear) {
+            val retreat = removedCount * BALL_SPACING
+            val moves = balls.take(start).map { ball ->
+                RetractionMove(ball, ball.progress, ball.progress - retreat)
+            }
+            retractionAnimation = RetractionAnimation(
+                moves = moves,
+                durationSeconds = (retreat / 320f).coerceIn(0.22f, 0.52f),
+                cascadeProbe = start - 1
             )
-            score += removedCount * 10 * level
-            balls.subList(start, end + 1).clear()
+        }
+    }
 
-            for (index in start until balls.size) {
-                balls[index].progress += removedCount * BALL_SPACING
-            }
-
-            if (balls.isEmpty()) {
-                completeLevel()
-                return
-            }
-
-            // The two groups on either side may have become one after the gap closed.
-            probe = (start - 1).coerceAtLeast(0)
+    private fun updateRetraction(deltaSeconds: Float) {
+        val animation = retractionAnimation ?: return
+        animation.elapsedSeconds = (animation.elapsedSeconds + deltaSeconds)
+            .coerceAtMost(animation.durationSeconds)
+        val fraction = (animation.elapsedSeconds / animation.durationSeconds).coerceIn(0f, 1f)
+        val eased = fraction * fraction * (3f - 2f * fraction)
+        animation.moves.forEach { move ->
+            move.ball.progress = move.fromProgress +
+                (move.targetProgress - move.fromProgress) * eased
+        }
+        if (fraction >= 1f) {
+            animation.moves.forEach { it.ball.progress = it.targetProgress }
+            val cascadeProbe = animation.cascadeProbe
+            retractionAnimation = null
+            resolveMatchAt(cascadeProbe)
         }
     }
 }

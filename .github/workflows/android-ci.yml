@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: Build and unit tests
+    name: Build, tests and release bundle
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -45,8 +45,17 @@ jobs:
       - name: Run unit tests
         run: gradle testDebugUnitTest --no-daemon
 
+      - name: Build unsigned release AAB
+        run: gradle bundleRelease --no-daemon
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: miniproject-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload unsigned release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: miniproject-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab

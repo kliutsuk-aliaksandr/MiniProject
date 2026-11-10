@@ -27,9 +27,16 @@ private data class BurstParticle(
     val radius: Float
 )
 
+private data class ClearingBall(
+    val position: Vec2,
+    val colorIndex: Int,
+    var lifeSeconds: Float = 0.24f
+)
+
 private enum class UiScreen {
     MENU,
     SETTINGS,
+    PRIVACY,
     GAME
 }
 
@@ -43,6 +50,7 @@ class GameView(context: Context) : View(context) {
     private var isActive = false
     private var lastFrameNanos = 0L
     private val particles = mutableListOf<BurstParticle>()
+    private val clearingBalls = mutableListOf<ClearingBall>()
     private var screen = UiScreen.MENU
     private var hasSavedGame = false
     private var language = preferences.getString("language", "ru") ?: "ru"
@@ -114,6 +122,7 @@ class GameView(context: Context) : View(context) {
     fun handleSystemBack(): Boolean {
         when (screen) {
             UiScreen.SETTINGS -> screen = UiScreen.MENU
+            UiScreen.PRIVACY -> screen = UiScreen.SETTINGS
             UiScreen.MENU -> return false
             UiScreen.GAME -> {
                 when (engine.status) {
@@ -159,13 +168,14 @@ class GameView(context: Context) : View(context) {
         when (screen) {
             UiScreen.MENU -> drawMenuScreen(canvas)
             UiScreen.SETTINGS -> drawSettingsScreen(canvas)
+            UiScreen.PRIVACY -> drawPrivacyScreen(canvas)
             UiScreen.GAME -> drawGameScreen(canvas)
         }
 
         canvas.restore()
 
         if (isActive && screen == UiScreen.GAME &&
-            (engine.status == GameStatus.RUNNING || particles.isNotEmpty())
+            (engine.status == GameStatus.RUNNING || particles.isNotEmpty() || clearingBalls.isNotEmpty())
         ) {
             postInvalidateOnAnimation()
         }
@@ -174,6 +184,7 @@ class GameView(context: Context) : View(context) {
     private fun drawGameScreen(canvas: Canvas) {
         drawTrack(canvas)
         drawBalls(canvas)
+        drawClearingBalls(canvas)
         drawProjectiles(canvas)
         drawParticles(canvas)
         drawShooter(canvas)
@@ -214,7 +225,7 @@ class GameView(context: Context) : View(context) {
 
         textPaint.textSize = 12f
         textPaint.color = Color.rgb(122, 143, 177)
-        canvas.drawText("OFFLINE  •  0.3.0", 210f, 825f, textPaint)
+        canvas.drawText("OFFLINE  •  0.4.0", 210f, 825f, textPaint)
         textPaint.textAlign = Paint.Align.LEFT
     }
 
@@ -243,6 +254,58 @@ class GameView(context: Context) : View(context) {
             Color.rgb(65, 92, 135)
         )
         drawUiButton(canvas, 80f, 600f, 340f, 660f, t("НАЗАД", "BACK"), Color.rgb(66, 194, 130))
+        drawUiButton(
+            canvas, 60f, 680f, 360f, 740f,
+            t("ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ", "PRIVACY POLICY"),
+            Color.rgb(65, 92, 135)
+        )
+        textPaint.textAlign = Paint.Align.LEFT
+    }
+
+    private fun drawPrivacyScreen(canvas: Canvas) {
+        textPaint.textAlign = Paint.Align.CENTER
+        textPaint.textSize = 26f
+        textPaint.color = Color.WHITE
+        canvas.drawText(t("КОНФИДЕНЦИАЛЬНОСТЬ", "PRIVACY"), 210f, 155f, textPaint)
+        val lines = if (language == "en") {
+            listOf(
+                "Marble Frog works offline.",
+                "No account or network connection is required.",
+                "This version does not collect or transmit",
+                "personal data. No ads or analytics SDKs are included.",
+                "",
+                "Best score, saved game, language and sound",
+                "preference are stored locally on this device.",
+                "This information is not sent to a server.",
+                "",
+                "You can erase local data in Android app settings",
+                "or by uninstalling the game.",
+                "",
+                "Contact: add a public support email before release."
+            )
+        } else {
+            listOf(
+                "Marble Frog работает без интернета.",
+                "Аккаунт и подключение к сети не нужны.",
+                "Эта версия не собирает и не передаёт",
+                "персональные данные. Рекламы и аналитики нет.",
+                "",
+                "Рекорд, сохранённая игра, язык и настройка",
+                "звука хранятся локально на устройстве.",
+                "Эти данные не отправляются на сервер.",
+                "",
+                "Данные можно удалить в настройках приложения",
+                "Android или удалив игру.",
+                "",
+                "Контакт: добавь публичный email до релиза."
+            )
+        }
+        textPaint.textSize = 14f
+        textPaint.color = Color.rgb(205, 218, 240)
+        lines.forEachIndexed { index, line ->
+            canvas.drawText(line, 210f, 230f + index * 36f, textPaint)
+        }
+        drawUiButton(canvas, 80f, 755f, 340f, 815f, t("НАЗАД", "BACK"), Color.rgb(66, 194, 130))
         textPaint.textAlign = Paint.Align.LEFT
     }
 
@@ -330,6 +393,19 @@ class GameView(context: Context) : View(context) {
             canvas.drawCircle(position.x - 5f, position.y - 6f, 4.8f, fillPaint)
             fillPaint.color = Color.argb(65, 255, 255, 255)
             canvas.drawCircle(position.x + 5f, position.y + 6f, 3.2f, fillPaint)
+        }
+    }
+
+    private fun drawClearingBalls(canvas: Canvas) {
+        for (ball in clearingBalls) {
+            val fraction = (ball.lifeSeconds / 0.24f).coerceIn(0f, 1f)
+            val radius = GameEngine.BALL_RADIUS * fraction
+            val color = palette[ball.colorIndex.coerceIn(0, palette.lastIndex)]
+            fillPaint.color = Color.argb((fraction * 225f).toInt(), Color.red(color), Color.green(color), Color.blue(color))
+            canvas.drawCircle(ball.position.x, ball.position.y, radius, fillPaint)
+            strokePaint.color = Color.argb((fraction * 230f).toInt(), 255, 245, 190)
+            strokePaint.strokeWidth = 2f
+            canvas.drawCircle(ball.position.x, ball.position.y, radius + 3f, strokePaint)
         }
     }
 
@@ -558,6 +634,7 @@ class GameView(context: Context) : View(context) {
                 GameEvent.ShotFired -> audio.playShot(soundEnabled)
                 is GameEvent.MatchCleared -> {
                     audio.playMatch(soundEnabled)
+                    event.removedPositions.forEach { clearingBalls += ClearingBall(it, event.colorIndex) }
                     createBurst(event)
                     saveGameState()
                 }
@@ -595,6 +672,12 @@ class GameView(context: Context) : View(context) {
 
     private fun updateParticles(deltaSeconds: Float) {
         val delta = deltaSeconds.coerceIn(0f, 0.05f)
+        val clearingIterator = clearingBalls.iterator()
+        while (clearingIterator.hasNext()) {
+            val ball = clearingIterator.next()
+            ball.lifeSeconds -= delta
+            if (ball.lifeSeconds <= 0f) clearingIterator.remove()
+        }
         val iterator = particles.iterator()
         while (iterator.hasNext()) {
             val particle = iterator.next()
@@ -686,6 +769,7 @@ class GameView(context: Context) : View(context) {
     private fun startNewGame() {
         engine.startNewGame()
         particles.clear()
+        clearingBalls.clear()
         screen = UiScreen.GAME
         hasSavedGame = true
         saveGameState()
@@ -730,6 +814,10 @@ class GameView(context: Context) : View(context) {
             screen = UiScreen.MENU
             audio.playClick(soundEnabled)
             invalidate()
+        } else if (target.x in 60f..360f && target.y in 680f..740f) {
+            screen = UiScreen.PRIVACY
+            audio.playClick(soundEnabled)
+            invalidate()
         }
     }
 
@@ -769,6 +857,7 @@ class GameView(context: Context) : View(context) {
                     target.x in 80f..340f && target.y in 520f..580f -> {
                         engine.startNewGame()
                         particles.clear()
+                        clearingBalls.clear()
                         saveGameState()
                         audio.playClick(soundEnabled)
                     }
@@ -784,6 +873,7 @@ class GameView(context: Context) : View(context) {
                     target.x in 65f..355f && target.y in 470f..530f -> {
                         engine.startNextLevel()
                         particles.clear()
+                        clearingBalls.clear()
                         saveGameState()
                         audio.playClick(soundEnabled)
                     }
@@ -854,6 +944,9 @@ class GameView(context: Context) : View(context) {
                     when (screen) {
                         UiScreen.MENU -> handleMenuTap(target)
                         UiScreen.SETTINGS -> handleSettingsTap(target)
+                        UiScreen.PRIVACY -> {
+                            if (target.y in 740f..830f) screen = UiScreen.SETTINGS
+                        }
                         UiScreen.GAME -> handleGameTap(target)
                     }
                 }

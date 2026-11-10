@@ -13,13 +13,14 @@ android {
         applicationId = "com.miniproject.marbleshooter"
         minSdk = 23
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // CI produces an unsigned AAB; sign it with a private upload key before Play upload.
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

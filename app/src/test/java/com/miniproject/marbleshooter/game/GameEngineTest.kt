@@ -93,6 +93,8 @@ class GameEngineTest {
     fun insertingBehindHitBallRemovesThreeMatchingMarbles() {
         val engine = GameEngine(Random(21))
         setChain(engine, listOf(0, 0, 1, 1, 2))
+        val frontBefore = engine.balls.take(2).map { it.progress }
+        val rearBefore = engine.balls.last().progress
 
         engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
 
@@ -100,6 +102,36 @@ class GameEngineTest {
         assertEquals(30, engine.score)
         assertEquals(listOf(0, 0, 2), engine.balls.map { it.colorIndex })
         assertEquals(3, engine.drainEvents().filterIsInstance<GameEvent.MatchCleared>().single().count)
+        assertEquals(frontBefore, engine.balls.take(2).map { it.progress })
+        assertEquals(rearBefore, engine.balls.last().progress)
+    }
+
+    @Test
+    fun matchRetractsFrogSideBallsWhileFarSideBallsStayStill() {
+        val engine = GameEngine(Random(211))
+        setChain(engine, listOf(0, 0, 1, 1, 2))
+        engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
+
+        val frontStart = engine.balls.take(2).map { it.progress }
+        val rearStart = engine.balls.last().progress
+        repeat(2) { engine.update(0.05f) }
+
+        assertTrue(engine.balls[0].progress < frontStart[0])
+        assertTrue(engine.balls[1].progress < frontStart[1])
+        assertEquals(rearStart, engine.balls.last().progress, 0.001f)
+
+        repeat(4) { engine.update(0.05f) }
+        assertEquals(rearStart + GameEngine.BALL_SPACING * 2, engine.balls[0].progress, 0.01f)
+        assertEquals(rearStart + GameEngine.BALL_SPACING, engine.balls[1].progress, 0.01f)
+        assertEquals(rearStart, engine.balls.last().progress, 0.01f)
+    }
+
+    @Test
+    fun saveSnapshotDuringRetractionStoresSettledPositions() {
+        val engine = GameEngine(Random(212))
+        setChain(engine, listOf(0, 0, 1, 1, 2))
+        engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
+        assertEquals(listOf(704f, 672f, 640f), engine.saveState().balls.map { it.progress })
     }
 
     @Test
@@ -120,6 +152,11 @@ class GameEngineTest {
         setChain(engine, listOf(0, 0, 1, 1, 0, 0))
 
         engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
+        assertEquals(4, engine.ballCount)
+        assertEquals(30, engine.score)
+        assertEquals(GameStatus.RUNNING, engine.status)
+
+        repeat(12) { engine.update(0.05f) }
 
         assertEquals(0, engine.ballCount)
         assertEquals(70, engine.score)
