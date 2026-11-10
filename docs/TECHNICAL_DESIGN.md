@@ -137,7 +137,7 @@ GameAccessibilityNodeProvider выдаёт виртуальные дочерни
 ./gradlew bundleRelease
 ```
 
-CI выполняет debug build, JVM tests, lint и unsigned release AAB. Unit-тесты покрывают движение, collision/insertion, match/cascade, pause/restore, уровни, бустеры, кеш маршрутов, tutorial progression guard и строгий parser. Robolectric tests проверяют SharedPreferences save/restore, legacy schema migration, повреждённые значения, изоляцию tutorial и правила открытия уровней. Для JDK 17 тестовый runtime закреплён на API 35; это не меняет targetSdk 36 приложения.
+CI выполняет debug build, JVM tests, lint и unsigned release AAB. Unit-тесты покрывают движение, collision/insertion, match/cascade, pause/restore, уровни, бустеры, кеш маршрутов, tutorial progression guard и строгий parser. JVM tests проверяют GameLoopController fixed-step/catch-up/pause behavior, а Robolectric tests — SharedPreferences save/restore, legacy schema migration, повреждённые значения, изоляцию tutorial и правила открытия уровней. Для JDK 17 тестовый runtime закреплён на API 35; это не меняет targetSdk 36 приложения.
 
 Физическое устройство всё ещё требуется для проверки FPS, TalkBack, масштабирования координат, звука/вибрации и реальных pause/resume lifecycle callbacks. CI-сборка не заменяет эти проверки.
 

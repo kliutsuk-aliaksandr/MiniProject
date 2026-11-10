@@ -59,7 +59,8 @@
 - [x] Добавить regression tests и lint в CI.
 - [x] Закрыть прямую структурную мутацию balls/projectiles снаружи GameEngine.
 - [x] Синхронизировать README, game/technical docs, privacy и release checklist.
-- [ ] Разбить GameView на loop/session/input/navigation/event controllers.
+- [x] Извлечь fixed-step loop из GameView в GameLoopController и покрыть независимыми JVM-тестами.
+- [ ] Разбить оставшуюся ответственность GameView на session/input/navigation/event controllers.
 - [ ] Разбить GameRenderer на отдельные screen/field/HUD/effects renderers.
 - [ ] Перенести весь UI copy из RU/EN пар в Android string resources.
 - [x] Добавить Robolectric tests для SharedPreferences repositories: save/restore, schema migration, corrupted payload/typed values и progression unlock rules.

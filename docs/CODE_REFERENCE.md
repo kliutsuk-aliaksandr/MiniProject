@@ -80,6 +80,7 @@ UI не должен дублировать игровые правила: он 
 ## Тесты
 
 - GameEngineTest.kt: движение, столкновения/вставка, совпадения/каскады, pause/restore, progression, маршруты, бустеры и запрет структурной мутации публичных collection views.
+- GameLoopControllerTest.kt: фиксированный шаг 60 Hz, ограниченный catch-up, reset accumulator и pause/resume без симуляции времени в фоне.
 - GameSaveCodecTest.kt: legacy round-trip, malformed tokens, blank payload и полнота цепочки.
 - GameSaveRepositoryTest.kt: save/restore, upgrade неверсированной schema 0, повреждённые payload/типы SharedPreferences, будущая schema и защита tutorial save.
 - LevelProgressRepositoryTest.kt: monotonic unlock/stars/score, валидация входа, legacy fallback и повреждённые SharedPreferences values.

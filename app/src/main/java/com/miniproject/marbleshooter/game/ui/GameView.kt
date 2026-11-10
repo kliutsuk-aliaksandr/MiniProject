@@ -59,14 +59,13 @@ class GameView(context: Context) : View(context) {
     private var soundEnabled = preferences.getBoolean("sound_enabled", true)
     private var vibrationEnabled = preferences.getBoolean("vibration_enabled", true)
     private var isActive = false
-    private var simulationAccumulatorSeconds = 0f
     private var isAiming = false
     private var isBoosterTouch = false
     private var tutorialPage = 0
-    private var lastFrameNanos = 0L
     private var bestScore = progressRepository.bestScore
     private val particles = mutableListOf<MutableParticle>()
     private val clearingBalls = mutableListOf<ClearingBallVisual>()
+    private val gameLoopController = GameLoopController(::updateFixedStep)
 
     private var scaleFactor = 1f
     private var offsetX = 0f
@@ -83,8 +82,7 @@ class GameView(context: Context) : View(context) {
     /** Restarts the view-driven frame loop after the Activity becomes active. */
     fun resumeGame() {
         isActive = true
-        simulationAccumulatorSeconds = 0f
-        lastFrameNanos = System.nanoTime()
+        gameLoopController.start(System.nanoTime())
         invalidate()
         if (screen == GameScreen.GAME && engine.status == GameStatus.RUNNING) {
             postInvalidateOnAnimation()
@@ -94,8 +92,7 @@ class GameView(context: Context) : View(context) {
     /** Stops simulation and persists the current non-tutorial session. */
     fun pauseGame() {
         isActive = false
-        simulationAccumulatorSeconds = 0f
-        lastFrameNanos = 0L
+        gameLoopController.stop()
         isAiming = false
         isBoosterTouch = false
         if (screen == GameScreen.GAME && engine.status == GameStatus.RUNNING) {
@@ -138,21 +135,7 @@ class GameView(context: Context) : View(context) {
         if (width == 0 || height == 0) return
 
         if (isActive && screen == GameScreen.GAME) {
-            val now = System.nanoTime()
-            val frameDelta = if (lastFrameNanos == 0L) 0f
-                else (now - lastFrameNanos) / 1_000_000_000f
-            lastFrameNanos = now
-            simulationAccumulatorSeconds = (
-                simulationAccumulatorSeconds + frameDelta.coerceIn(0f, MAX_FRAME_DELTA_SECONDS)
-            ).coerceAtMost(MAX_FRAME_DELTA_SECONDS)
-
-            var steps = 0
-            while (simulationAccumulatorSeconds >= FIXED_STEP_SECONDS && steps < MAX_CATCH_UP_STEPS) {
-                engine.update(FIXED_STEP_SECONDS)
-                updateEffects(FIXED_STEP_SECONDS)
-                simulationAccumulatorSeconds -= FIXED_STEP_SECONDS
-                steps++
-            }
+            gameLoopController.advanceFrame(System.nanoTime())
             handleGameEvents(engine.drainEvents())
             saveBestScoreIfNeeded()
         }
@@ -246,8 +229,13 @@ class GameView(context: Context) : View(context) {
         }
     }
 
+    private fun updateFixedStep(deltaSeconds: Float) {
+        engine.update(deltaSeconds)
+        updateEffects(deltaSeconds)
+    }
+
     private fun updateEffects(deltaSeconds: Float) {
-        val delta = deltaSeconds.coerceIn(0f, FIXED_STEP_SECONDS)
+        val delta = deltaSeconds.coerceIn(0f, GameLoopController.FIXED_STEP_SECONDS)
         // Reverse iteration keeps removal O(1) and avoids indexOf on duplicate effects.
         for (index in clearingBalls.lastIndex downTo 0) {
             val ball = clearingBalls[index]
@@ -301,7 +289,7 @@ class GameView(context: Context) : View(context) {
     }
 
     private fun startNewGame() {
-        simulationAccumulatorSeconds = 0f
+        gameLoopController.resetAccumulator()
         engine.startNewGame()
         clearEffects()
         screen = GameScreen.GAME
@@ -319,7 +307,7 @@ class GameView(context: Context) : View(context) {
     }
 
     private fun startTutorialPractice() {
-        simulationAccumulatorSeconds = 0f
+        gameLoopController.resetAccumulator()
         engine.startTutorial()
         clearEffects()
         screen = GameScreen.GAME
@@ -734,12 +722,6 @@ class GameView(context: Context) : View(context) {
             }
         }
         return true
-    }
-
-    private companion object {
-        const val FIXED_STEP_SECONDS = 1f / 60f
-        const val MAX_FRAME_DELTA_SECONDS = 0.25f
-        const val MAX_CATCH_UP_STEPS = 16
     }
 
     override fun performClick(): Boolean {

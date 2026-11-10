@@ -2,6 +2,7 @@
 
 ## Unreleased — fix branch
 
+- Fixed-step frame timing extracted from GameView into independently tested GameLoopController.
 - Typed SharedPreferences corruption is now rejected and cleared without leaking ClassCastException through save detection or restore.
 - Публичные коллекции balls/projectiles в GameEngine заменены unmodifiable live views; структура игровых сущностей меняется только внутри симуляции.
 - Прогресс кампании теперь отклоняет некорректные level/stars/score вместо принудительной нормализации, способной открыть последний уровень.
