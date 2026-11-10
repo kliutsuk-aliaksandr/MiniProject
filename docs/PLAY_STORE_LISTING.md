@@ -5,7 +5,7 @@
 ## Русский язык
 
 **Название:** Marble Frog  
-**Краткое описание:** Попади в цепочку цветных шаров, собирай комбинации и проходи уровни в офлайн-игре.
+**Краткое описание:** Собирай цветные шары и запускай каскадные комбинации в офлайн-игре.
 
 **Полное описание:**
 
@@ -40,6 +40,6 @@ Features:
 
 ## Graphic assets still required
 
-Google Play currently requires a 512 × 512 px PNG app icon, a feature graphic and screenshots. Capture genuine screens from the actual release build; do not use mockups that show features not present in the app.
+Asset formats: app icon — 512 × 512 px, 32-bit PNG with alpha, maximum 1 MB; feature graphic — 1024 × 500 px, JPEG or 24-bit PNG without alpha. The supplied icon and feature graphic meet these file-format and dimension requirements. Capture genuine screens from the actual release build; do not use mockups that show features not present in the app.
 
-Suggested screenshot set: gameplay, match rollback, main menu/settings, pause and privacy screen. Verify current device-category requirements in Play Console before submission.
+Google Play requires at least two screenshots across different device types. For games, three portrait screenshots at 1080 × 1920 px (9:16) are recommended for promotional surfaces; tablet/large-screen requirements differ. Suggested phone set: gameplay, match rollback, main menu/settings, pause and privacy screen. Verify all current device-category requirements in Play Console before submission.

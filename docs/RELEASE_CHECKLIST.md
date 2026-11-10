@@ -14,14 +14,14 @@
 ## Still requires the developer / Play Console
 
 - [ ] Add a public support email to the privacy-policy files and Play Console contact fields.
-- [ ] Host docs/privacy-policy.html at a public HTTPS URL (for example, enable GitHub Pages with the GitHub Actions source); verify global access without sign-in.
+- [ ] In repository Settings → Pages select GitHub Actions as the source; the deploy-privacy-policy workflow will publish docs/privacy-policy.html as the page root. Verify the generated HTTPS URL is globally accessible without sign-in or geofencing.
 - [ ] Export the final 512 × 512 PNG store icon and 1024 × 500 feature graphic; confirm current requirements in Play Console.
 - [ ] Capture genuine screenshots from the actual release build on supported phones/tablets.
 - [ ] Test on physical low/mid-range and newer Android devices; check frame stability, pause/resume, background/foreground and small displays.
 - [ ] Create and back up a private upload keystore. Never commit the keystore or passwords to Git.
 - [ ] Sign the AAB with the upload key. The CI AAB is unsigned and cannot be uploaded as-is.
-- [ ] Complete Play Console app content, Data safety, content rating, target audience and ads declaration.
-- [ ] Create a closed test and invite testers if the developer account is subject to that requirement.
+- [ ] Complete Play Console app content, Data safety, content rating, target audience and ads declaration. The Data safety form and privacy-policy URL are required even when the app does not collect user data.
+- [ ] Create a closed test and invite testers if the developer account is subject to that requirement. For personal developer accounts created after 13 November 2023, Google currently requires at least 12 testers opted in continuously for 14 days before applying for production access.
 - [ ] Submit the signed build for review and publish only after approval.
 
 ## Signing the AAB locally
