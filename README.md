@@ -110,6 +110,7 @@ domain не зависит от Android. data владеет SharedPreferences. 
 - docs/CODE_REFERENCE.md — описание классов, методов, событий и рекомендации по расширению.
 - docs/GAME_DESIGN.md — правила, уровни, препятствия, бустеры и очки.
 - docs/ROADMAP.md — завершённые этапы и технический backlog.
+- docs/WORK_STATUS.md — актуальный снимок: что сделано, что остаётся и следующий план работ.
 - docs/RELEASE_CHECKLIST.md — оставшиеся ручные и Play Console проверки.
 - docs/PRIVACY_POLICY.md — политика конфиденциальности.
 

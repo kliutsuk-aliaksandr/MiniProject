@@ -53,7 +53,7 @@ GameRenderer рисует меню, карту уровней, обучение,
 
 ### UI: game/ui
 
-GameView преобразует координаты касаний, управляет экранами и жизненным циклом игры, выполняет фиксированные simulation ticks, обрабатывает события и создаёт GameRenderState. GameAccessibilityNodeProvider представляет Canvas-кнопки как виртуальные узлы AccessibilityNodeProvider с названием, bounds и click action.
+GameView преобразует координаты касаний, управляет экранами и жизненным циклом игры, обрабатывает события и создаёт GameRenderState. GameLoopController отдельно владеет accumulator, фиксированным шагом 1/60 секунды, ограничением frame delta и catch-up. ProgressPresentationCache хранит snapshot best score, unlocked level и stars; обновление репозитория происходит при изменении прогресса, а не в onDraw. GameAccessibilityNodeProvider представляет Canvas-кнопки как виртуальные узлы AccessibilityNodeProvider с названием, bounds и click action.
 
 ### Audio: game/audio
 
@@ -63,7 +63,7 @@ GameAudio оборачивает ToneGenerator. Сигналы генериру�
 
 Логический мир — 420 × 900. Canvas сохраняет пропорции и центрирует поле. Ввод переводится обратным преобразованием offset/scale.
 
-GameView использует accumulator и фиксированный шаг 1/60 секунды. Время одного кадра ограничено 250 мс, catch-up — максимум 16 шагов. При pause/resume accumulator сбрасывается, поэтому время в фоне не симулируется как игровое.
+GameLoopController использует accumulator и фиксированный шаг 1/60 секунды. Время одного кадра ограничено 250 мс, catch-up — максимум 16 шагов. При pause/resume accumulator сбрасывается, поэтому время в фоне не симулируется как игровое.
 
 GameEngine.update() дополнительно ограничивает delta до 50 мс. Отрисовка и время симуляции таким образом не зависят напрямую от колебаний частоты кадров.
 
