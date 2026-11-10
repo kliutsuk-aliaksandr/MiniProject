@@ -2,6 +2,8 @@
 
 ## Unreleased — fix branch
 
+- Прогресс кампании теперь отклоняет некорректные level/stars/score вместо принудительной нормализации, способной открыть последний уровень.
+- Добавлены Robolectric repository tests для SharedPreferences save/restore, legacy schema migration, повреждённых данных, tutorial isolation и monotonic progression.
 - Исправлен Bomb target: используется последняя мировая точка прицеливания, а не координата HUD.
 - Повтор, победа и поражение в обучении изолированы от campaign save и прогресса; tutorial не переходит на следующий обычный уровень.
 - Применимость бустера проверяется до списания заряда.

@@ -61,7 +61,7 @@
 - [ ] Разбить GameView на loop/session/input/navigation/event controllers.
 - [ ] Разбить GameRenderer на отдельные screen/field/HUD/effects renderers.
 - [ ] Перенести весь UI copy из RU/EN пар в Android string resources.
-- [ ] Добавить Robolectric/instrumented тесты SharedPreferences repositories.
+- [x] Добавить Robolectric tests для SharedPreferences repositories: save/restore, schema migration, corrupted values и progression unlock rules.
 - [ ] Добавить instrumented UI tests и automated accessibility checks.
 - [ ] Проверить FPS, TalkBack, масштабирование и touch на физических устройствах.
 

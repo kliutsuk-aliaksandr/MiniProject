@@ -51,7 +51,7 @@ NEXT меняет текущий и следующий шар. Верхняя п
 - Kotlin, Android Gradle Plugin 8.13.2, Gradle 8.13, JDK 17.
 - Android SDK 36, Canvas API, ToneGenerator.
 - SharedPreferences для локального сохранения.
-- JUnit 4 для JVM unit-тестов.
+- JUnit 4 и Robolectric 4.17 для JVM и SharedPreferences repository tests (тестовый runtime API 35).
 
 ## Сборка и проверка
 

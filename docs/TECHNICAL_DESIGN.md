@@ -14,7 +14,7 @@
 | Графика | Android View + Canvas |
 | Звук | Android ToneGenerator |
 | Хранение | SharedPreferences |
-| Unit-тесты | JUnit 4 |
+| Unit-тесты | JUnit 4 + Robolectric 4.17 (API 35 test runtime) |
 
 Проект полностью офлайн. В AndroidManifest.xml отсутствует INTERNET permission; рекламные и аналитические SDK не подключены.
 
@@ -137,9 +137,9 @@ GameAccessibilityNodeProvider выдаёт виртуальные дочерни
 ./gradlew bundleRelease
 ```
 
-CI выполняет debug build, JVM tests, lint и unsigned release AAB. Unit-тесты покрывают движение, collision/insertion, match/cascade, pause/restore, уровни, бустеры, кеш маршрутов, tutorial progression guard и строгий parser.
+CI выполняет debug build, JVM tests, lint и unsigned release AAB. Unit-тесты покрывают движение, collision/insertion, match/cascade, pause/restore, уровни, бустеры, кеш маршрутов, tutorial progression guard и строгий parser. Robolectric tests проверяют SharedPreferences save/restore, legacy schema migration, повреждённые значения, изоляцию tutorial и правила открытия уровней. Для JDK 17 тестовый runtime закреплён на API 35; это не меняет targetSdk 36 приложения.
 
-SharedPreferences repository пока требует Robolectric/instrumentation tests; физическое устройство, FPS, TalkBack и масштабирование проверяются вручную. CI-сборка не заменяет эти проверки.
+Физическое устройство всё ещё требуется для проверки FPS, TalkBack, масштабирования координат, звука/вибрации и реальных pause/resume lifecycle callbacks. CI-сборка не заменяет эти проверки.
 
 ## 10. Приватность
 

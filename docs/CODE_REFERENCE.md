@@ -81,7 +81,9 @@ UI не должен дублировать игровые правила: он 
 
 - GameEngineTest.kt: движение, столкновения/вставка, совпадения/каскады, pause/restore, progression, маршруты и бустеры.
 - GameSaveCodecTest.kt: legacy round-trip, malformed tokens, blank payload и полнота цепочки.
-- Запуск: ./gradlew testDebugUnitTest и ./gradlew lintDebug.
+- GameSaveRepositoryTest.kt: save/restore, upgrade неверсированной schema 0, повреждённые payload, будущая schema и защита tutorial save.
+- LevelProgressRepositoryTest.kt: monotonic unlock/stars/score, валидация входа, legacy fallback и повреждённые SharedPreferences values.
+- Repository tests используют Robolectric 4.17 на API 35; запуск: ./gradlew testDebugUnitTest и ./gradlew lintDebug.
 
 ## Известные точки дальнейшего рефакторинга
 
@@ -91,4 +93,4 @@ GameRenderer.kt пока рисует разные экраны и все игр
 
 Тексты RU/EN пока находятся в вызовах renderer. Их перенос в Android string resources потребует отдельного UI localization pass и тестов для обоих языков.
 
-Для SharedPreferences нужен Robolectric/instrumented repository test. Устройство требуется для проверки FPS, TalkBack, touch scaling, звука/вибрации и поведения при background/foreground.
+SharedPreferences repositories покрыты Robolectric integration tests. Физическое устройство всё ещё требуется для проверки FPS, TalkBack, touch scaling, звука/вибрации и поведения при background/foreground.
