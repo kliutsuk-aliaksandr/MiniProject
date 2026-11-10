@@ -98,7 +98,7 @@ internal class GameSessionController(
     }
 
     fun disposeGame(screen: GameScreen) {
-        saveGameState(screen == GameScreen)
+        saveGameState(screen == GameScreen.GAME)
         audio.release()
     }
 

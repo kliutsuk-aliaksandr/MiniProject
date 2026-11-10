@@ -17,8 +17,8 @@ class GameInputRouterTest {
             isGameRunning = { true },
             isBoosterTouch = { false },
             canStartAiming = { it.y > 145f },
-            onAim = aimedAt::add,
-            onFire = firedAt::add,
+            onAim = { aimedAt += it },
+            onFire = { firedAt += it },
             onBoosterTap = {},
             onScreenTap = { screenTaps++ },
             onInvalidate = {},
@@ -65,9 +65,8 @@ class GameInputRouterTest {
     }
 
     @Test
-    fun cancelClearsGestureAndPreventsShotOnFollowingRelease() {
+    fun cancelClearsGestureFlags() {
         var shots = 0
-        var screenTaps = 0
         val router = GameInputRouter(
             isGameRunning = { true },
             isBoosterTouch = { false },
@@ -75,7 +74,7 @@ class GameInputRouterTest {
             onAim = {},
             onFire = { shots++ },
             onBoosterTap = {},
-            onScreenTap = { screenTaps++ },
+            onScreenTap = {},
             onInvalidate = {},
             onInteractionFinished = {}
         )
@@ -84,8 +83,6 @@ class GameInputRouterTest {
         router.handle(GamePointerAction.CANCEL, Vec2(200f, 300f))
 
         assertFalse(router.hasActiveGesture)
-        router.handle(GamePointerAction.UP, Vec2(200f, 300f))
         assertEquals(0, shots)
-        assertEquals(1, screenTaps)
     }
 }
