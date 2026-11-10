@@ -42,6 +42,7 @@ class GameView(context: Context) : View(context) {
     private val audio = GameAudio()
     private val saveRepository = GameSaveRepository(context)
     private val progressPresentation = ProgressPresentationCache(context)
+    private val preferences = context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
     private val accessibilityProvider by lazy(LazyThreadSafetyMode.NONE) {
         GameAccessibilityNodeProvider(this, ::accessibilityTargets)
     }
