@@ -566,7 +566,10 @@ class GameView(context: Context) : View(context) {
                     audio.playWin(soundEnabled)
                     saveGameState()
                 }
-                GameEvent.GameLost -> audio.playLose(soundEnabled)
+                GameEvent.GameLost -> {
+                    audio.playLose(soundEnabled)
+                    saveGameState()
+                }
             }
         }
     }
