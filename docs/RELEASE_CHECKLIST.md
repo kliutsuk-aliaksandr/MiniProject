@@ -7,6 +7,7 @@
 - [x] Store listing metadata draft in Russian and English.
 - [x] Privacy policy in Markdown and HTML.
 - [x] Privacy policy readable inside the app (Settings → Privacy Policy).
+- [x] Android cloud backup and device-transfer of saved SharedPreferences disabled.
 - [x] targetSdk is Android 16 / API 36.
 - [x] Release build uses R8 minification.
 - [x] CI builds debug APK, tests and an unsigned release AAB.

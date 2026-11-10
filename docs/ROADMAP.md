@@ -40,6 +40,7 @@
 - [x] Иконка приложения: legacy vector и adaptive icon для Android 8+.
 - [x] Название приложения Marble Frog и метаданные карточки Google Play на русском и английском.
 - [x] Политика конфиденциальности в HTML/Markdown и внутри приложения.
+- [x] Резервное копирование SharedPreferences в облако и device transfer отключены.
 - [x] targetSdk 36 (Android 16), minSdk 23; проверка отсутствия ненужных разрешений и сетевых SDK.
 - [x] R8 minification для release.
 - [x] CI собирает debug APK, выполняет unit-тесты и формирует unsigned AAB.
