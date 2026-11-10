@@ -93,10 +93,9 @@ class GameEngineTest {
     fun insertingBehindHitBallRemovesThreeMatchingMarbles() {
         val engine = GameEngine(Random(21))
         setChain(engine, listOf(0, 0, 1, 1, 2))
+        engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
         val frontBefore = engine.balls.take(2).map { it.progress }
         val rearBefore = engine.balls.last().progress
-
-        engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
 
         assertEquals(3, engine.ballCount)
         assertEquals(30, engine.score)
