@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -44,6 +44,9 @@ jobs:
 
       - name: Run unit tests
         run: gradle testDebugUnitTest --no-daemon
+
+      - name: Run Android lint
+        run: gradle lintDebug --no-daemon
 
       - name: Build unsigned release AAB
         run: gradle bundleRelease --no-daemon
