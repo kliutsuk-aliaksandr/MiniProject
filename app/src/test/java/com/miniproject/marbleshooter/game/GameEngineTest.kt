@@ -46,7 +46,7 @@ class GameEngineTest {
 
         assertEquals(1, engine.projectileCount)
         assertNotEquals(previousAmmo, engine.ammoColor)
-        assertTrue(engine.drainEvents().contains(DomainDomainGameEvent.ShotFired))
+        assertTrue(engine.drainEvents().contains(DomainGameEvent.ShotFired))
     }
 
     @Test
@@ -104,7 +104,7 @@ class GameEngineTest {
         assertEquals(3, engine.ballCount)
         assertEquals(30, engine.score)
         assertEquals(listOf(0, 0, 2), engine.balls.map { it.colorIndex })
-        assertEquals(3, engine.drainEvents().filterIsInstance<DomainDomainGameEvent.MatchCleared>().single().count)
+        assertEquals(3, engine.drainEvents().filterIsInstance<DomainGameEvent.MatchCleared>().single().count)
         assertEquals(frontBefore, engine.balls.take(2).map { it.progress })
         assertEquals(rearBefore, engine.balls.last().progress)
     }
@@ -279,7 +279,7 @@ class GameEngineTest {
 
         assertEquals(7, engine.ballCount)
         assertEquals(1, engine.boosters.bomb)
-        assertTrue(engine.drainEvents().any { it is DomainDomainGameEvent.MatchCleared })
+        assertTrue(engine.drainEvents().any { it is DomainGameEvent.MatchCleared })
         repeat(12) { engine.update(0.05f) }
         assertTrue(engine.balls.zipWithNext().all { (front, rear) -> front.progress > rear.progress })
     }
@@ -321,7 +321,7 @@ class GameEngineTest {
 
         assertEquals(GameStatus.WON, engine.status)
         assertEquals(3, engine.lastStars)
-        val completed = engine.drainEvents().filterIsInstance<DomainDomainGameEvent.LevelCompleted>().single()
+        val completed = engine.drainEvents().filterIsInstance<DomainGameEvent.LevelCompleted>().single()
         assertEquals(3, completed.stars)
         assertEquals(1, completed.level)
     }
