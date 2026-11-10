@@ -173,7 +173,11 @@ class GameEngine(private val random: Random = Random.Default) {
         nextColor = randomDifferentColor(ammoColor)
         var previous = -1
         var repeatCount = 0
-        val start = routeLength * START_PROGRESS_FRACTION
+        val requiredChainSpan = (targetBallCount - 1) * BALL_SPACING
+        val start = max(
+            routeLength * START_PROGRESS_FRACTION,
+            requiredChainSpan + BALL_SPACING * 2f
+        ).coerceAtMost(routeLength - BALL_RADIUS * 2f)
         repeat(targetBallCount) {
             var color = random.nextInt(activeColorCount)
             while (color == previous && repeatCount >= 2) {

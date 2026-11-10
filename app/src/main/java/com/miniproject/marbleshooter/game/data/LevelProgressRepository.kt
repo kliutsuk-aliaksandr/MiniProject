@@ -14,12 +14,16 @@ interface LevelProgressRepository {
 
 class SharedPreferencesLevelProgressRepository(context: Context) : LevelProgressRepository {
     private val preferences = context.getSharedPreferences("level_progress", Context.MODE_PRIVATE)
+    private val legacyPreferences = context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
 
     override val bestScore: Int
-        get() = preferences.getInt(KEY_BEST_SCORE, 0)
+        get() = preferences.getInt(KEY_BEST_SCORE, legacyPreferences.getInt("best_score", 0))
 
     override val unlockedLevel: Int
-        get() = preferences.getInt(KEY_UNLOCKED_LEVEL, 1).coerceIn(1, LevelCatalog.MAX_LEVELS)
+        get() = preferences.getInt(
+            KEY_UNLOCKED_LEVEL,
+            legacyPreferences.getInt("saved_level", 1)
+        ).coerceIn(1, LevelCatalog.MAX_LEVELS)
 
     override fun starsFor(level: Int): Int =
         preferences.getInt(starsKey(level), 0).coerceIn(0, 3)

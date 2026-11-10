@@ -79,9 +79,9 @@ object LevelCatalog {
             Vec2(210f, 735f)
         )
         TrackId.DOUBLE_LOOP -> listOf(
-            Vec2(42f, 145f), Vec2(378f, 145f), Vec2(378f, 285f),
-            Vec2(42f, 285f), Vec2(42f, 425f), Vec2(378f, 425f),
-            Vec2(378f, 565f), Vec2(42f, 565f), Vec2(42f, 680f),
+            Vec2(48f, 150f), Vec2(372f, 150f), Vec2(372f, 280f),
+            Vec2(92f, 280f), Vec2(92f, 370f), Vec2(328f, 370f),
+            Vec2(328f, 500f), Vec2(48f, 500f), Vec2(48f, 625f),
             Vec2(210f, 740f)
         )
         TrackId.SWITCHBACK -> listOf(
