@@ -2,7 +2,7 @@
 
 **Снимок состояния:** 10 ноября 2026 года  
 **Рабочая ветка:** `fix`  
-**Кодовый срез ветки fix:** `c762f3759134b12199c49da0518ce7850fbea0c3` (17 коммитов впереди main; 0 позади)
+**Кодовый срез, описанный в этом отчёте:** `c762f3759134b12199c49da0518ce7850fbea0c3`. Последующие изменения в этой ветке после данного среза — только документы статуса/ссылки; production code не менялся.
 
 Этот документ фиксирует фактическое состояние исходного кода и GitHub CI. Отметка «сделано» означает, что изменение уже есть в ветке; она не означает, что каждое поведение проверено на физическом устройстве.
 
@@ -13,7 +13,7 @@
 | `main` | `20ce0d75928c3988628de93a784683a411307ff2` |
 | `fix` (кодовый срез этого отчёта) | `c762f3759134b12199c49da0518ce7850fbea0c3` |
 | PR №2 | открыт, Draft, направление `fix → main` |
-| Сравнение веток | `fix` впереди на 17 коммитов, отставание — 0 |
+| Сравнение веток на кодовом срезе | `fix` впереди на 17 коммитов, отставание — 0 |
 | Merge | не выполнялся и не должен выполняться без отдельного подтверждения |
 
 Удалённые ветки `main`, `fix` и feature-ветка сохранены. История не переписывалась, force push не применялся.
@@ -114,15 +114,17 @@ Robolectric repository tests запускаются на test runtime API 35. Э
 
 На commit `8f0061c4462f0f749e481a50bef1d482841a94d0` CI обнаружил compile error: при извлечении ProgressPresentationCache из GameView было удалено поле `preferences`, хотя настройки языка, звука и вибрации продолжали его использовать. Это исправлено отдельным commit `bda872de2c2a429cc2d3e6e0708f46f4cb8bb5ac`.
 
-На commit `bda872de2c2a429cc2d3e6e0708f46f4cb8bb5ac` workflow [42838489410](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42838489410) уже прошёл `assembleDebug`, `testDebugUnitTest` и `lintDebug`; на последней проверке продолжал выполняться `bundleRelease`.
+На commit `bda872de2c2a429cc2d3e6e0708f46f4cb8bb5ac` PR workflow [42838489410](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42838489410) завершился `success`: `assembleDebug`, `testDebugUnitTest`, `lintDebug`, `bundleRelease` и загрузка APK/AAB artifacts прошли.
 
-**Проверка кодового среза `c762f3759134b12199c49da0518ce7850fbea0c3`:** workflow [42838762914](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42838762914) выполнялся; подготовка runner/SDK/Gradle завершилась, начался `assembleDebug`. Полный успех этого workflow ещё не подтверждён. Перед дальнейшим рефакторингом необходимо проверить именно этот кодовый срез; если workflow красный — сначала исправить причину.
+**Проверка кодового среза `c762f3759134b12199c49da0518ce7850fbea0c3`:** PR workflow [42838777475](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42838777475) и push workflow [42838762914](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42838762914) прошли `assembleDebug` и `testDebugUnitTest`; `lintDebug` выполнялся на момент последней проверки, `bundleRelease` ещё не стартовал. Итог этих workflow пока не считается зелёным.
+
+Следующий документальный commit `4b138a22f334cc6d915922649e148bd800757947` не меняет production source; его push workflow [42839023787](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42839023787) был в очереди/подготовке runner на момент последней проверки. Перед следующим кодовым этапом нужно проверить актуальный PR workflow на HEAD; если он красный — сначала исправить причину.
 
 Предыдущие зелёные результаты не заменяют проверку более нового commit.
 
 ## 6. Порядок дальнейших действий
 
-1. **Закрыть текущий CI gate.** Дождаться workflow для кодового среза `c762f375...`; проверить assembleDebug, testDebugUnitTest, lintDebug и bundleRelease. Если упадёт — исправить причину, повторить полный CI.
+1. **Закрыть текущий CI gate.** Проверить актуальный PR workflow на HEAD после документальных коммитов; убедиться, что assembleDebug, testDebugUnitTest, lintDebug и bundleRelease завершились success. Если упадёт — исправить причину и повторить полный CI.
 2. **Довести GameView до управляемого coordinator.** Сначала выделить event handling и session lifecycle, затем input routing и navigation. Для каждого выделения добавить тесты и сравнить поведение до/после.
 3. **Разделить GameRenderer.** Начать с TrackRenderer и EffectsRenderer, затем HUD и overlays, последним — маршрутизацию экранов. Сохранить общий draw contract и добавить screenshot/golden или доступные Robolectric проверки.
 4. **Вынести локализацию.** Создать полный RU и EN набор resources, включая tutorial, HUD, boosters, pause/end screens, privacy и accessibility labels. Проверить полноту обоих наборов автоматически.
