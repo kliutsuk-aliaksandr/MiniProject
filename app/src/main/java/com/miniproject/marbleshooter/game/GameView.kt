@@ -552,40 +552,6 @@ class GameView(context: Context) : View(context) {
         canvas.drawRect(0f, 0f, GameEngine.WORLD_WIDTH, GameEngine.WORLD_HEIGHT, fillPaint)
     }
 
-    private fun drawOverlayPanel(canvas: Canvas, title: String, subtitle: String) {
-        fillPaint.color = Color.rgb(30, 43, 71)
-        canvas.drawRoundRect(RectF(35f, 315f, 385f, 615f), 30f, 30f, fillPaint)
-
-        textPaint.textAlign = Paint.Align.CENTER
-        textPaint.textSize = 27f
-        textPaint.color = Color.WHITE
-        canvas.drawText(title, 210f, 388f, textPaint)
-
-        textPaint.textSize = 16f
-        textPaint.color = Color.rgb(199, 213, 239)
-        canvas.drawText(subtitle, 210f, 430f, textPaint)
-        textPaint.textAlign = Paint.Align.LEFT
-    }
-
-    private fun drawOverlayButton(
-        canvas: Canvas,
-        left: Float,
-        top: Float,
-        right: Float,
-        bottom: Float,
-        label: String,
-        color: Int
-    ) {
-        fillPaint.color = color
-        canvas.drawRoundRect(RectF(left, top, right, bottom), 20f, 20f, fillPaint)
-        textPaint.textAlign = Paint.Align.CENTER
-        textPaint.textSize = 16f
-        textPaint.color = Color.rgb(10, 39, 31)
-        canvas.drawText(label, (left + right) / 2f, (top + bottom) / 2f + 6f, textPaint)
-        textPaint.textAlign = Paint.Align.LEFT
-        textPaint.color = Color.WHITE
-    }
-
     private fun handleGameEvents(events: List<GameEvent>) {
         for (event in events) {
             when (event) {
