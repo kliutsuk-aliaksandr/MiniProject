@@ -54,6 +54,7 @@ data class GameRenderState(
 )
 
 /** Canvas-only drawing layer. It receives state and never handles input or persistence. */
+/** Canvas renderer. Consumes domain state and visual snapshots; owns no game rules. */
 class GameRenderer {
     private val palette = intArrayOf(
         Color.rgb(255, 91, 105),
@@ -64,6 +65,10 @@ class GameRenderer {
         Color.rgb(255, 129, 207)
     )
     private val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val backgroundShader = LinearGradient(
+        0f, 0f, 0f, GameEngine.WORLD_HEIGHT,
+        Color.rgb(24, 38, 68), Color.rgb(12, 18, 36), Shader.TileMode.CLAMP
+    )
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -91,10 +96,7 @@ class GameRenderer {
     }
 
     private fun drawBackground(canvas: Canvas) {
-        backgroundPaint.shader = LinearGradient(
-            0f, 0f, 0f, GameEngine.WORLD_HEIGHT,
-            Color.rgb(24, 38, 68), Color.rgb(12, 18, 36), Shader.TileMode.CLAMP
-        )
+        backgroundPaint.shader = backgroundShader
         canvas.drawRect(0f, 0f, GameEngine.WORLD_WIDTH, GameEngine.WORLD_HEIGHT, backgroundPaint)
         backgroundPaint.shader = null
         fillPaint.color = Color.argb(28, 255, 255, 255)
@@ -374,7 +376,7 @@ class GameRenderer {
                 canvas,
                 tr(state, "ТРЕНИРОВКА • ПОПРОБУЙ БУСТЕРЫ И КОМБИНАЦИИ",
                     "PRACTICE • TRY BOOSTERS AND MATCHES"),
-                11f, Color.rgb(255, 223, 122), 210f, 705f
+                11f, Color.rgb(255, 223, 122), 210f, 675f
             )
         } else {
             centeredText(
@@ -624,19 +626,37 @@ class GameRenderer {
 
     private fun drawEndOverlay(canvas: Canvas, engine: GameEngine, state: GameRenderState, won: Boolean) {
         overlayBackdrop(canvas)
-        overlayPanel(
-            canvas,
-            if (won) tr(state, "УРОВЕНЬ ПРОЙДЕН!", "LEVEL COMPLETE!") else tr(state, "ИГРА ОКОНЧЕНА", "GAME OVER"),
+        val title = when {
+            won && engine.isTutorial -> tr(state, "ОБУЧЕНИЕ ПРОЙДЕНО!", "PRACTICE COMPLETE!")
+            won -> tr(state, "УРОВЕНЬ ПРОЙДЕН!", "LEVEL COMPLETE!")
+            else -> tr(state, "ИГРА ОКОНЧЕНА", "GAME OVER")
+        }
+        val subtitle = if (engine.isTutorial) {
+            tr(state, "Тренировка • счёт ", "Practice • score ") + engine.score
+        } else {
             tr(state, "Уровень ", "Level ") + engine.level + "  •  " +
                 tr(state, "Счёт ", "Score ") + engine.score
-        )
+        }
+        overlayPanel(canvas, title, subtitle)
         if (won) {
-            button(canvas, 65f, 455f, 355f, 515f, tr(state, "СЛЕДУЮЩИЙ УРОВЕНЬ", "NEXT LEVEL"), GREEN)
-            button(canvas, 80f, 525f, 340f, 585f, tr(state, "К КАРТЕ УРОВНЕЙ", "LEVEL MAP"), BLUE)
+            button(
+                canvas, 65f, 455f, 355f, 515f,
+                if (engine.isTutorial) tr(state, "ПОВТОРИТЬ ТРЕНИРОВКУ", "RETRY PRACTICE")
+                else tr(state, "СЛЕДУЮЩИЙ УРОВЕНЬ", "NEXT LEVEL"), GREEN
+            )
+            button(
+                canvas, 80f, 525f, 340f, 585f,
+                if (engine.isTutorial) tr(state, "К УРОКАМ", "BACK TO LESSONS")
+                else tr(state, "К КАРТЕ УРОВНЕЙ", "LEVEL MAP"), BLUE
+            )
             button(canvas, 80f, 595f, 340f, 655f, tr(state, "В ГЛАВНОЕ МЕНЮ", "MAIN MENU"), BLUE)
-            centeredText(canvas, starsLine(engine.lastStars), 27f, Color.rgb(255, 209, 88), 210f, 420f)
+            if (!engine.isTutorial) centeredText(canvas, starsLine(engine.lastStars), 27f, Color.rgb(255, 209, 88), 210f, 420f)
         } else {
-            button(canvas, 80f, 500f, 340f, 560f, tr(state, "ИГРАТЬ СНОВА", "PLAY AGAIN"), GREEN)
+            button(
+                canvas, 80f, 500f, 340f, 560f,
+                if (engine.isTutorial) tr(state, "ПОВТОРИТЬ ТРЕНИРОВКУ", "RETRY PRACTICE")
+                else tr(state, "ИГРАТЬ СНОВА", "PLAY AGAIN"), GREEN
+            )
             button(canvas, 80f, 575f, 340f, 635f, tr(state, "К КАРТЕ УРОВНЕЙ", "LEVEL MAP"), BLUE)
             button(canvas, 80f, 650f, 340f, 710f, tr(state, "В ГЛАВНОЕ МЕНЮ", "MAIN MENU"), BLUE)
         }
@@ -684,7 +704,16 @@ class GameRenderer {
         }
         if (current.isNotEmpty()) lines += current
         val lineHeight = size * 1.4f
-        lines.take((bounds.height() / lineHeight).toInt().coerceAtLeast(1)).forEachIndexed { index, line ->
+        val maxLines = (bounds.height() / lineHeight).toInt().coerceAtLeast(1)
+        val visibleLines = lines.take(maxLines).toMutableList()
+        if (lines.size > maxLines && visibleLines.isNotEmpty()) {
+            var last = visibleLines.last()
+            while (last.isNotEmpty() && textPaint.measureText(last + "…") > bounds.width()) {
+                last = last.dropLast(1)
+            }
+            visibleLines[visibleLines.lastIndex] = if (last.isEmpty()) "…" else last + "…"
+        }
+        visibleLines.forEachIndexed { index, line ->
             canvas.drawText(line, bounds.left, bounds.top + size + index * lineHeight, textPaint)
         }
         textPaint.textAlign = Paint.Align.LEFT
