@@ -404,6 +404,8 @@ class GameEngine(private val random: Random = Random.Default) {
                     projectile.velocity.y * tangent.y >= 0f
                 iterator.remove()
                 insertBallAt(nearestIndex, color, insertInFront = !movingWithChain)
+                // Keep any other in-flight shots alive while the chain is retracting.
+                if (retractionAnimation != null || status != GameStatus.RUNNING) break
                 continue
             }
 
