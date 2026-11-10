@@ -4,6 +4,7 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 
 /** Small offline sound adapter; no media assets, network access or permissions. */
+/** Owns the offline ToneGenerator and exposes short game-event sound effects. */
 class GameAudio {
     private val generator: ToneGenerator? = runCatching {
         ToneGenerator(AudioManager.STREAM_MUSIC, 55)
@@ -19,6 +20,7 @@ class GameAudio {
         if (enabled) generator?.startTone(tone, durationMs)
     }
 
+    /** Releases the platform audio handle during Activity teardown. */
     fun release() {
         generator?.release()
     }

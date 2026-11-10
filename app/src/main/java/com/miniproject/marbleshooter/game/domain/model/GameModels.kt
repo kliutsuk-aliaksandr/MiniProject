@@ -2,6 +2,7 @@ package com.miniproject.marbleshooter.game.domain.model
 
 import kotlin.math.sqrt
 
+/** Position/vector in the 420x900 logical game coordinate system. */
 data class Vec2(val x: Float, val y: Float) {
     operator fun plus(other: Vec2) = Vec2(x + other.x, y + other.y)
     operator fun minus(other: Vec2) = Vec2(x - other.x, y - other.y)
@@ -15,16 +16,20 @@ data class Vec2(val x: Float, val y: Float) {
     }
 }
 
+/** A marble and its scalar progress along the active route. */
 data class Ball(val colorIndex: Int, var progress: Float)
 
+/** Fired marble with world-space position and velocity. */
 data class Projectile(
     val colorIndex: Int,
     var position: Vec2,
     val velocity: Vec2
 )
 
+/** Lifecycle state of the active campaign or practice round. */
 enum class GameStatus { RUNNING, PAUSED, LOST, WON }
 
+/** Consumable actions exposed by the gameplay HUD. */
 enum class BoosterType {
     SLOW_TIME,
     BOMB,
@@ -32,6 +37,7 @@ enum class BoosterType {
     REVERSE_CHAIN
 }
 
+/** Remaining booster charges for the current round. */
 data class BoosterInventory(
     val slowTime: Int = 3,
     val bomb: Int = 2,
@@ -53,14 +59,17 @@ data class BoosterInventory(
     }
 }
 
+/** Track zones that multiply chain movement speed. */
 enum class ObstacleType { MUD, ICE, ROCK }
 
+/** Active obstacle position measured along the route. */
 data class TrackObstacle(
     val type: ObstacleType,
     val progress: Float,
     val radius: Float = 22f
 )
 
+/** Serializable campaign snapshot; projectiles and visual effects are transient. */
 data class GameSaveState(
     val level: Int,
     val score: Int,
@@ -73,6 +82,7 @@ data class GameSaveState(
     val shotsFired: Int = 0
 )
 
+/** Domain events consumed by the UI without Android dependencies. */
 sealed interface GameEvent {
     data object ShotFired : GameEvent
     data class MatchCleared(

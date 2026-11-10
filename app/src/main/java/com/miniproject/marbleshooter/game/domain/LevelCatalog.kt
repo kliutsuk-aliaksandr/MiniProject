@@ -3,13 +3,16 @@ package com.miniproject.marbleshooter.game.domain
 import com.miniproject.marbleshooter.game.domain.model.ObstacleType
 import com.miniproject.marbleshooter.game.domain.model.Vec2
 
+/** Stable route identifiers used by level definitions and renderer caches. */
 enum class TrackId { CLASSIC, DOUBLE_LOOP, SWITCHBACK, SPIRAL }
 
+/** Obstacle placement expressed as a fraction of the total route length. */
 data class ObstacleDefinition(
     val type: ObstacleType,
     val routeFraction: Float
 )
 
+/** Immutable difficulty and track configuration for one campaign level. */
 data class LevelDefinition(
     val id: Int,
     val trackId: TrackId,
@@ -26,6 +29,7 @@ data class LevelDefinition(
 object LevelCatalog {
     const val MAX_LEVELS = 30
 
+    /** Returns the clamped level definition, including difficulty and obstacle placements. */
     fun definition(levelId: Int): LevelDefinition {
         val id = levelId.coerceIn(1, MAX_LEVELS)
         val track = when {
@@ -71,6 +75,7 @@ object LevelCatalog {
         )
     }
 
+    /** Builds the logical polyline for a route; the active engine caches this list. */
     fun route(trackId: TrackId): List<Vec2> = when (trackId) {
         TrackId.CLASSIC -> listOf(
             Vec2(42f, 160f), Vec2(378f, 160f), Vec2(378f, 300f),

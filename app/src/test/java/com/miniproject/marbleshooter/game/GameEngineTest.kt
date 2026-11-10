@@ -3,6 +3,8 @@ package com.miniproject.marbleshooter.game
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.miniproject.marbleshooter.game.domain.LevelCatalog
@@ -240,6 +242,48 @@ class GameEngineTest {
         assertEquals(TrackId.SPIRAL, LevelCatalog.definition(23).trackId)
         assertTrue(LevelCatalog.definition(20).ballCount > LevelCatalog.definition(2).ballCount)
         assertTrue(LevelCatalog.definition(20).chainSpeed > LevelCatalog.definition(2).chainSpeed)
+    }
+
+    @Test
+    fun routeGeometryAndObstaclesAreCachedUntilTheLevelChanges() {
+        val engine = GameEngine(Random(301))
+        val firstRoute = engine.routePoints
+        val firstObstacles = engine.obstacles
+
+        assertSame(firstRoute, engine.routePoints)
+        assertSame(firstObstacles, engine.obstacles)
+
+        engine.startLevel(9)
+
+        assertNotSame(firstRoute, engine.routePoints)
+        assertSame(engine.routePoints, engine.routePoints)
+        assertSame(engine.obstacles, engine.obstacles)
+    }
+
+    @Test
+    fun tutorialWinCannotAdvanceTheCampaign() {
+        val engine = GameEngine(Random(302))
+        engine.startTutorial()
+        engine.balls.clear()
+        engine.update(0.016f)
+
+        assertEquals(GameStatus.WON, engine.status)
+        assertTrue(engine.isTutorial)
+        assertFalse(engine.startNextLevel())
+        assertEquals(1, engine.level)
+        assertTrue(engine.isTutorial)
+    }
+
+    @Test
+    fun bombAndColorChangeDoNotConsumeChargesWhenTheChainIsEmpty() {
+        val engine = GameEngine(Random(303))
+        engine.balls.clear()
+        val inventoryBefore = engine.boosters
+
+        assertFalse(engine.activateBooster(BoosterType.BOMB))
+        assertEquals(inventoryBefore, engine.boosters)
+        assertFalse(engine.activateBooster(BoosterType.COLOR_CHANGE))
+        assertEquals(inventoryBefore, engine.boosters)
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.miniproject.marbleshooter.game.data
 import android.content.Context
 import com.miniproject.marbleshooter.game.domain.LevelCatalog
 
+/** Local campaign progress contract; completion updates must be monotonic. */
 interface LevelProgressRepository {
     val bestScore: Int
     val unlockedLevel: Int
@@ -12,6 +13,7 @@ interface LevelProgressRepository {
     fun isUnlocked(level: Int): Boolean = level in 1..unlockedLevel
 }
 
+/** SharedPreferences-backed progress with fallback reads for legacy 0.4 saves. */
 class SharedPreferencesLevelProgressRepository(context: Context) : LevelProgressRepository {
     private val preferences = context.getSharedPreferences("level_progress", Context.MODE_PRIVATE)
     private val legacyPreferences = context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
@@ -28,6 +30,7 @@ class SharedPreferencesLevelProgressRepository(context: Context) : LevelProgress
     override fun starsFor(level: Int): Int =
         preferences.getInt(starsKey(level), 0).coerceIn(0, 3)
 
+    /** Records best stars, next unlock and best score without reducing stored progress. */
     override fun recordCompletion(level: Int, stars: Int, score: Int) {
         val safeLevel = level.coerceIn(1, LevelCatalog.MAX_LEVELS)
         val safeStars = stars.coerceIn(1, 3)
