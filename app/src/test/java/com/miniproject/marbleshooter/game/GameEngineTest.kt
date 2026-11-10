@@ -46,6 +46,31 @@ class GameEngineTest {
     }
 
     @Test
+    fun aimCanBeUpdatedDuringDragWithoutFiringUntilRelease() {
+        val engine = GameEngine(Random(12))
+
+        engine.aimAt(Vec2(90f, 360f))
+
+        assertEquals(Vec2(90f, 360f), engine.aimTarget)
+        assertEquals(0, engine.projectileCount)
+
+        engine.fireShot()
+
+        assertEquals(1, engine.projectileCount)
+        assertEquals(Vec2(90f, 360f), engine.aimTarget)
+    }
+
+    @Test
+    fun aimTargetIsKeptInsideThePlayableWorld() {
+        val engine = GameEngine(Random(13))
+
+        engine.aimAt(Vec2(900f, 950f))
+
+        assertEquals(GameEngine.WORLD_WIDTH, engine.aimTarget.x, 0.001f)
+        assertEquals(GameEngine.SHOOTER_Y - 180f, engine.aimTarget.y, 0.001f)
+    }
+
+    @Test
     fun updateMovesEveryBallAndPreservesSpacing() {
         val engine = GameEngine(Random(15))
         val initialProgress = engine.balls.map { it.progress }

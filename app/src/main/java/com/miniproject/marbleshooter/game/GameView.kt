@@ -11,6 +11,7 @@ import android.graphics.LinearGradient
 import android.graphics.Typeface
 import android.view.MotionEvent
 import android.view.View
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -26,6 +27,12 @@ private data class BurstParticle(
     val radius: Float
 )
 
+private enum class UiScreen {
+    MENU,
+    SETTINGS,
+    GAME
+}
+
 class GameView(context: Context) : View(context) {
 
     private val engine = GameEngine()
@@ -36,6 +43,10 @@ class GameView(context: Context) : View(context) {
     private var isActive = false
     private var lastFrameNanos = 0L
     private val particles = mutableListOf<BurstParticle>()
+    private var screen = UiScreen.MENU
+    private var hasSavedGame = false
+    private var language = preferences.getString("language", "ru") ?: "ru"
+    private var isAiming = false
 
     private val palette = intArrayOf(
         Color.rgb(255, 91, 105),
@@ -71,25 +82,52 @@ class GameView(context: Context) : View(context) {
     init {
         isFocusable = true
         setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        restoreSavedGame()
+        hasSavedGame = restoreSavedGame()
         engine.drainEvents()
     }
 
     fun resumeGame() {
         isActive = true
         lastFrameNanos = System.nanoTime()
-        postInvalidateOnAnimation()
+        invalidate()
+        if (screen == UiScreen.GAME && engine.status == GameStatus.RUNNING) {
+            postInvalidateOnAnimation()
+        }
     }
 
     fun pauseGame() {
         isActive = false
         lastFrameNanos = 0L
-        saveGameState()
+        isAiming = false
+        if (screen == UiScreen.GAME && engine.status == GameStatus.RUNNING) {
+            engine.pauseRound()
+        }
+        if (screen == UiScreen.GAME) saveGameState()
+        invalidate()
     }
 
     fun disposeGame() {
-        saveGameState()
+        if (screen == UiScreen.GAME) saveGameState()
         audio.release()
+    }
+
+    fun handleSystemBack(): Boolean {
+        when (screen) {
+            UiScreen.SETTINGS -> screen = UiScreen.MENU
+            UiScreen.MENU -> return false
+            UiScreen.GAME -> {
+                when (engine.status) {
+                    GameStatus.RUNNING -> engine.pauseRound()
+                    GameStatus.PAUSED -> screen = UiScreen.MENU
+                    GameStatus.WON, GameStatus.LOST -> screen = UiScreen.MENU
+                }
+                isAiming = false
+                if (screen == UiScreen.MENU || engine.status == GameStatus.PAUSED) saveGameState()
+                hasSavedGame = hasSavedGame || engine.status == GameStatus.PAUSED
+            }
+        }
+        invalidate()
+        return true
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -97,11 +135,11 @@ class GameView(context: Context) : View(context) {
         if (width == 0 || height == 0) return
 
         var delta = 0f
-        if (isActive) {
+        if (isActive && screen == UiScreen.GAME) {
             val now = System.nanoTime()
             delta = if (lastFrameNanos == 0L) 0f else (now - lastFrameNanos) / 1_000_000_000f
             lastFrameNanos = now
-            engine.update(delta)
+            if (engine.status == GameStatus.RUNNING) engine.update(delta)
             updateParticles(delta)
             handleGameEvents(engine.drainEvents())
             saveBestScoreIfNeeded()
@@ -118,6 +156,22 @@ class GameView(context: Context) : View(context) {
         canvas.scale(scale, scale)
 
         drawBackground(canvas)
+        when (screen) {
+            UiScreen.MENU -> drawMenuScreen(canvas)
+            UiScreen.SETTINGS -> drawSettingsScreen(canvas)
+            UiScreen.GAME -> drawGameScreen(canvas)
+        }
+
+        canvas.restore()
+
+        if (isActive && screen == UiScreen.GAME &&
+            (engine.status == GameStatus.RUNNING || particles.isNotEmpty())
+        ) {
+            postInvalidateOnAnimation()
+        }
+    }
+
+    private fun drawGameScreen(canvas: Canvas) {
         drawTrack(canvas)
         drawBalls(canvas)
         drawProjectiles(canvas)
@@ -131,15 +185,87 @@ class GameView(context: Context) : View(context) {
             GameStatus.WON, GameStatus.LOST -> drawEndOverlay(canvas)
             GameStatus.RUNNING -> Unit
         }
-
-        canvas.restore()
-
-        if (isActive && engine.status == GameStatus.RUNNING) {
-            postInvalidateOnAnimation()
-        } else if (isActive && particles.isNotEmpty()) {
-            postInvalidateOnAnimation()
-        }
     }
+
+    private fun drawMenuScreen(canvas: Canvas) {
+        textPaint.textAlign = Paint.Align.CENTER
+        textPaint.textSize = 39f
+        textPaint.color = Color.WHITE
+        canvas.drawText("MARBLE FROG", 210f, 190f, textPaint)
+
+        textPaint.textSize = 16f
+        textPaint.color = Color.rgb(174, 193, 224)
+        canvas.drawText(t("ЛЯГУШКА-МРАМОРЩИК", "THE MARBLE SHOOTER"), 210f, 225f, textPaint)
+
+        drawShooter(canvas, Vec2(210f, 335f), Vec2(210f, 170f), engine.ammoColor)
+
+        textPaint.textSize = 15f
+        textPaint.color = Color.rgb(194, 212, 240)
+        canvas.drawText(t("РЕКОРД  ", "BEST  ") + bestScore, 210f, 405f, textPaint)
+
+        if (hasSavedGame) {
+            drawUiButton(canvas, 80f, 450f, 340f, 510f, t("ПРОДОЛЖИТЬ", "CONTINUE"), Color.rgb(66, 194, 130))
+            drawUiButton(canvas, 80f, 525f, 340f, 585f, t("НОВАЯ ИГРА", "NEW GAME"), Color.rgb(65, 92, 135))
+            drawUiButton(canvas, 80f, 600f, 340f, 660f, t("НАСТРОЙКИ", "SETTINGS"), Color.rgb(65, 92, 135))
+        } else {
+            drawUiButton(canvas, 80f, 490f, 340f, 550f, t("ИГРАТЬ", "PLAY"), Color.rgb(66, 194, 130))
+            drawUiButton(canvas, 80f, 570f, 340f, 630f, t("НАСТРОЙКИ", "SETTINGS"), Color.rgb(65, 92, 135))
+        }
+
+        textPaint.textSize = 12f
+        textPaint.color = Color.rgb(122, 143, 177)
+        canvas.drawText("OFFLINE  •  0.3.0", 210f, 825f, textPaint)
+        textPaint.textAlign = Paint.Align.LEFT
+    }
+
+    private fun drawSettingsScreen(canvas: Canvas) {
+        textPaint.textAlign = Paint.Align.CENTER
+        textPaint.textSize = 32f
+        textPaint.color = Color.WHITE
+        canvas.drawText(t("НАСТРОЙКИ", "SETTINGS"), 210f, 235f, textPaint)
+
+        textPaint.textSize = 17f
+        textPaint.color = Color.rgb(174, 193, 224)
+        canvas.drawText(t("ЯЗЫК", "LANGUAGE"), 210f, 335f, textPaint)
+
+        drawUiButton(
+            canvas, 40f, 370f, 200f, 435f, "РУССКИЙ",
+            if (language == "ru") Color.rgb(66, 194, 130) else Color.rgb(65, 92, 135)
+        )
+        drawUiButton(
+            canvas, 220f, 370f, 380f, 435f, "ENGLISH",
+            if (language == "en") Color.rgb(66, 194, 130) else Color.rgb(65, 92, 135)
+        )
+
+        drawUiButton(
+            canvas, 60f, 485f, 360f, 550f,
+            t("ЗВУК: ", "SOUND: ") + t(if (soundEnabled) "ВКЛ" else "ВЫКЛ", if (soundEnabled) "ON" else "OFF"),
+            Color.rgb(65, 92, 135)
+        )
+        drawUiButton(canvas, 80f, 600f, 340f, 660f, t("НАЗАД", "BACK"), Color.rgb(66, 194, 130))
+        textPaint.textAlign = Paint.Align.LEFT
+    }
+
+    private fun drawUiButton(
+        canvas: Canvas,
+        left: Float,
+        top: Float,
+        right: Float,
+        bottom: Float,
+        label: String,
+        color: Int
+    ) {
+        fillPaint.color = color
+        canvas.drawRoundRect(RectF(left, top, right, bottom), 18f, 18f, fillPaint)
+        textPaint.textAlign = Paint.Align.CENTER
+        textPaint.textSize = if (label.length > 18) 13f else 16f
+        textPaint.color = Color.WHITE
+        canvas.drawText(label, (left + right) / 2f, (top + bottom) / 2f + 6f, textPaint)
+        textPaint.textAlign = Paint.Align.LEFT
+    }
+
+    private fun t(russian: String, english: String): String =
+        if (language == "en") english else russian
 
     private fun drawBackground(canvas: Canvas) {
         backgroundPaint.shader = LinearGradient(
@@ -177,13 +303,13 @@ class GameView(context: Context) : View(context) {
         canvas.drawCircle(start.x, start.y, 11f, fillPaint)
         textPaint.textSize = 13f
         textPaint.color = Color.rgb(190, 255, 211)
-        canvas.drawText("СТАРТ", start.x - 23f, start.y - 35f, textPaint)
+        canvas.drawText(t("СТАРТ", "START"), start.x - 23f, start.y - 35f, textPaint)
 
         val finish = engine.routePoints.last()
         fillPaint.color = Color.rgb(255, 100, 110)
         canvas.drawCircle(finish.x, finish.y, 13f, fillPaint)
         textPaint.color = Color.rgb(255, 190, 194)
-        canvas.drawText("ФИНИШ", finish.x - 29f, finish.y + 39f, textPaint)
+        canvas.drawText(t("ФИНИШ", "FINISH"), finish.x - 29f, finish.y + 39f, textPaint)
         textPaint.color = Color.WHITE
     }
 
@@ -228,39 +354,43 @@ class GameView(context: Context) : View(context) {
     }
 
     private fun drawShooter(canvas: Canvas) {
-        val center = engine.shooterPosition
-        val direction = (engine.aimTarget - center).normalized()
+        drawShooter(canvas, engine.shooterPosition, engine.aimTarget, engine.ammoColor)
+    }
 
+    private fun drawShooter(canvas: Canvas, center: Vec2, target: Vec2, colorIndex: Int) {
+        val direction = (target - center).normalized()
+        val rotation = Math.toDegrees(atan2(direction.y.toDouble(), direction.x.toDouble())).toFloat() + 90f
+
+        canvas.save()
+        canvas.translate(center.x, center.y)
+        canvas.rotate(rotation)
+
+        // The barrel, face and eyes all rotate together so the frog visibly follows the finger.
         strokePaint.color = Color.rgb(17, 78, 66)
-        strokePaint.strokeWidth = 27f
-        canvas.drawLine(
-            center.x + direction.x * 7f,
-            center.y - 10f + direction.y * 7f,
-            center.x + direction.x * 63f,
-            center.y - 10f + direction.y * 63f,
-            strokePaint
-        )
+        strokePaint.strokeWidth = 25f
+        canvas.drawLine(0f, -2f, 0f, -56f, strokePaint)
 
         fillPaint.color = Color.rgb(11, 80, 65)
-        canvas.drawCircle(center.x, center.y + 3f, 39f, fillPaint)
+        canvas.drawCircle(0f, 3f, 39f, fillPaint)
         fillPaint.color = Color.rgb(65, 203, 139)
-        canvas.drawCircle(center.x, center.y, 34f, fillPaint)
+        canvas.drawCircle(0f, 0f, 34f, fillPaint)
         fillPaint.color = Color.rgb(44, 158, 111)
-        canvas.drawOval(RectF(center.x - 27f, center.y + 10f, center.x + 27f, center.y + 32f), fillPaint)
+        canvas.drawOval(RectF(-27f, 10f, 27f, 32f), fillPaint)
 
         fillPaint.color = Color.WHITE
-        canvas.drawCircle(center.x - 15f, center.y - 25f, 11f, fillPaint)
-        canvas.drawCircle(center.x + 15f, center.y - 25f, 11f, fillPaint)
+        canvas.drawCircle(-15f, -25f, 11f, fillPaint)
+        canvas.drawCircle(15f, -25f, 11f, fillPaint)
         fillPaint.color = Color.rgb(19, 42, 48)
-        canvas.drawCircle(center.x - 13f, center.y - 25f, 4.5f, fillPaint)
-        canvas.drawCircle(center.x + 17f, center.y - 25f, 4.5f, fillPaint)
+        canvas.drawCircle(-13f, -25f, 4.5f, fillPaint)
+        canvas.drawCircle(17f, -25f, 4.5f, fillPaint)
 
         strokePaint.color = Color.rgb(20, 79, 61)
         strokePaint.strokeWidth = 3f
-        canvas.drawArc(
-            RectF(center.x - 13f, center.y - 2f, center.x + 13f, center.y + 17f),
-            10f, 160f, false, strokePaint
-        )
+        canvas.drawArc(RectF(-13f, -2f, 13f, 17f), 10f, 160f, false, strokePaint)
+
+        // The loaded marble is drawn in the frog's mouth/muzzle and always shows the next shot.
+        drawAmmoBadge(canvas, 0f, -53f, colorIndex, 13f)
+        canvas.restore()
     }
 
     private fun drawHud(canvas: Canvas) {
@@ -274,7 +404,7 @@ class GameView(context: Context) : View(context) {
 
         textPaint.textSize = 12f
         textPaint.color = Color.rgb(111, 228, 164)
-        canvas.drawText("УРОВЕНЬ " + engine.level, 34f, 69f, textPaint)
+        canvas.drawText(t("УРОВЕНЬ ", "LEVEL ") + engine.level, 34f, 69f, textPaint)
 
         textPaint.textSize = 29f
         textPaint.color = Color.WHITE
@@ -282,23 +412,15 @@ class GameView(context: Context) : View(context) {
 
         textPaint.textSize = 11f
         textPaint.color = Color.rgb(165, 183, 216)
-        canvas.drawText("РЕКОРД  " + bestScore, 34f, 119f, textPaint)
+        canvas.drawText(t("РЕКОРД  ", "BEST  ") + bestScore, 34f, 119f, textPaint)
 
         drawHudButton(canvas, 322f, 46f, soundEnabled, true)
         drawHudButton(canvas, 374f, 46f, engine.status == GameStatus.PAUSED, false)
 
         textPaint.textSize = 11f
         textPaint.color = Color.rgb(165, 183, 216)
-        canvas.drawText("СЛЕДУЮЩИЙ", 275f, 75f, textPaint)
-
-        drawAmmoBadge(canvas, 315f, 103f, engine.nextColor, 16f)
-        drawAmmoBadge(canvas, 370f, 103f, engine.ammoColor, 16f)
-
-        textPaint.textAlign = Paint.Align.CENTER
-        textPaint.textSize = 9f
-        textPaint.color = Color.rgb(202, 215, 239)
-        canvas.drawText("NEXT", 315f, 126f, textPaint)
-        canvas.drawText("ТЕКУЩИЙ", 370f, 126f, textPaint)
+        canvas.drawText("NEXT", 370f, 75f, textPaint)
+        drawAmmoBadge(canvas, 370f, 103f, engine.nextColor, 16f)
         textPaint.textAlign = Paint.Align.LEFT
         textPaint.color = Color.WHITE
     }
@@ -356,15 +478,20 @@ class GameView(context: Context) : View(context) {
         textPaint.textAlign = Paint.Align.CENTER
         textPaint.textSize = 13f
         textPaint.color = Color.rgb(174, 193, 224)
-        canvas.drawText("НАЖМИ НА ПОЛЕ, ЧТОБЫ ВЫСТРЕЛИТЬ", 210f, 882f, textPaint)
+        canvas.drawText(
+            t("ВЕДИ ПАЛЬЦЕМ ДЛЯ ПРИЦЕЛА • ОТПУСТИ ДЛЯ ВЫСТРЕЛА",
+              "DRAG TO AIM • RELEASE TO SHOOT"),
+            210f, 882f, textPaint
+        )
         textPaint.textAlign = Paint.Align.LEFT
     }
 
     private fun drawPauseOverlay(canvas: Canvas) {
         drawOverlayBackdrop(canvas)
-        drawOverlayPanel(canvas, "ПАУЗА", "Прогресс уровня сохранён")
-        drawOverlayButton(canvas, 80f, 440f, 340f, 505f, "ПРОДОЛЖИТЬ", Color.rgb(66, 194, 130))
-        drawOverlayButton(canvas, 80f, 520f, 340f, 585f, "НАЧАТЬ ЗАНОВО", Color.rgb(65, 92, 135))
+        drawOverlayPanel(canvas, t("ПАУЗА", "PAUSED"), t("Прогресс уровня сохранён", "Level progress saved"))
+        drawOverlayButton(canvas, 80f, 450f, 340f, 510f, t("ПРОДОЛЖИТЬ", "RESUME"), Color.rgb(66, 194, 130))
+        drawOverlayButton(canvas, 80f, 520f, 340f, 580f, t("НАЧАТЬ ЗАНОВО", "RESTART"), Color.rgb(65, 92, 135))
+        drawOverlayButton(canvas, 80f, 590f, 340f, 650f, t("В ГЛАВНОЕ МЕНЮ", "MAIN MENU"), Color.rgb(65, 92, 135))
     }
 
     private fun drawEndOverlay(canvas: Canvas) {
@@ -372,15 +499,52 @@ class GameView(context: Context) : View(context) {
         val won = engine.status == GameStatus.WON
         drawOverlayPanel(
             canvas,
-            if (won) "УРОВЕНЬ ПРОЙДЕН!" else "ИГРА ОКОНЧЕНА",
-            "УРОВЕНЬ " + engine.level + "   •   СЧЁТ " + engine.score
+            if (won) t("УРОВЕНЬ ПРОЙДЕН!", "LEVEL COMPLETE!") else t("ИГРА ОКОНЧЕНА", "GAME OVER"),
+            t("УРОВЕНЬ ", "LEVEL ") + engine.level + "   •   " +
+                t("СЧЁТ ", "SCORE ") + engine.score
         )
         if (won) {
-            drawOverlayButton(canvas, 65f, 470f, 355f, 535f, "СЛЕДУЮЩИЙ УРОВЕНЬ", Color.rgb(66, 194, 130))
-            drawOverlayButton(canvas, 80f, 545f, 340f, 600f, "ЗАНОВО", Color.rgb(65, 92, 135))
+            drawOverlayButton(canvas, 65f, 470f, 355f, 530f, t("СЛЕДУЮЩИЙ УРОВЕНЬ", "NEXT LEVEL"), Color.rgb(66, 194, 130))
+            drawOverlayButton(canvas, 80f, 540f, 340f, 600f, t("ЗАНОВО", "RESTART"), Color.rgb(65, 92, 135))
+            drawOverlayButton(canvas, 80f, 610f, 340f, 670f, t("В ГЛАВНОЕ МЕНЮ", "MAIN MENU"), Color.rgb(65, 92, 135))
         } else {
-            drawOverlayButton(canvas, 80f, 490f, 340f, 555f, "ИГРАТЬ СНОВА", Color.rgb(66, 194, 130))
+            drawOverlayButton(canvas, 80f, 500f, 340f, 560f, t("ИГРАТЬ СНОВА", "PLAY AGAIN"), Color.rgb(66, 194, 130))
+            drawOverlayButton(canvas, 80f, 575f, 340f, 635f, t("В ГЛАВНОЕ МЕНЮ", "MAIN MENU"), Color.rgb(65, 92, 135))
         }
+    }
+
+    private fun drawOverlayPanel(canvas: Canvas, title: String, subtitle: String) {
+        fillPaint.color = Color.rgb(30, 43, 71)
+        canvas.drawRoundRect(RectF(35f, 285f, 385f, 710f), 30f, 30f, fillPaint)
+
+        textPaint.textAlign = Paint.Align.CENTER
+        textPaint.textSize = 26f
+        textPaint.color = Color.WHITE
+        canvas.drawText(title, 210f, 375f, textPaint)
+
+        textPaint.textSize = 15f
+        textPaint.color = Color.rgb(199, 213, 239)
+        canvas.drawText(subtitle, 210f, 415f, textPaint)
+        textPaint.textAlign = Paint.Align.LEFT
+    }
+
+    private fun drawOverlayButton(
+        canvas: Canvas,
+        left: Float,
+        top: Float,
+        right: Float,
+        bottom: Float,
+        label: String,
+        color: Int
+    ) {
+        fillPaint.color = color
+        canvas.drawRoundRect(RectF(left, top, right, bottom), 18f, 18f, fillPaint)
+        textPaint.textAlign = Paint.Align.CENTER
+        textPaint.textSize = if (label.length > 18) 13f else 15f
+        textPaint.color = Color.WHITE
+        canvas.drawText(label, (left + right) / 2f, (top + bottom) / 2f + 6f, textPaint)
+        textPaint.textAlign = Paint.Align.LEFT
+        textPaint.color = Color.WHITE
     }
 
     private fun drawOverlayBackdrop(canvas: Canvas) {
@@ -483,6 +647,7 @@ class GameView(context: Context) : View(context) {
     private fun saveGameState() {
         if (engine.status == GameStatus.LOST || engine.status == GameStatus.WON || engine.ballCount == 0) {
             preferences.edit().remove("saved_balls").apply()
+            hasSavedGame = false
             return
         }
 
@@ -497,13 +662,14 @@ class GameView(context: Context) : View(context) {
             .putInt("saved_next", snapshot.nextColor)
             .putFloat("saved_aim_x", snapshot.aimTarget.x)
             .putFloat("saved_aim_y", snapshot.aimTarget.y)
-            .putBoolean("saved_paused", snapshot.isPaused)
+            .putBoolean("saved_paused", true)
             .putString("saved_balls", encodedBalls)
             .apply()
+        hasSavedGame = true
     }
 
-    private fun restoreSavedGame() {
-        val encoded = preferences.getString("saved_balls", null) ?: return
+    private fun restoreSavedGame(): Boolean {
+        val encoded = preferences.getString("saved_balls", null) ?: return false
         val restoredBalls = encoded.split(";").mapNotNull { token ->
             val parts = token.split(":")
             if (parts.size != 2) return@mapNotNull null
@@ -513,7 +679,7 @@ class GameView(context: Context) : View(context) {
         }
         if (restoredBalls.isEmpty()) {
             preferences.edit().remove("saved_balls").apply()
-            return
+            return false
         }
 
         val state = GameSaveState(
@@ -528,15 +694,143 @@ class GameView(context: Context) : View(context) {
             isPaused = true,
             balls = restoredBalls
         )
-        if (!engine.restoreState(state)) {
-            preferences.edit().remove("saved_balls").apply()
-        }
+        val restored = engine.restoreState(state)
+        if (!restored) preferences.edit().remove("saved_balls").apply()
+        return restored
     }
 
     private fun toggleSound() {
-        if (soundEnabled) audio.playClick(true)
+        audio.playClick(soundEnabled)
         soundEnabled = !soundEnabled
         preferences.edit().putBoolean("sound_enabled", soundEnabled).apply()
+        invalidate()
+    }
+
+    private fun setLanguage(code: String) {
+        if (code != "ru" && code != "en") return
+        language = code
+        preferences.edit().putString("language", language).apply()
+        audio.playClick(soundEnabled)
+        invalidate()
+    }
+
+    private fun startNewGame() {
+        engine.startNewGame()
+        particles.clear()
+        screen = UiScreen.GAME
+        hasSavedGame = true
+        saveGameState()
+        audio.playClick(soundEnabled)
+        invalidate()
+    }
+
+    private fun openSavedGame() {
+        screen = UiScreen.GAME
+        engine.resumeRound()
+        isAiming = false
+        audio.playClick(soundEnabled)
+        invalidate()
+        if (isActive && engine.status == GameStatus.RUNNING) postInvalidateOnAnimation()
+    }
+
+    private fun handleMenuTap(target: Vec2) {
+        if (hasSavedGame && target.x in 80f..340f && target.y in 450f..510f) {
+            openSavedGame()
+            return
+        }
+        val newGameRange = if (hasSavedGame) 525f..585f else 490f..550f
+        val settingsRange = if (hasSavedGame) 600f..660f else 570f..630f
+        if (target.x in 80f..340f && target.y in newGameRange) {
+            startNewGame()
+        } else if (target.x in 80f..340f && target.y in settingsRange) {
+            screen = UiScreen.SETTINGS
+            audio.playClick(soundEnabled)
+            invalidate()
+        }
+    }
+
+    private fun handleSettingsTap(target: Vec2) {
+        if (target.y in 370f..435f) {
+            when {
+                target.x in 40f..200f -> setLanguage("ru")
+                target.x in 220f..380f -> setLanguage("en")
+            }
+        } else if (target.x in 60f..360f && target.y in 485f..550f) {
+            toggleSound()
+        } else if (target.x in 80f..340f && target.y in 600f..660f) {
+            screen = UiScreen.MENU
+            audio.playClick(soundEnabled)
+            invalidate()
+        }
+    }
+
+    private fun handleGameTap(target: Vec2) {
+        if (target.y in 20f..75f) {
+            if (target.x in 302f..342f) {
+                toggleSound()
+                return
+            }
+            if (target.x in 354f..400f && engine.status == GameStatus.RUNNING) {
+                engine.pauseRound()
+                isAiming = false
+                saveGameState()
+                audio.playClick(soundEnabled)
+                invalidate()
+                return
+            }
+        }
+
+        if (engine.status == GameStatus.RUNNING &&
+            target.x in 340f..405f && target.y in 80f..140f
+        ) {
+            engine.swapAmmo()
+            audio.playClick(soundEnabled)
+            saveGameState()
+            invalidate()
+            return
+        }
+
+        when (engine.status) {
+            GameStatus.PAUSED -> {
+                when {
+                    target.x in 80f..340f && target.y in 450f..510f -> {
+                        engine.resumeRound()
+                        audio.playClick(soundEnabled)
+                    }
+                    target.x in 80f..340f && target.y in 520f..580f -> {
+                        engine.startNewGame()
+                        particles.clear()
+                        saveGameState()
+                        audio.playClick(soundEnabled)
+                    }
+                    target.x in 80f..340f && target.y in 590f..650f -> {
+                        screen = UiScreen.MENU
+                        saveGameState()
+                        audio.playClick(soundEnabled)
+                    }
+                }
+            }
+            GameStatus.WON -> {
+                when {
+                    target.x in 65f..355f && target.y in 470f..530f -> {
+                        engine.startNextLevel()
+                        particles.clear()
+                        saveGameState()
+                        audio.playClick(soundEnabled)
+                    }
+                    target.x in 80f..340f && target.y in 540f..600f -> startNewGame()
+                    target.x in 80f..340f && target.y in 610f..670f -> screen = UiScreen.MENU
+                }
+            }
+            GameStatus.LOST -> {
+                when {
+                    target.x in 80f..340f && target.y in 500f..560f -> startNewGame()
+                    target.x in 80f..340f && target.y in 575f..635f -> screen = UiScreen.MENU
+                }
+            }
+            GameStatus.RUNNING -> Unit
+        }
+        saveBestScoreIfNeeded()
         invalidate()
     }
 
@@ -548,41 +842,62 @@ class GameView(context: Context) : View(context) {
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.action != MotionEvent.ACTION_UP) return true
         if (scaleFactor <= 0f) return true
 
-        val x = (event.x - offsetX) / scaleFactor
-        val y = (event.y - offsetY) / scaleFactor
-        val target = Vec2(x, y)
+        val target = Vec2(
+            (event.x - offsetX) / scaleFactor,
+            (event.y - offsetY) / scaleFactor
+        )
 
-        if (x in 302f..342f && y in 24f..70f) {
-            toggleSound()
-            return true
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                if (screen == UiScreen.GAME &&
+                    engine.status == GameStatus.RUNNING &&
+                    target.y > 145f
+                ) {
+                    isAiming = true
+                    engine.aimAt(target)
+                    invalidate()
+                }
+                return true
+            }
+            MotionEvent.ACTION_MOVE -> {
+                if (isAiming && screen == UiScreen.GAME && engine.status == GameStatus.RUNNING) {
+                    engine.aimAt(target)
+                    invalidate()
+                }
+                return true
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                isAiming = false
+                invalidate()
+                return true
+            }
+            MotionEvent.ACTION_UP -> {
+                if (isAiming && screen == UiScreen.GAME && engine.status == GameStatus.RUNNING) {
+                    engine.aimAt(target)
+                    engine.fireShot()
+                    isAiming = false
+                    handleGameEvents(engine.drainEvents())
+                    saveGameState()
+                    saveBestScoreIfNeeded()
+                } else {
+                    when (screen) {
+                        UiScreen.MENU -> handleMenuTap(target)
+                        UiScreen.SETTINGS -> handleSettingsTap(target)
+                        UiScreen.GAME -> handleGameTap(target)
+                    }
+                }
+                performClick()
+                invalidate()
+                return true
+            }
         }
+        return true
+    }
 
-        if (x in 354f..400f && y in 24f..70f && engine.status == GameStatus.RUNNING) {
-            engine.pauseRound()
-            saveGameState()
-            invalidate()
-            return true
-        }
-
-        val previousStatus = engine.status
-        engine.onTap(target)
-        handleGameEvents(engine.drainEvents())
-        if (previousStatus == GameStatus.PAUSED && engine.status == GameStatus.RUNNING) {
-            saveGameState()
-        }
-        if (previousStatus == GameStatus.WON && engine.status == GameStatus.RUNNING) {
-            particles.clear()
-            saveGameState()
-        }
-        if (previousStatus == GameStatus.LOST && engine.status == GameStatus.RUNNING) {
-            particles.clear()
-            saveGameState()
-        }
-        saveBestScoreIfNeeded()
-        invalidate()
+    override fun performClick(): Boolean {
+        super.performClick()
         return true
     }
 }

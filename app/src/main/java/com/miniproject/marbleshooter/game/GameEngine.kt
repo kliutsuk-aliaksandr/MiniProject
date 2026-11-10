@@ -201,21 +201,31 @@ class GameEngine(private val random: Random = Random.Default) {
             return
         }
 
-        val safeTarget = if (target.y > shooterPosition.y - 35f) {
-            Vec2(target.x, shooterPosition.y - 180f)
-        } else {
-            target
-        }
-        aimTarget = safeTarget
+        aimAt(target)
+        fireShot()
+    }
 
-        val direction = (safeTarget - shooterPosition).normalized()
+    /** Updates the frog's aim while the player is dragging a finger. */
+    fun aimAt(target: Vec2) {
+        val safeX = target.x.coerceIn(0f, WORLD_WIDTH)
+        val safeY = if (target.y > shooterPosition.y - 35f) {
+            shooterPosition.y - 180f
+        } else {
+            target.y.coerceIn(0f, WORLD_HEIGHT)
+        }
+        aimTarget = Vec2(safeX, safeY)
+    }
+
+    /** Fires the currently loaded marble in the last aimed direction. */
+    fun fireShot() {
+        if (status != GameStatus.RUNNING) return
+        val direction = (aimTarget - shooterPosition).normalized()
         projectiles += Projectile(
             colorIndex = ammoColor,
             position = shooterPosition + direction * 50f,
             velocity = direction * PROJECTILE_SPEED
         )
         pendingEvents += GameEvent.ShotFired
-
         ammoColor = nextColor
         nextColor = randomDifferentColor(ammoColor)
     }

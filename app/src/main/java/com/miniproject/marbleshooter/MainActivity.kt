@@ -39,6 +39,12 @@ class MainActivity : Activity() {
         super.onPause()
     }
 
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        if (::gameView.isInitialized && gameView.handleSystemBack()) return
+        super.onBackPressed()
+    }
+
     override fun onDestroy() {
         if (::gameView.isInitialized) gameView.disposeGame()
         super.onDestroy()
