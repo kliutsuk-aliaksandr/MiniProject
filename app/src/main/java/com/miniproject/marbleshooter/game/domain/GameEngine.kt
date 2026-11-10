@@ -46,6 +46,9 @@ class GameEngine(private val random: Random = Random.Default) {
     }
 
     private var definition: LevelDefinition = LevelCatalog.definition(1)
+    private var routePointsCache: List<Vec2> = LevelCatalog.route(definition.trackId)
+    private var routeLengthCache: Float = calculateRouteLength(routePointsCache)
+    private var obstaclesCache: List<TrackObstacle> = buildObstacles(definition, routeLengthCache)
     private var retraction: Retraction? = null
     private var slowTimer = 0f
     private var reverseTimer = 0f
@@ -76,14 +79,14 @@ class GameEngine(private val random: Random = Random.Default) {
     var isTutorial: Boolean = false
         private set
 
+    /** Immutable definition for the active campaign or practice level. */
     val levelDefinition: LevelDefinition get() = definition
-    val routePoints: List<Vec2> get() = LevelCatalog.route(definition.trackId)
-    val routeLength: Float
-        get() = calculateRouteLength(routePoints)
-    val obstacles: List<TrackObstacle>
-        get() = definition.obstacles.map {
-            TrackObstacle(it.type, routeLength * it.routeFraction)
-        }
+    /** Cached route geometry, rebuilt only when the active definition changes. */
+    val routePoints: List<Vec2> get() = routePointsCache
+    /** Cached total length of the active route polyline. */
+    val routeLength: Float get() = routeLengthCache
+    /** Obstacles projected into progress coordinates for the active level. */
+    val obstacles: List<TrackObstacle> get() = obstaclesCache
 
     val ballCount: Int get() = balls.size
     val projectileCount: Int get() = projectiles.size
@@ -99,6 +102,7 @@ class GameEngine(private val random: Random = Random.Default) {
         startNewGame()
     }
 
+    /** Resets the campaign and starts level one. */
     fun startNewGame() {
         score = 0
         shotsFired = 0
@@ -108,6 +112,7 @@ class GameEngine(private val random: Random = Random.Default) {
         startLevelInternal(1)
     }
 
+    /** Starts a selected level; UI callers must check unlock state first. */
     fun startLevel(levelId: Int) {
         score = 0
         shotsFired = 0
@@ -117,27 +122,31 @@ class GameEngine(private val random: Random = Random.Default) {
         startLevelInternal(levelId.coerceIn(1, LevelCatalog.MAX_LEVELS))
     }
 
+    /** Advances the campaign after a win. Practice sessions cannot advance campaign levels. */
     fun startNextLevel(): Boolean {
-        if (status != GameStatus.WON || level >= LevelCatalog.MAX_LEVELS) return false
+        if (isTutorial || status != GameStatus.WON || level >= LevelCatalog.MAX_LEVELS) return false
         shotsFired = 0
         isTutorial = false
         startLevelInternal(level + 1)
         return true
     }
 
+    /** Starts an isolated practice chain without changing campaign progression. */
     fun startTutorial() {
         score = 0
         shotsFired = 0
         lastStars = 0
         boosters = BoosterInventory(slowTime = 2, bomb = 1, colorChange = 2, reverseChain = 1)
         isTutorial = true
-        definition = LevelDefinition(
-            id = 1,
-            trackId = TrackId.CLASSIC,
-            ballCount = 9,
-            chainSpeed = 12f,
-            colorCount = 4,
-            obstacles = emptyList()
+        setDefinition(
+            LevelDefinition(
+                id = 1,
+                trackId = TrackId.CLASSIC,
+                ballCount = 9,
+                chainSpeed = 12f,
+                colorCount = 4,
+                obstacles = emptyList()
+            )
         )
         balls.clear()
         projectiles.clear()
@@ -158,8 +167,23 @@ class GameEngine(private val random: Random = Random.Default) {
         pendingEvents += GameEvent.LevelStarted(1)
     }
 
+    /** Refreshes route-derived caches for a newly selected definition. */
+    private fun setDefinition(newDefinition: LevelDefinition) {
+        definition = newDefinition
+        routePointsCache = LevelCatalog.route(newDefinition.trackId)
+        routeLengthCache = calculateRouteLength(routePointsCache)
+        obstaclesCache = buildObstacles(newDefinition, routeLengthCache)
+    }
+
+    private fun buildObstacles(
+        levelDefinition: LevelDefinition,
+        totalRouteLength: Float
+    ): List<TrackObstacle> = levelDefinition.obstacles.map {
+        TrackObstacle(it.type, totalRouteLength * it.routeFraction)
+    }
+
     private fun startLevelInternal(levelId: Int) {
-        definition = LevelCatalog.definition(levelId)
+        setDefinition(LevelCatalog.definition(levelId))
         lastStars = 0
         level = definition.id
         balls.clear()
@@ -193,14 +217,17 @@ class GameEngine(private val random: Random = Random.Default) {
         pendingEvents += GameEvent.LevelStarted(level)
     }
 
+    /** Pauses the active simulation without discarding the round. */
     fun pauseRound() {
         if (status == GameStatus.RUNNING) status = GameStatus.PAUSED
     }
 
+    /** Resumes a paused simulation. */
     fun resumeRound() {
         if (status == GameStatus.PAUSED) status = GameStatus.RUNNING
     }
 
+    /** Updates the aim point after clamping it to the logical play field. */
     fun aimAt(target: Vec2) {
         val safeX = target.x.coerceIn(0f, WORLD_WIDTH)
         val safeY = if (target.y > shooterPosition.y - 35f) {
@@ -211,6 +238,7 @@ class GameEngine(private val random: Random = Random.Default) {
         aimTarget = Vec2(safeX, safeY)
     }
 
+    /** Fires the loaded marble along the current aim vector. */
     fun fireShot() {
         if (status != GameStatus.RUNNING || retraction != null) return
         val direction = (aimTarget - shooterPosition).normalized()
@@ -242,40 +270,42 @@ class GameEngine(private val random: Random = Random.Default) {
         nextColor = old
     }
 
+    /** Applies a booster only when it can produce a meaningful effect. Target is a world-space aim point for Bomb. */
     fun activateBooster(type: BoosterType, target: Vec2 = aimTarget): Boolean {
         if (status != GameStatus.RUNNING || retraction != null) return false
-        val updatedInventory = boosters.consume(type) ?: return false
 
+        val colorToSelect = if (type == BoosterType.COLOR_CHANGE) {
+            if (balls.isEmpty()) return false
+            balls.groupingBy { it.colorIndex }.eachCount().entries
+                .filter { it.key != ammoColor }
+                .sortedWith(compareByDescending<Map.Entry<Int, Int>> { it.value }.thenBy { it.key })
+                .firstOrNull()?.key ?: return false
+        } else null
+        if (type == BoosterType.BOMB &&
+            (balls.isEmpty() || !target.x.isFinite() || !target.y.isFinite())
+        ) return false
+
+        val updatedInventory = boosters.consume(type) ?: return false
         when (type) {
             BoosterType.SLOW_TIME -> slowTimer = max(slowTimer, 5f)
             BoosterType.REVERSE_CHAIN -> reverseTimer = max(reverseTimer, 3f)
-            BoosterType.COLOR_CHANGE -> {
-                val frequencies = balls.groupingBy { it.colorIndex }.eachCount()
-                val ordered = frequencies.entries.sortedWith(
-                    compareByDescending<Map.Entry<Int, Int>> { it.value }.thenBy { it.key }
-                )
-                val selected = ordered.firstOrNull { it.key != ammoColor }?.key
-                    ?: ordered.firstOrNull()?.key
-                if (selected != null) ammoColor = selected
-            }
+            BoosterType.COLOR_CHANGE -> ammoColor = requireNotNull(colorToSelect)
             BoosterType.BOMB -> {
-                if (balls.isNotEmpty()) {
-                    val nearestIndex = balls.indices.minByOrNull { index ->
-                        val point = positionOnRoute(balls[index].progress)
-                        (point - target).lengthSquared()
-                    } ?: 0
-                    val start = (nearestIndex - 2).coerceAtLeast(0)
-                    val end = (nearestIndex + 2).coerceAtMost(balls.lastIndex)
-                    removeRange(start, end, pointsPerBall = 15 * level, allowCascade = true)
-                }
+                val nearestIndex = balls.indices.minByOrNull { index ->
+                    val point = positionOnRoute(balls[index].progress)
+                    (point - target).lengthSquared()
+                } ?: return false
+                val start = (nearestIndex - 2).coerceAtLeast(0)
+                val end = (nearestIndex + 2).coerceAtMost(balls.lastIndex)
+                removeRange(start, end, pointsPerBall = 15 * level, allowCascade = true)
             }
         }
-
         boosters = updatedInventory
         pendingEvents += GameEvent.BoosterActivated(type)
         return true
     }
 
+    /** Advances simulation by at most 50 ms; callers may use a fixed smaller step. */
     fun update(deltaSeconds: Float) {
         if (status != GameStatus.RUNNING) return
         val delta = deltaSeconds.coerceIn(0f, 0.05f)
@@ -350,6 +380,7 @@ class GameEngine(private val random: Random = Random.Default) {
         return pendingEvents.toList().also { pendingEvents.clear() }
     }
 
+    /** Creates a settled snapshot suitable for persistence. */
     fun saveState(): GameSaveState = GameSaveState(
         level = level,
         score = score,
@@ -365,6 +396,7 @@ class GameEngine(private val random: Random = Random.Default) {
         shotsFired = shotsFired
     )
 
+    /** Validates then restores a snapshot; invalid input leaves the engine unchanged. */
     fun restoreState(state: GameSaveState): Boolean {
         if (state.level !in 1..LevelCatalog.MAX_LEVELS || state.score < 0 || state.shotsFired < 0) return false
         if (state.balls.isEmpty() || state.balls.size > 250) return false
@@ -374,22 +406,21 @@ class GameEngine(private val random: Random = Random.Default) {
         ) return false
         if (state.balls.zipWithNext().any { (front, rear) -> front.progress <= rear.progress }) return false
         val candidate = LevelCatalog.definition(state.level)
+        val candidateRouteLength = calculateRouteLength(LevelCatalog.route(candidate.trackId))
         if (state.ammoColor !in 0 until candidate.colorCount || state.nextColor !in 0 until candidate.colorCount) return false
         if (state.balls.any {
                 it.colorIndex !in 0 until candidate.colorCount ||
                     !it.progress.isFinite() ||
-                    it.progress < -calculateRouteLength(LevelCatalog.route(candidate.trackId)) ||
-                    it.progress > calculateRouteLength(LevelCatalog.route(candidate.trackId))
+                    it.progress < -candidateRouteLength ||
+                    it.progress > candidateRouteLength
             }
         ) return false
-
-        val candidateRouteLength = calculateRouteLength(LevelCatalog.route(candidate.trackId))
         // 0.4.0 allowed the tail of long chains to extend beyond the route start.
         // Shift the whole chain forward on migration, preserving all spacing.
         val legacyOffset = max(0f, BALL_RADIUS * 2f - state.balls.last().progress)
         if (state.balls.first().progress + legacyOffset > candidateRouteLength - BALL_RADIUS) return false
 
-        definition = candidate
+        setDefinition(candidate)
         level = state.level
         score = state.score
         ammoColor = state.ammoColor
@@ -410,6 +441,7 @@ class GameEngine(private val random: Random = Random.Default) {
         return true
     }
 
+    /** Converts route progress into a world-space point on the active polyline. */
     fun positionOnRoute(progress: Float): Vec2 {
         val route = routePoints
         var remaining = progress.coerceIn(0f, routeLength)
