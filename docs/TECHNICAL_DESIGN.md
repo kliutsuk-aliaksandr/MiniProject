@@ -23,6 +23,8 @@
 ```text
 MainActivity
   └── GameView (Android View / UI coordinator)
+       ├── GameLoopController (fixed-step frame timing)
+       ├── ProgressPresentationCache (cached campaign presentation)
        ├── GameEngine (pure Kotlin domain aggregate)
        ├── GameRenderer (Canvas presentation)
        ├── GameSaveRepository ── GameSaveCodec

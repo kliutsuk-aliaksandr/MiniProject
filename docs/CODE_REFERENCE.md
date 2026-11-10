@@ -14,7 +14,9 @@
 | game/data/GameSaveCodec.kt | Строгая сериализация цепочки | encodeBalls, decodeBalls |
 | game/data/LevelProgressRepository.kt | Открытые уровни, звёзды и рекорд | recordCompletion, updateBestScore |
 | game/render/GameRenderer.kt | Canvas-отрисовка всех экранов и игрового поля | draw, drawMenu, drawGame, drawEndOverlay |
-| game/ui/GameView.kt | UI coordinator, frame stepping, touch routing, event side effects | onDraw, onTouchEvent, handleSystemBack |
+| game/ui/GameView.kt | UI coordinator, touch routing, event side effects and render state | onDraw, onTouchEvent, handleSystemBack |
+| game/ui/GameLoopController.kt | Fixed 60 Hz accumulator, frame-delta clamp and bounded catch-up | start, stop, resetAccumulator, advanceFrame |
+| game/ui/ProgressPresentationCache.kt | Cached best score, unlock and per-level stars for presentation | recordCompletion, updateBestScore, isUnlocked |
 | game/ui/GameAccessibilityNodeProvider.kt | Виртуальные accessibility-кнопки для Canvas | createAccessibilityNodeInfo, performAction |
 | game/audio/GameAudio.kt | Офлайн-звуковые сигналы | playShot, playMatch, playWin, playLose, release |
 
@@ -54,8 +56,8 @@ UI не должен дублировать игровые правила: он 
 ## Кадровый цикл и ввод
 
 1. Android вызывает GameView.onDraw().
-2. View добавляет elapsed frame time в accumulator и вызывает GameEngine.update(1/60) фиксированными шагами.
-3. View drains events и выполняет UI side effects: audio, progression и persistence.
+2. GameView delegates frame timing to GameLoopController, which invokes fixed 1/60-second simulation steps with bounded catch-up.
+3. View drains events and executes audio/persistence side effects; ProgressPresentationCache refreshes the presentation snapshot after campaign progress writes.
 4. GameView формирует GameRenderState и вызывает GameRenderer.
 5. onTouchEvent преобразует screen pixels в логические координаты мира 420×900.
 6. Virtual accessibility actions направляются в те же screen handlers, что и физические касания.
@@ -81,6 +83,7 @@ UI не должен дублировать игровые правила: он 
 
 - GameEngineTest.kt: движение, столкновения/вставка, совпадения/каскады, pause/restore, progression, маршруты, бустеры и запрет структурной мутации публичных collection views.
 - GameLoopControllerTest.kt: фиксированный шаг 60 Hz, ограниченный catch-up, reset accumulator и pause/resume без симуляции времени в фоне.
+- ProgressPresentationCacheTest.kt: начальный snapshot, update после completion и монотонное обновление рекорда.
 - GameSaveCodecTest.kt: legacy round-trip, malformed tokens, blank payload и полнота цепочки.
 - GameSaveRepositoryTest.kt: save/restore, upgrade неверсированной schema 0, повреждённые payload/типы SharedPreferences, будущая schema и защита tutorial save.
 - LevelProgressRepositoryTest.kt: monotonic unlock/stars/score, валидация входа, legacy fallback и повреждённые SharedPreferences values.
@@ -88,7 +91,7 @@ UI не должен дублировать игровые правила: он 
 
 ## Известные точки дальнейшего рефакторинга
 
-GameView.kt остаётся координатором с несколькими зонами ответственности. Следующий безопасный шаг — выделить FrameLoopController, GameSessionController, InputRouter, NavigationController и GameEventHandler за существующими публичными контрактами.
+GameView.kt остаётся координатором с несколькими зонами ответственности. Fixed-step timing уже вынесен в GameLoopController, а cached campaign presentation — в ProgressPresentationCache. Следующие безопасные шаги — выделить GameSessionController, InputRouter, NavigationController и GameEventHandler за существующими публичными контрактами.
 
 GameRenderer.kt пока рисует разные экраны и все игровые слои. Разделение на ScreenRenderer, TrackRenderer, HudRenderer и EffectsRenderer следует выполнить отдельным небольшим рефакторингом с golden/screenshot tests.
 

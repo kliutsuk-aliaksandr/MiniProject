@@ -10,10 +10,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeProvider
 import com.miniproject.marbleshooter.game.audio.GameAudio
 import com.miniproject.marbleshooter.game.data.GameSaveRepository
-import com.miniproject.marbleshooter.game.data.LevelProgressRepository
-import com.miniproject.marbleshooter.game.data.SharedPreferencesLevelProgressRepository
 import com.miniproject.marbleshooter.game.domain.GameEngine
-import com.miniproject.marbleshooter.game.domain.LevelCatalog
 import com.miniproject.marbleshooter.game.domain.model.BoosterType
 import com.miniproject.marbleshooter.game.domain.model.GameEvent
 import com.miniproject.marbleshooter.game.domain.model.GameStatus
@@ -44,12 +41,7 @@ class GameView(context: Context) : View(context) {
     private val renderer = GameRenderer()
     private val audio = GameAudio()
     private val saveRepository = GameSaveRepository(context)
-    private val progressRepository: LevelProgressRepository =
-        SharedPreferencesLevelProgressRepository(context)
-    private val preferences = context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
-    private var cachedUnlockedLevel = progressRepository.unlockedLevel
-    private var cachedStarsByLevel = (1..LevelCatalog.MAX_LEVELS)
-        .associateWith(progressRepository::starsFor)
+    private val progressPresentation = ProgressPresentationCache(context)
     private val accessibilityProvider by lazy(LazyThreadSafetyMode.NONE) {
         GameAccessibilityNodeProvider(this, ::accessibilityTargets)
     }
@@ -62,7 +54,6 @@ class GameView(context: Context) : View(context) {
     private var isAiming = false
     private var isBoosterTouch = false
     private var tutorialPage = 0
-    private var bestScore = progressRepository.bestScore
     private val particles = mutableListOf<MutableParticle>()
     private val clearingBalls = mutableListOf<ClearingBallVisual>()
     private val gameLoopController = GameLoopController(::updateFixedStep)
@@ -162,13 +153,13 @@ class GameView(context: Context) : View(context) {
     private fun buildRenderState() = GameRenderState(
         screen = screen,
         language = language,
-        bestScore = bestScore,
+        bestScore = progressPresentation.bestScore,
         savedGameAvailable = saveRepository.hasSavedGame(),
         soundEnabled = soundEnabled,
         vibrationEnabled = vibrationEnabled,
         tutorialPage = tutorialPage,
-        unlockedLevel = cachedUnlockedLevel,
-        starsByLevel = cachedStarsByLevel,
+        unlockedLevel = progressPresentation.unlockedLevel,
+        starsByLevel = progressPresentation.starsByLevel,
         particles = particles.map {
             ParticleVisual(it.x, it.y, it.life, it.maxLife, it.color, it.radius)
         },
@@ -191,9 +182,7 @@ class GameView(context: Context) : View(context) {
                 is GameEvent.LevelCompleted -> {
                     audio.playWin(soundEnabled)
                     if (!engine.isTutorial) {
-                        progressRepository.recordCompletion(event.level, event.stars, event.score)
-                        bestScore = progressRepository.bestScore
-                        refreshProgressSnapshot()
+                        progressPresentation.recordCompletion(event.level, event.stars, event.score)
                         saveRepository.clear()
                     }
                 }
@@ -267,19 +256,10 @@ class GameView(context: Context) : View(context) {
         return colors[index.coerceIn(0, colors.lastIndex)]
     }
 
-    private fun refreshProgressSnapshot() {
-        cachedUnlockedLevel = progressRepository.unlockedLevel
-        cachedStarsByLevel = (1..LevelCatalog.MAX_LEVELS)
-            .associateWith(progressRepository::starsFor)
-    }
-
     private fun saveBestScoreIfNeeded() {
         // Practice scores are session-only and must not overwrite campaign records.
         if (engine.isTutorial) return
-        if (engine.score > bestScore) {
-            bestScore = engine.score
-            progressRepository.updateBestScore(bestScore)
-        }
+        progressPresentation.updateBestScore(engine.score)
     }
 
     private fun saveGameState() {
@@ -298,7 +278,7 @@ class GameView(context: Context) : View(context) {
     }
 
     private fun startLevel(level: Int) {
-        if (!progressRepository.isUnlocked(level)) return
+        if (!progressPresentation.isUnlocked(level)) return
         engine.startLevel(level)
         clearEffects()
         screen = GameScreen.GAME
@@ -411,7 +391,7 @@ class GameView(context: Context) : View(context) {
         val y = top + row * (cellHeight + gapY)
         if (target.x !in x..(x + cellWidth) || target.y !in y..(y + cellHeight)) return
         val level = row * 5 + column + 1
-        if (progressRepository.isUnlocked(level)) startLevel(level)
+        if (progressPresentation.isUnlocked(level)) startLevel(level)
     }
 
     private fun handleTutorialTap(target: Vec2) {
@@ -595,7 +575,7 @@ class GameView(context: Context) : View(context) {
             }
             GameScreen.LEVEL_MAP -> {
                 add(10, localized("В главное меню", "Main menu"), 78f, 750f, 342f, 810f) { handleLevelMapTap(Vec2(210f, 780f)) }
-                for (level in 1..cachedUnlockedLevel) {
+                for (level in 1..progressPresentation.unlockedLevel) {
                     val index = level - 1
                     val left = 22f + (index % 5) * 76f
                     val top = 220f + (index / 5) * 66f

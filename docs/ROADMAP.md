@@ -60,6 +60,7 @@
 - [x] Закрыть прямую структурную мутацию balls/projectiles снаружи GameEngine.
 - [x] Синхронизировать README, game/technical docs, privacy и release checklist.
 - [x] Извлечь fixed-step loop из GameView в GameLoopController и покрыть независимыми JVM-тестами.
+- [x] Извлечь ProgressPresentationCache из GameView и покрыть snapshot/update logic unit tests.
 - [ ] Разбить оставшуюся ответственность GameView на session/input/navigation/event controllers.
 - [ ] Разбить GameRenderer на отдельные screen/field/HUD/effects renderers.
 - [ ] Перенести весь UI copy из RU/EN пар в Android string resources.
