@@ -14,7 +14,7 @@
 
 ## Still requires the developer / Play Console
 
-- [ ] Add a public support email to the privacy-policy files and Play Console contact fields.
+- [ ] Add `alex.kliutsuk@gmail.com` to the Play Console developer contact fields and confirm it is monitored.
 - [ ] In repository Settings → Pages select GitHub Actions as the source; the deploy-privacy-policy workflow will publish docs/privacy-policy.html as the page root. Verify the generated HTTPS URL is globally accessible without sign-in or geofencing.
 - [ ] Export the final 512 × 512 PNG store icon and 1024 × 500 feature graphic; confirm current requirements in Play Console.
 - [ ] Capture genuine screenshots from the actual release build on supported phones/tablets.

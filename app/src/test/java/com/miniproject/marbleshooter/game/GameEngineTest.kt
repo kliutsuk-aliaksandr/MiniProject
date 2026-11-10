@@ -5,6 +5,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.miniproject.marbleshooter.game.domain.LevelCatalog
+import com.miniproject.marbleshooter.game.domain.TrackId
+import com.miniproject.marbleshooter.game.domain.model.ObstacleType
 import kotlin.random.Random
 
 class GameEngineTest {
@@ -206,7 +209,7 @@ class GameEngineTest {
         assertEquals(4, engine.level)
         assertEquals(firstCount + 6, engine.targetBallCount)
         assertTrue(engine.chainSpeed > firstSpeed)
-        assertEquals(5, engine.activeColorCount)
+        assertEquals(4, engine.activeColorCount)
         assertEquals(GameStatus.RUNNING, engine.status)
     }
 
@@ -223,6 +226,115 @@ class GameEngineTest {
         assertEquals(0, engine.projectileCount)
         assertEquals(12, engine.ballCount)
         assertEquals(GameStatus.RUNNING, engine.status)
+    }
+
+    @Test
+    fun levelCatalogProvidesFourDifferentRoutesAndProgressivelyHarderLevels() {
+        val routes = TrackId.values().map { track ->
+            LevelCatalog.route(track).map { point -> point.x to point.y }
+        }
+        assertEquals(4, routes.distinct().size)
+        assertEquals(TrackId.DOUBLE_LOOP, LevelCatalog.definition(9).trackId)
+        assertEquals(TrackId.SWITCHBACK, LevelCatalog.definition(16).trackId)
+        assertEquals(TrackId.SPIRAL, LevelCatalog.definition(23).trackId)
+        assertTrue(LevelCatalog.definition(20).ballCount > LevelCatalog.definition(2).ballCount)
+        assertTrue(LevelCatalog.definition(20).chainSpeed > LevelCatalog.definition(2).chainSpeed)
+    }
+
+    @Test
+    fun slowTimeBoosterConsumesChargeAndSlowsTheChain() {
+        val engine = GameEngine(Random(31))
+        val before = engine.headProgress
+        val charges = engine.boosters.slowTime
+
+        assertTrue(engine.activateBooster(BoosterType.SLOW_TIME))
+        engine.update(0.05f)
+
+        assertEquals(charges - 1, engine.boosters.slowTime)
+        assertTrue(engine.slowTimeRemaining > 0f)
+        assertTrue(engine.headProgress - before < engine.chainSpeed * 0.05f)
+    }
+
+    @Test
+    fun reverseBoosterMovesTheChainAwayFromTheFinish() {
+        val engine = GameEngine(Random(32))
+        val before = engine.headProgress
+
+        assertTrue(engine.activateBooster(BoosterType.REVERSE_CHAIN))
+        engine.update(0.05f)
+
+        assertTrue(engine.reverseTimeRemaining > 0f)
+        assertTrue(engine.headProgress < before)
+        assertEquals(0, engine.boosters.reverseChain)
+    }
+
+    @Test
+    fun bombBoosterRemovesAContiguousSectionAndStartsRetraction() {
+        val engine = GameEngine(Random(33))
+        setChain(engine, listOf(0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3))
+        val target = engine.positionOnRoute(engine.balls[5].progress)
+
+        assertTrue(engine.activateBooster(BoosterType.BOMB, target))
+
+        assertEquals(7, engine.ballCount)
+        assertEquals(1, engine.boosters.bomb)
+        assertTrue(engine.drainEvents().any { it is GameEvent.MatchCleared })
+        repeat(12) { engine.update(0.05f) }
+        assertTrue(engine.balls.zipWithNext().all { (front, rear) -> front.progress > rear.progress })
+    }
+
+    @Test
+    fun colorChangeBoosterSelectsAnotherColorPresentInTheChain() {
+        val engine = GameEngine(Random(34))
+        setChain(engine, listOf(2, 2, 2, 2, 1, 1, 0, 3))
+        val previousAmmo = engine.ammoColor
+
+        assertTrue(engine.activateBooster(BoosterType.COLOR_CHANGE))
+
+        assertNotEquals(previousAmmo, engine.ammoColor)
+        assertTrue(engine.balls.any { it.colorIndex == engine.ammoColor })
+        assertEquals(2, engine.boosters.colorChange)
+    }
+
+    @Test
+    fun obstacleSlowsTheChainAtItsRoutePosition() {
+        val engine = GameEngine(Random(35))
+        engine.startLevel(3)
+        val obstacle = engine.obstacles.first { it.type == ObstacleType.MUD }
+        engine.balls.clear()
+        engine.balls += Ball(0, obstacle.progress)
+        engine.balls += Ball(1, obstacle.progress - GameEngine.BALL_SPACING)
+        val before = engine.headProgress
+
+        engine.update(0.05f)
+
+        assertTrue(engine.headProgress - before < engine.chainSpeed * 0.05f)
+    }
+
+    @Test
+    fun emptyingLevelAwardsThreeStarsAndEmitsCompletion() {
+        val engine = GameEngine(Random(36))
+        engine.balls.clear()
+
+        engine.update(0.01f)
+
+        assertEquals(GameStatus.WON, engine.status)
+        assertEquals(3, engine.lastStars)
+        val completed = engine.drainEvents().filterIsInstance<GameEvent.LevelCompleted>().single()
+        assertEquals(3, completed.stars)
+        assertEquals(1, completed.level)
+    }
+
+    @Test
+    fun tutorialStartsWithItsOwnPracticeChainAndBoosters() {
+        val engine = GameEngine(Random(37))
+        engine.startTutorial()
+
+        assertTrue(engine.isTutorial)
+        assertEquals(9, engine.ballCount)
+        assertEquals(2, engine.boosters.slowTime)
+        assertEquals(1, engine.boosters.bomb)
+        assertTrue(engine.chainSpeed < 20f)
     }
 
     @Test
