@@ -210,7 +210,7 @@ class GameEngineTest {
         assertEquals(4, engine.level)
         assertEquals(firstCount + 6, engine.targetBallCount)
         assertTrue(engine.chainSpeed > firstSpeed)
-        assertEquals(4, engine.activeColorCount)
+        assertEquals(5, engine.activeColorCount)
         assertEquals(GameStatus.RUNNING, engine.status)
     }
 
@@ -336,6 +336,30 @@ class GameEngineTest {
         assertEquals(2, engine.boosters.slowTime)
         assertEquals(1, engine.boosters.bomb)
         assertTrue(engine.chainSpeed < 20f)
+    }
+
+    @Test
+    fun legacyFourVersionChainWithNegativeTailIsMigratedWithoutBreakingSpacing() {
+        val oldBalls = (0 until 22).map { index ->
+            Ball(index % 5, 620f - index * GameEngine.BALL_SPACING)
+        }
+        val snapshot = GameSaveState(
+            level = 6,
+            score = 450,
+            ammoColor = 1,
+            nextColor = 2,
+            aimTarget = Vec2(210f, 500f),
+            isPaused = true,
+            balls = oldBalls
+        )
+        val engine = GameEngine(Random(38))
+
+        assertTrue(engine.restoreState(snapshot))
+        assertEquals(GameStatus.PAUSED, engine.status)
+        assertEquals(GameEngine.BALL_RADIUS * 2f, engine.balls.last().progress, 0.001f)
+        engine.balls.zipWithNext().forEach { (front, rear) ->
+            assertEquals(GameEngine.BALL_SPACING, front.progress - rear.progress, 0.001f)
+        }
     }
 
     @Test

@@ -378,10 +378,16 @@ class GameEngine(private val random: Random = Random.Default) {
         if (state.balls.any {
                 it.colorIndex !in 0 until candidate.colorCount ||
                     !it.progress.isFinite() ||
-                    it.progress < 0f ||
+                    it.progress < -calculateRouteLength(LevelCatalog.route(candidate.trackId)) ||
                     it.progress > calculateRouteLength(LevelCatalog.route(candidate.trackId))
             }
         ) return false
+
+        val candidateRouteLength = calculateRouteLength(LevelCatalog.route(candidate.trackId))
+        // 0.4.0 allowed the tail of long chains to extend beyond the route start.
+        // Shift the whole chain forward on migration, preserving all spacing.
+        val legacyOffset = max(0f, BALL_RADIUS * 2f - state.balls.last().progress)
+        if (state.balls.first().progress + legacyOffset > candidateRouteLength - BALL_RADIUS) return false
 
         definition = candidate
         level = state.level
@@ -392,7 +398,7 @@ class GameEngine(private val random: Random = Random.Default) {
         shotsFired = state.shotsFired
         boosters = state.boosters
         balls.clear()
-        balls.addAll(state.balls.map { Ball(it.colorIndex, it.progress) })
+        balls.addAll(state.balls.map { Ball(it.colorIndex, it.progress + legacyOffset) })
         projectiles.clear()
         pendingEvents.clear()
         retraction = null

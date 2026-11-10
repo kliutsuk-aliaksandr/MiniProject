@@ -66,7 +66,7 @@ object LevelCatalog {
             trackId = track,
             ballCount = (12 + (id - 1) * 2).coerceAtMost(70),
             chainSpeed = (32f + (id - 1) * 1.7f).coerceAtMost(78f),
-            colorCount = (4 + (id - 1) / 5).coerceIn(4, 6),
+            colorCount = (4 + (id - 1) / 3).coerceIn(4, 6),
             obstacles = obstacles
         )
     }
