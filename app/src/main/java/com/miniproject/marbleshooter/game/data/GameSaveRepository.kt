@@ -8,14 +8,15 @@ import com.miniproject.marbleshooter.game.domain.model.GameSaveState
 import com.miniproject.marbleshooter.game.domain.model.Vec2
 
 /**
- * Version-tolerant SharedPreferences adapter. The domain layer never reads Android
- * preferences directly. Legacy 0.4.0 keys are retained for smooth upgrades.
+ * SharedPreferences adapter for one in-progress campaign round.
+ * The domain layer never reads Android preferences directly.
  */
 class GameSaveRepository(context: Context) {
     private val preferences = context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
 
     fun hasSavedGame(): Boolean = !preferences.getString(KEY_BALLS, null).isNullOrBlank()
 
+    /** Saves a settled campaign snapshot; training rounds are intentionally excluded. */
     fun save(engine: GameEngine): Boolean {
         if (engine.isTutorial) return false
         if (engine.status == com.miniproject.marbleshooter.game.domain.model.GameStatus.LOST ||
@@ -27,10 +28,9 @@ class GameSaveRepository(context: Context) {
         }
 
         val snapshot = engine.saveState()
-        val encodedBalls = snapshot.balls.joinToString(";") {
-            "${it.colorIndex}:${it.progress}"
-        }
+        val encodedBalls = GameSaveCodec.encodeBalls(snapshot.balls)
         preferences.edit()
+            .putInt(KEY_SCHEMA_VERSION, GameSaveCodec.CURRENT_SCHEMA_VERSION)
             .putInt("saved_level", snapshot.level)
             .putInt("saved_score", snapshot.score)
             .putInt("saved_ammo", snapshot.ammoColor)
@@ -48,17 +48,16 @@ class GameSaveRepository(context: Context) {
         return true
     }
 
+    /** Restores only complete supported snapshots; malformed saves are discarded as a unit. */
     fun restore(engine: GameEngine): Boolean {
         val encoded = preferences.getString(KEY_BALLS, null) ?: return false
-        val restoredBalls = encoded.split(";").mapNotNull { token ->
-            val parts = token.split(":")
-            if (parts.size != 2) return@mapNotNull null
-            val color = parts[0].toIntOrNull() ?: return@mapNotNull null
-            val progress = parts[1].toFloatOrNull() ?: return@mapNotNull null
-            if (!progress.isFinite()) return@mapNotNull null
-            Ball(color, progress)
+        val schemaVersion = preferences.getInt(KEY_SCHEMA_VERSION, GameSaveCodec.LEGACY_SCHEMA_VERSION)
+        if (schemaVersion !in GameSaveCodec.LEGACY_SCHEMA_VERSION..GameSaveCodec.CURRENT_SCHEMA_VERSION) {
+            clear()
+            return false
         }
-        if (restoredBalls.isEmpty()) {
+        val restoredBalls = GameSaveCodec.decodeBalls(encoded)
+        if (restoredBalls.isNullOrEmpty()) {
             clear()
             return false
         }
@@ -83,13 +82,19 @@ class GameSaveRepository(context: Context) {
             shotsFired = preferences.getInt("saved_shots", 0).coerceAtLeast(0)
         )
         val restored = engine.restoreState(state)
-        if (!restored) clear()
+        if (!restored) {
+            clear()
+        } else {
+            preferences.edit().putInt(KEY_SCHEMA_VERSION, GameSaveCodec.CURRENT_SCHEMA_VERSION).apply()
+        }
         return restored
     }
 
+    /** Removes all keys owned by the in-progress campaign snapshot. */
     fun clear() {
         preferences.edit()
             .remove(KEY_BALLS)
+            .remove(KEY_SCHEMA_VERSION)
             .remove("saved_level")
             .remove("saved_score")
             .remove("saved_ammo")
@@ -107,5 +112,6 @@ class GameSaveRepository(context: Context) {
 
     private companion object {
         const val KEY_BALLS = "saved_balls"
+        const val KEY_SCHEMA_VERSION = "saved_schema_version"
     }
 }
