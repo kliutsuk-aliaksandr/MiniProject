@@ -2,6 +2,8 @@
 
 ## Unreleased — fix branch
 
+- Fixed startup crash when configuring immersive system bars before the Window DecorView existed; immersive mode is now applied after content setup and restored when the Activity regains focus.
+- Added a Robolectric API 35 regression test for MainActivity startup and content/decor initialization.
 - ProgressPresentationCache extracted from GameView to isolate cached campaign presentation data and avoid preference reads during rendering.
 - Fixed-step frame timing extracted from GameView into independently tested GameLoopController.
 - Typed SharedPreferences corruption is now rejected and cleared without leaking ClassCastException through save detection or restore.
