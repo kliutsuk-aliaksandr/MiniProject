@@ -2,9 +2,12 @@ package com.miniproject.marbleshooter.game.ui
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Rect
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
+import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeProvider
 import com.miniproject.marbleshooter.game.audio.GameAudio
 import com.miniproject.marbleshooter.game.data.GameSaveRepository
 import com.miniproject.marbleshooter.game.data.LevelProgressRepository
@@ -35,6 +38,7 @@ private data class MutableParticle(
     val radius: Float
 )
 
+/** Android View coordinator for simulation, navigation, input, rendering and side effects. */
 class GameView(context: Context) : View(context) {
     private val engine = GameEngine()
     private val renderer = GameRenderer()
@@ -43,12 +47,19 @@ class GameView(context: Context) : View(context) {
     private val progressRepository: LevelProgressRepository =
         SharedPreferencesLevelProgressRepository(context)
     private val preferences = context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
+    private var cachedUnlockedLevel = progressRepository.unlockedLevel
+    private var cachedStarsByLevel = (1..LevelCatalog.MAX_LEVELS)
+        .associateWith(progressRepository::starsFor)
+    private val accessibilityProvider by lazy(LazyThreadSafetyMode.NONE) {
+        GameAccessibilityNodeProvider(this, ::accessibilityTargets)
+    }
 
     private var screen = GameScreen.MENU
     private var language = preferences.getString("language", "ru") ?: "ru"
     private var soundEnabled = preferences.getBoolean("sound_enabled", true)
     private var vibrationEnabled = preferences.getBoolean("vibration_enabled", true)
     private var isActive = false
+    private var simulationAccumulatorSeconds = 0f
     private var isAiming = false
     private var isBoosterTouch = false
     private var tutorialPage = 0
@@ -63,13 +74,16 @@ class GameView(context: Context) : View(context) {
 
     init {
         isFocusable = true
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
         setLayerType(View.LAYER_TYPE_HARDWARE, null)
         saveRepository.restore(engine)
         engine.drainEvents()
     }
 
+    /** Restarts the view-driven frame loop after the Activity becomes active. */
     fun resumeGame() {
         isActive = true
+        simulationAccumulatorSeconds = 0f
         lastFrameNanos = System.nanoTime()
         invalidate()
         if (screen == GameScreen.GAME && engine.status == GameStatus.RUNNING) {
@@ -77,8 +91,10 @@ class GameView(context: Context) : View(context) {
         }
     }
 
+    /** Stops simulation and persists the current non-tutorial session. */
     fun pauseGame() {
         isActive = false
+        simulationAccumulatorSeconds = 0f
         lastFrameNanos = 0L
         isAiming = false
         isBoosterTouch = false
@@ -89,11 +105,13 @@ class GameView(context: Context) : View(context) {
         invalidate()
     }
 
+    /** Releases platform audio resources during Activity teardown. */
     fun disposeGame() {
         saveGameState()
         audio.release()
     }
 
+    /** Handles in-game Back navigation; false asks the Activity to finish. */
     fun handleSystemBack(): Boolean {
         when (screen) {
             GameScreen.SETTINGS, GameScreen.PRIVACY, GameScreen.LEVEL_MAP, GameScreen.TUTORIAL -> {
@@ -121,11 +139,20 @@ class GameView(context: Context) : View(context) {
 
         if (isActive && screen == GameScreen.GAME) {
             val now = System.nanoTime()
-            val delta = if (lastFrameNanos == 0L) 0f
+            val frameDelta = if (lastFrameNanos == 0L) 0f
                 else (now - lastFrameNanos) / 1_000_000_000f
             lastFrameNanos = now
-            engine.update(delta)
-            updateEffects(delta)
+            simulationAccumulatorSeconds = (
+                simulationAccumulatorSeconds + frameDelta.coerceIn(0f, MAX_FRAME_DELTA_SECONDS)
+            ).coerceAtMost(MAX_FRAME_DELTA_SECONDS)
+
+            var steps = 0
+            while (simulationAccumulatorSeconds >= FIXED_STEP_SECONDS && steps < MAX_CATCH_UP_STEPS) {
+                engine.update(FIXED_STEP_SECONDS)
+                updateEffects(FIXED_STEP_SECONDS)
+                simulationAccumulatorSeconds -= FIXED_STEP_SECONDS
+                steps++
+            }
             handleGameEvents(engine.drainEvents())
             saveBestScoreIfNeeded()
         }
@@ -157,8 +184,8 @@ class GameView(context: Context) : View(context) {
         soundEnabled = soundEnabled,
         vibrationEnabled = vibrationEnabled,
         tutorialPage = tutorialPage,
-        unlockedLevel = progressRepository.unlockedLevel,
-        starsByLevel = (1..LevelCatalog.MAX_LEVELS).associateWith(progressRepository::starsFor),
+        unlockedLevel = cachedUnlockedLevel,
+        starsByLevel = cachedStarsByLevel,
         particles = particles.map {
             ParticleVisual(it.x, it.y, it.life, it.maxLife, it.color, it.radius)
         },
@@ -183,6 +210,7 @@ class GameView(context: Context) : View(context) {
                     if (!engine.isTutorial) {
                         progressRepository.recordCompletion(event.level, event.stars, event.score)
                         bestScore = progressRepository.bestScore
+                        refreshProgressSnapshot()
                         saveRepository.clear()
                     }
                 }
@@ -219,16 +247,13 @@ class GameView(context: Context) : View(context) {
     }
 
     private fun updateEffects(deltaSeconds: Float) {
-        val delta = deltaSeconds.coerceIn(0f, 0.05f)
-        val clearingIterator = clearingBalls.iterator()
-        while (clearingIterator.hasNext()) {
-            val ball = clearingIterator.next()
-            val life = (ball.lifeSeconds - delta)
-            if (life <= 0f) clearingIterator.remove()
-            else {
-                val index = clearingBalls.indexOf(ball)
-                clearingBalls[index] = ball.copy(lifeSeconds = life)
-            }
+        val delta = deltaSeconds.coerceIn(0f, FIXED_STEP_SECONDS)
+        // Reverse iteration keeps removal O(1) and avoids indexOf on duplicate effects.
+        for (index in clearingBalls.lastIndex downTo 0) {
+            val ball = clearingBalls[index]
+            val remainingLife = ball.lifeSeconds - delta
+            if (remainingLife <= 0f) clearingBalls.removeAt(index)
+            else clearingBalls[index] = ball.copy(lifeSeconds = remainingLife)
         }
 
         val iterator = particles.iterator()
@@ -254,6 +279,12 @@ class GameView(context: Context) : View(context) {
         return colors[index.coerceIn(0, colors.lastIndex)]
     }
 
+    private fun refreshProgressSnapshot() {
+        cachedUnlockedLevel = progressRepository.unlockedLevel
+        cachedStarsByLevel = (1..LevelCatalog.MAX_LEVELS)
+            .associateWith(progressRepository::starsFor)
+    }
+
     private fun saveBestScoreIfNeeded() {
         if (engine.score > bestScore) {
             bestScore = engine.score
@@ -268,6 +299,7 @@ class GameView(context: Context) : View(context) {
     }
 
     private fun startNewGame() {
+        simulationAccumulatorSeconds = 0f
         engine.startNewGame()
         clearEffects()
         screen = GameScreen.GAME
@@ -285,6 +317,7 @@ class GameView(context: Context) : View(context) {
     }
 
     private fun startTutorialPractice() {
+        simulationAccumulatorSeconds = 0f
         engine.startTutorial()
         clearEffects()
         screen = GameScreen.GAME
@@ -439,7 +472,8 @@ class GameView(context: Context) : View(context) {
             2 -> BoosterType.COLOR_CHANGE
             else -> BoosterType.REVERSE_CHAIN
         }
-        if (engine.activateBooster(type, target)) {
+        // The HUD touch coordinate is not a world-space target. Bomb uses the aim point.
+        if (engine.activateBooster(type, engine.aimTarget)) {
             handleGameEvents(engine.drainEvents())
             saveGameState()
         } else {
@@ -492,14 +526,20 @@ class GameView(context: Context) : View(context) {
             }
             GameStatus.WON -> when {
                 inButton(target, 455f, 515f) -> {
-                    if (!engine.startNextLevel()) screen = GameScreen.LEVEL_MAP
-                    clearEffects()
-                    saveGameState()
-                    playClick()
+                    if (engine.isTutorial) {
+                        startTutorialPractice()
+                    } else {
+                        if (!engine.startNextLevel()) screen = GameScreen.LEVEL_MAP
+                        clearEffects()
+                        saveGameState()
+                        playClick()
+                    }
                 }
                 inButton(target, 525f, 585f) -> {
-                    screen = GameScreen.LEVEL_MAP
-                    playClick()
+                    if (engine.isTutorial) openTutorial() else {
+                        screen = GameScreen.LEVEL_MAP
+                        playClick()
+                    }
                 }
                 inButton(target, 595f, 655f) -> {
                     screen = GameScreen.MENU
@@ -507,7 +547,9 @@ class GameView(context: Context) : View(context) {
                 }
             }
             GameStatus.LOST -> when {
-                inButton(target, 500f, 560f) -> startNewGame()
+                inButton(target, 500f, 560f) -> {
+                    if (engine.isTutorial) startTutorialPractice() else startNewGame()
+                }
                 inButton(target, 575f, 635f) -> {
                     screen = GameScreen.LEVEL_MAP
                     playClick()
@@ -526,6 +568,102 @@ class GameView(context: Context) : View(context) {
 
     private fun inButton(target: Vec2, top: Float, bottom: Float): Boolean =
         target.x in 60f..360f && target.y in top..bottom
+
+    override fun getAccessibilityNodeProvider(): AccessibilityNodeProvider = accessibilityProvider
+
+    /**
+     * Describes visible Canvas controls as named virtual buttons for TalkBack and
+     * switch access. Bounds are converted from the logical 420x900 world to View pixels.
+     */
+    private fun accessibilityTargets(): List<GameAccessibilityTarget> {
+        val result = mutableListOf<GameAccessibilityTarget>()
+        fun localized(ru: String, en: String) = if (language == "ru") ru else en
+        fun add(id: Int, label: String, l: Float, t: Float, r: Float, b: Float, action: () -> Unit) {
+            result += GameAccessibilityTarget(
+                id, label,
+                Rect(
+                    (offsetX + l * scaleFactor).toInt(), (offsetY + t * scaleFactor).toInt(),
+                    (offsetX + r * scaleFactor).toInt(), (offsetY + b * scaleFactor).toInt()
+                ), action
+            )
+        }
+
+        when (screen) {
+            GameScreen.MENU -> {
+                if (saveRepository.hasSavedGame()) {
+                    add(1, localized("Продолжить игру", "Continue game"), 78f, 410f, 342f, 464f) { handleMenuTap(Vec2(210f, 437f)) }
+                    add(2, localized("Новая игра", "New game"), 78f, 474f, 342f, 528f) { handleMenuTap(Vec2(210f, 501f)) }
+                    add(3, localized("Карта уровней", "Level map"), 78f, 538f, 342f, 592f) { handleMenuTap(Vec2(210f, 565f)) }
+                    add(4, localized("Обучение", "Tutorial"), 78f, 602f, 342f, 656f) { handleMenuTap(Vec2(210f, 629f)) }
+                    add(5, localized("Настройки", "Settings"), 78f, 666f, 342f, 720f) { handleMenuTap(Vec2(210f, 693f)) }
+                } else {
+                    add(1, localized("Играть", "Play"), 78f, 438f, 342f, 496f) { handleMenuTap(Vec2(210f, 467f)) }
+                    add(3, localized("Карта уровней", "Level map"), 78f, 506f, 342f, 564f) { handleMenuTap(Vec2(210f, 535f)) }
+                    add(4, localized("Обучение", "Tutorial"), 78f, 574f, 342f, 632f) { handleMenuTap(Vec2(210f, 603f)) }
+                    add(5, localized("Настройки", "Settings"), 78f, 642f, 342f, 700f) { handleMenuTap(Vec2(210f, 671f)) }
+                }
+            }
+            GameScreen.LEVEL_MAP -> {
+                add(10, localized("В главное меню", "Main menu"), 78f, 750f, 342f, 810f) { handleLevelMapTap(Vec2(210f, 780f)) }
+                for (level in 1..cachedUnlockedLevel) {
+                    val index = level - 1
+                    val left = 22f + (index % 5) * 76f
+                    val top = 220f + (index / 5) * 66f
+                    add(100 + level, localized("Уровень $level", "Level $level"), left, top, left + 68f, top + 58f) {
+                        handleLevelMapTap(Vec2(left + 34f, top + 29f))
+                    }
+                }
+            }
+            GameScreen.TUTORIAL -> {
+                add(20, localized("Закрыть обучение", "Close tutorial"), 290f, 775f, 380f, 835f) { handleTutorialTap(Vec2(330f, 805f)) }
+                if (tutorialPage > 0) add(21, localized("Предыдущий урок", "Previous lesson"), 60f, 712f, 190f, 760f) { handleTutorialTap(Vec2(120f, 736f)) }
+                add(22, if (tutorialPage == 4) localized("Начать тренировку", "Start practice") else localized("Следующий урок", "Next lesson"), 230f, 640f, 370f, 695f) { handleTutorialTap(Vec2(300f, 667f)) }
+            }
+            GameScreen.SETTINGS -> {
+                add(30, "Русский", 35f, 350f, 200f, 410f) { handleSettingsTap(Vec2(100f, 380f)) }
+                add(31, "English", 220f, 350f, 385f, 410f) { handleSettingsTap(Vec2(300f, 380f)) }
+                add(32, localized("Звук", "Sound"), 60f, 465f, 360f, 525f) { handleSettingsTap(Vec2(210f, 495f)) }
+                add(33, localized("Вибрация", "Vibration"), 60f, 540f, 360f, 600f) { handleSettingsTap(Vec2(210f, 570f)) }
+                add(34, localized("Политика конфиденциальности", "Privacy policy"), 60f, 635f, 360f, 690f) { handleSettingsTap(Vec2(210f, 662f)) }
+                add(35, localized("Назад", "Back"), 60f, 735f, 360f, 795f) { handleSettingsTap(Vec2(210f, 765f)) }
+            }
+            GameScreen.PRIVACY -> add(40, localized("Назад", "Back"), 80f, 790f, 340f, 845f) {
+                screen = GameScreen.SETTINGS; playClick()
+            }
+            GameScreen.GAME -> when (engine.status) {
+                GameStatus.RUNNING -> {
+                    add(50, localized("Переключить звук", "Toggle sound"), 302f, 20f, 342f, 75f) { handleGameTap(Vec2(322f, 50f)) }
+                    add(51, localized("Пауза", "Pause"), 354f, 20f, 400f, 75f) { handleGameTap(Vec2(377f, 50f)) }
+                    add(52, localized("Поменять шар", "Swap marbles"), 340f, 80f, 405f, 140f) { handleGameTap(Vec2(370f, 110f)) }
+                    val types = listOf(BoosterType.SLOW_TIME, BoosterType.BOMB, BoosterType.COLOR_CHANGE, BoosterType.REVERSE_CHAIN)
+                    val centers = listOf(40f, 150f, 270f, 380f)
+                    val labels = listOf(localized("Замедление", "Slow time"), localized("Бомба", "Bomb"), localized("Смена цвета", "Change color"), localized("Реверс цепочки", "Reverse chain"))
+                    centers.forEachIndexed { index, center ->
+                        add(60 + index, "${labels[index]}, ${engine.boosters.count(types[index])}", center - 28f, 708f, center + 28f, 766f) {
+                            handleBoosterTap(Vec2(center, 737f))
+                        }
+                    }
+                }
+                GameStatus.PAUSED -> {
+                    add(70, localized("Продолжить", "Resume"), 80f, 445f, 340f, 505f) { handleGameTap(Vec2(210f, 475f)) }
+                    add(71, localized("Начать заново", "Restart"), 80f, 515f, 340f, 575f) { handleGameTap(Vec2(210f, 545f)) }
+                    add(72, localized("К карте уровней", "Level map"), 80f, 585f, 340f, 645f) { handleGameTap(Vec2(210f, 615f)) }
+                    add(73, localized("В главное меню", "Main menu"), 80f, 655f, 340f, 715f) { handleGameTap(Vec2(210f, 685f)) }
+                }
+                GameStatus.WON -> {
+                    add(80, if (engine.isTutorial) localized("Повторить тренировку", "Retry practice") else localized("Следующий уровень", "Next level"), 65f, 455f, 355f, 515f) { handleGameTap(Vec2(210f, 485f)) }
+                    add(81, if (engine.isTutorial) localized("К урокам", "Back to lessons") else localized("К карте уровней", "Level map"), 80f, 525f, 340f, 585f) { handleGameTap(Vec2(210f, 555f)) }
+                    add(82, localized("В главное меню", "Main menu"), 80f, 595f, 340f, 655f) { handleGameTap(Vec2(210f, 625f)) }
+                }
+                GameStatus.LOST -> {
+                    add(90, if (engine.isTutorial) localized("Повторить тренировку", "Retry practice") else localized("Играть снова", "Play again"), 80f, 500f, 340f, 560f) { handleGameTap(Vec2(210f, 530f)) }
+                    add(91, localized("К карте уровней", "Level map"), 80f, 575f, 340f, 635f) { handleGameTap(Vec2(210f, 605f)) }
+                    add(92, localized("В главное меню", "Main menu"), 80f, 650f, 340f, 710f) { handleGameTap(Vec2(210f, 680f)) }
+                }
+            }
+        }
+        return result
+    }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (scaleFactor <= 0f) return true
@@ -588,11 +726,18 @@ class GameView(context: Context) : View(context) {
                 isAiming = false
                 isBoosterTouch = false
                 performClick()
+                sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)
                 invalidate()
                 return true
             }
         }
         return true
+    }
+
+    private companion object {
+        const val FIXED_STEP_SECONDS = 1f / 60f
+        const val MAX_FRAME_DELTA_SECONDS = 0.25f
+        const val MAX_CATCH_UP_STEPS = 16
     }
 
     override fun performClick(): Boolean {
