@@ -2,7 +2,6 @@ package com.miniproject.marbleshooter.game.data
 
 import android.content.Context
 import com.miniproject.marbleshooter.game.domain.GameEngine
-import com.miniproject.marbleshooter.game.domain.model.Ball
 import com.miniproject.marbleshooter.game.domain.model.BoosterInventory
 import com.miniproject.marbleshooter.game.domain.model.GameSaveState
 import com.miniproject.marbleshooter.game.domain.model.Vec2

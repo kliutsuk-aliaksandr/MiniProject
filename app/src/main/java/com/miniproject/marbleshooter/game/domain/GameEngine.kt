@@ -586,11 +586,11 @@ class GameEngine(private val random: Random = Random.Default) {
         animation.elapsed = (animation.elapsed + delta).coerceAtMost(animation.duration)
         val fraction = (animation.elapsed / animation.duration).coerceIn(0f, 1f)
         val eased = fraction * fraction * (3f - 2f * fraction)
-        animation.moves.forEach { move ->
+        for (move in animation.moves) {
             move.ball.progress = move.from + (move.target - move.from) * eased
         }
         if (fraction >= 1f) {
-            animation.moves.forEach { it.ball.progress = it.target }
+            for (move in animation.moves) move.ball.progress = move.target
             val cascade = animation.cascadeProbe
             retraction = null
             resolveMatchAt(cascade)

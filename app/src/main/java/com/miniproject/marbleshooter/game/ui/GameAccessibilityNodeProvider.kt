@@ -31,7 +31,7 @@ internal class GameAccessibilityNodeProvider(
                 setBoundsInParent(Rect(0, 0, host.width, host.height))
                 isEnabled = host.isEnabled
                 isFocusable = true
-                targetsProvider().forEach { addChild(host, it.id) }
+                for (target in targetsProvider()) addChild(host, target.id)
             }
         }
         val target = targetsProvider().firstOrNull { it.id == virtualViewId } ?: return null

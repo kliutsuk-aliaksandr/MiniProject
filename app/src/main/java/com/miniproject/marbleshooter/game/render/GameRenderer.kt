@@ -428,7 +428,7 @@ class GameRenderer {
     }
 
     private fun drawObstacles(canvas: Canvas, engine: GameEngine) {
-        engine.obstacles.forEach { obstacle ->
+        for (obstacle in engine.obstacles) {
             val point = engine.positionOnRoute(obstacle.progress)
             when (obstacle.type) {
                 ObstacleType.MUD -> {
@@ -462,7 +462,7 @@ class GameRenderer {
     }
 
     private fun drawBalls(canvas: Canvas, engine: GameEngine) {
-        engine.balls.forEach { ball ->
+        for (ball in engine.balls) {
             val point = engine.positionOnRoute(ball.progress)
             drawMarble(canvas, point.x, point.y, ball.colorIndex, GameEngine.BALL_RADIUS)
         }
@@ -483,7 +483,7 @@ class GameRenderer {
     }
 
     private fun drawClearingBalls(canvas: Canvas, state: GameRenderState) {
-        state.clearingBalls.forEach { ball ->
+        for (ball in state.clearingBalls) {
             val fraction = (ball.lifeSeconds / 0.24f).coerceIn(0f, 1f)
             val radius = GameEngine.BALL_RADIUS * fraction
             val color = palette[ball.colorIndex.coerceIn(0, palette.lastIndex)]
@@ -498,7 +498,7 @@ class GameRenderer {
     }
 
     private fun drawProjectiles(canvas: Canvas, engine: GameEngine) {
-        engine.projectiles.forEach { projectile ->
+        for (projectile in engine.projectiles) {
             fillPaint.color = Color.argb(70, 255, 255, 255)
             canvas.drawCircle(projectile.position.x, projectile.position.y, 15f, fillPaint)
             drawMarble(canvas, projectile.position.x, projectile.position.y, projectile.colorIndex, 10f)
@@ -506,7 +506,7 @@ class GameRenderer {
     }
 
     private fun drawParticles(canvas: Canvas, state: GameRenderState) {
-        state.particles.forEach { particle ->
+        for (particle in state.particles) {
             val fraction = (particle.life / particle.maxLife).coerceIn(0f, 1f)
             fillPaint.color = Color.argb(
                 (fraction * 255f).toInt(),

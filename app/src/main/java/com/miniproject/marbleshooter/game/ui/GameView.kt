@@ -193,13 +193,13 @@ class GameView(context: Context) : View(context) {
     )
 
     private fun handleGameEvents(events: List<GameEvent>) {
-        events.forEach { event ->
+        for (event in events) {
             when (event) {
                 GameEvent.ShotFired -> audio.playShot(soundEnabled)
                 is GameEvent.MatchCleared -> {
                     audio.playMatch(soundEnabled)
-                    event.removedPositions.forEach {
-                        clearingBalls += ClearingBallVisual(it, event.colorIndex, 0.24f)
+                    for (position in event.removedPositions) {
+                        clearingBalls += ClearingBallVisual(position, event.colorIndex, 0.24f)
                     }
                     createBurst(event)
                     saveGameState()
@@ -286,6 +286,8 @@ class GameView(context: Context) : View(context) {
     }
 
     private fun saveBestScoreIfNeeded() {
+        // Practice scores are session-only and must not overwrite campaign records.
+        if (engine.isTutorial) return
         if (engine.score > bestScore) {
             bestScore = engine.score
             progressRepository.updateBestScore(bestScore)
