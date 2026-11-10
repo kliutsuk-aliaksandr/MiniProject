@@ -7,7 +7,7 @@
 | Файл | Ответственность | Основные точки входа |
 |---|---|---|
 | MainActivity.kt | Activity lifecycle, immersive mode, системная Back-навигация | onCreate, configureImmersiveMode, dispatchBack |
-| game/domain/GameEngine.kt | Чистая Kotlin-симуляция и состояние кампании | startNewGame, startLevel, startTutorial, update, activateBooster, restoreState |
+| game/domain/GameEngine.kt | Чистая Kotlin-симуляция и состояние кампании; публичные balls/projectiles — unmodifiable live views | startNewGame, startLevel, startTutorial, update, activateBooster, restoreState |
 | game/domain/LevelCatalog.kt | Параметры уровней и геометрия дорожек | definition, route |
 | game/domain/model/GameModels.kt | Модели, статусы, инвентарь, snapshot и события | Vec2, Ball, Projectile, GameSaveState, GameEvent |
 | game/data/GameSaveRepository.kt | Сохранение текущей кампании | save, restore, clear |
@@ -79,7 +79,7 @@ UI не должен дублировать игровые правила: он 
 
 ## Тесты
 
-- GameEngineTest.kt: движение, столкновения/вставка, совпадения/каскады, pause/restore, progression, маршруты и бустеры.
+- GameEngineTest.kt: движение, столкновения/вставка, совпадения/каскады, pause/restore, progression, маршруты, бустеры и запрет структурной мутации публичных collection views.
 - GameSaveCodecTest.kt: legacy round-trip, malformed tokens, blank payload и полнота цепочки.
 - GameSaveRepositoryTest.kt: save/restore, upgrade неверсированной schema 0, повреждённые payload, будущая schema и защита tutorial save.
 - LevelProgressRepositoryTest.kt: monotonic unlock/stars/score, валидация входа, legacy fallback и повреждённые SharedPreferences values.

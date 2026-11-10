@@ -57,6 +57,7 @@
 - [x] Добавить виртуальные accessibility nodes для Canvas-кнопок.
 - [x] Перевести immersive mode и Back на современные Android API с fallback.
 - [x] Добавить regression tests и lint в CI.
+- [x] Закрыть прямую структурную мутацию balls/projectiles снаружи GameEngine.
 - [x] Синхронизировать README, game/technical docs, privacy и release checklist.
 - [ ] Разбить GameView на loop/session/input/navigation/event controllers.
 - [ ] Разбить GameRenderer на отдельные screen/field/HUD/effects renderers.

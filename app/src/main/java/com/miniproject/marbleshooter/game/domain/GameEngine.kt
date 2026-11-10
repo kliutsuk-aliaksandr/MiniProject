@@ -10,6 +10,7 @@ import com.miniproject.marbleshooter.game.domain.model.ObstacleType
 import com.miniproject.marbleshooter.game.domain.model.Projectile
 import com.miniproject.marbleshooter.game.domain.model.TrackObstacle
 import com.miniproject.marbleshooter.game.domain.model.Vec2
+import java.util.Collections
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
@@ -54,8 +55,13 @@ class GameEngine(private val random: Random = Random.Default) {
     private var reverseTimer = 0f
     private val pendingEvents = mutableListOf<GameEvent>()
 
-    val balls = mutableListOf<Ball>()
-    val projectiles = mutableListOf<Projectile>()
+    internal val mutableBalls = mutableListOf<Ball>()
+    /** Unmodifiable live view of the chain; only the simulation may change its structure. */
+    val balls: List<Ball> = Collections.unmodifiableList(mutableBalls)
+
+    internal val mutableProjectiles = mutableListOf<Projectile>()
+    /** Unmodifiable live view of active shots; only the simulation may change their structure. */
+    val projectiles: List<Projectile> = Collections.unmodifiableList(mutableProjectiles)
     val shooterPosition = Vec2(SHOOTER_X, SHOOTER_Y)
 
     var status: GameStatus = GameStatus.RUNNING
@@ -88,9 +94,9 @@ class GameEngine(private val random: Random = Random.Default) {
     /** Obstacles projected into progress coordinates for the active level. */
     val obstacles: List<TrackObstacle> get() = obstaclesCache
 
-    val ballCount: Int get() = balls.size
-    val projectileCount: Int get() = projectiles.size
-    val headProgress: Float get() = balls.firstOrNull()?.progress ?: 0f
+    val ballCount: Int get() = mutableBalls.size
+    val projectileCount: Int get() = mutableProjectiles.size
+    val headProgress: Float get() = mutableBalls.firstOrNull()?.progress ?: 0f
     val activeColorCount: Int get() = definition.colorCount
     val chainSpeed: Float get() = if (isTutorial) 12f else definition.chainSpeed
     val targetBallCount: Int get() = definition.ballCount
@@ -148,8 +154,8 @@ class GameEngine(private val random: Random = Random.Default) {
                 obstacles = emptyList()
             )
         )
-        balls.clear()
-        projectiles.clear()
+        mutableBalls.clear()
+        mutableProjectiles.clear()
         pendingEvents.clear()
         retraction = null
         slowTimer = 0f
@@ -159,7 +165,7 @@ class GameEngine(private val random: Random = Random.Default) {
         val tutorialColors = listOf(0, 1, 2, 2, 1, 3, 0, 3, 1)
         val start = routeLength * 0.55f
         tutorialColors.forEachIndexed { index, color ->
-            balls += Ball(color, start - index * BALL_SPACING)
+            mutableBalls += Ball(color, start - index * BALL_SPACING)
         }
         ammoColor = 2
         nextColor = 1
@@ -186,8 +192,8 @@ class GameEngine(private val random: Random = Random.Default) {
         setDefinition(LevelCatalog.definition(levelId))
         lastStars = 0
         level = definition.id
-        balls.clear()
-        projectiles.clear()
+        mutableBalls.clear()
+        mutableProjectiles.clear()
         pendingEvents.clear()
         retraction = null
         slowTimer = 0f
@@ -211,7 +217,7 @@ class GameEngine(private val random: Random = Random.Default) {
                 previous = color
                 repeatCount = 1
             }
-            balls += Ball(color, start - balls.size * BALL_SPACING)
+            mutableBalls += Ball(color, start - mutableBalls.size * BALL_SPACING)
         }
         aimTarget = Vec2(210f, 500f)
         pendingEvents += GameEvent.LevelStarted(level)
@@ -242,7 +248,7 @@ class GameEngine(private val random: Random = Random.Default) {
     fun fireShot() {
         if (status != GameStatus.RUNNING || retraction != null) return
         val direction = (aimTarget - shooterPosition).normalized()
-        projectiles += Projectile(
+        mutableProjectiles += Projectile(
             colorIndex = ammoColor,
             position = shooterPosition + direction * 50f,
             velocity = direction * PROJECTILE_SPEED
@@ -275,14 +281,14 @@ class GameEngine(private val random: Random = Random.Default) {
         if (status != GameStatus.RUNNING || retraction != null) return false
 
         val colorToSelect = if (type == BoosterType.COLOR_CHANGE) {
-            if (balls.isEmpty()) return false
-            balls.groupingBy { it.colorIndex }.eachCount().entries
+            if (mutableBalls.isEmpty()) return false
+            mutableBalls.groupingBy { it.colorIndex }.eachCount().entries
                 .filter { it.key != ammoColor }
                 .sortedWith(compareByDescending<Map.Entry<Int, Int>> { it.value }.thenBy { it.key })
                 .firstOrNull()?.key ?: return false
         } else null
         if (type == BoosterType.BOMB &&
-            (balls.isEmpty() || !target.x.isFinite() || !target.y.isFinite())
+            (mutableBalls.isEmpty() || !target.x.isFinite() || !target.y.isFinite())
         ) return false
 
         val updatedInventory = boosters.consume(type) ?: return false
@@ -291,12 +297,12 @@ class GameEngine(private val random: Random = Random.Default) {
             BoosterType.REVERSE_CHAIN -> reverseTimer = max(reverseTimer, 3f)
             BoosterType.COLOR_CHANGE -> ammoColor = requireNotNull(colorToSelect)
             BoosterType.BOMB -> {
-                val nearestIndex = balls.indices.minByOrNull { index ->
-                    val point = positionOnRoute(balls[index].progress)
+                val nearestIndex = mutableBalls.indices.minByOrNull { index ->
+                    val point = positionOnRoute(mutableBalls[index].progress)
                     (point - target).lengthSquared()
                 } ?: return false
                 val start = (nearestIndex - 2).coerceAtLeast(0)
-                val end = (nearestIndex + 2).coerceAtMost(balls.lastIndex)
+                val end = (nearestIndex + 2).coerceAtMost(mutableBalls.lastIndex)
                 removeRange(start, end, pointsPerBall = 15 * level, allowCascade = true)
             }
         }
@@ -317,7 +323,7 @@ class GameEngine(private val random: Random = Random.Default) {
             return
         }
 
-        if (balls.isEmpty()) {
+        if (mutableBalls.isEmpty()) {
             completeLevel()
             return
         }
@@ -327,18 +333,18 @@ class GameEngine(private val random: Random = Random.Default) {
         val obstacleMultiplier = obstacleSpeedMultiplier(headProgress)
         val slowMultiplier = if (slowTimer > 0f) 0.34f else 1f
         val movement = chainSpeed * obstacleMultiplier * slowMultiplier * movementDirection * delta
-        balls.forEach { ball ->
+        mutableBalls.forEach { ball ->
             ball.progress = (ball.progress + movement).coerceAtLeast(0f)
         }
         enforceSpacingForward(1)
 
         if (reverseTimer <= 0f) updateProjectiles(delta)
 
-        if (balls.isEmpty()) {
+        if (mutableBalls.isEmpty()) {
             completeLevel()
-        } else if (balls.first().progress >= routeLength - BALL_RADIUS) {
+        } else if (mutableBalls.first().progress >= routeLength - BALL_RADIUS) {
             status = GameStatus.LOST
-            projectiles.clear()
+            mutableProjectiles.clear()
             pendingEvents += GameEvent.GameLost
         }
     }
@@ -363,7 +369,7 @@ class GameEngine(private val random: Random = Random.Default) {
         if (status == GameStatus.WON) return
         status = GameStatus.WON
         retraction = null
-        projectiles.clear()
+        mutableProjectiles.clear()
         val threeStarLimit = max(4, (targetBallCount * 0.45f).toInt())
         val twoStarLimit = max(7, (targetBallCount * 0.8f).toInt())
         val stars = when {
@@ -388,7 +394,7 @@ class GameEngine(private val random: Random = Random.Default) {
         nextColor = nextColor,
         aimTarget = aimTarget,
         isPaused = true,
-        balls = balls.map { ball ->
+        balls = mutableBalls.map { ball ->
             val target = retraction?.moves?.firstOrNull { it.ball === ball }?.target ?: ball.progress
             Ball(ball.colorIndex, target)
         },
@@ -428,9 +434,9 @@ class GameEngine(private val random: Random = Random.Default) {
         aimTarget = state.aimTarget
         shotsFired = state.shotsFired
         boosters = state.boosters
-        balls.clear()
-        balls.addAll(state.balls.map { Ball(it.colorIndex, it.progress + legacyOffset) })
-        projectiles.clear()
+        mutableBalls.clear()
+        mutableBalls.addAll(state.balls.map { Ball(it.colorIndex, it.progress + legacyOffset) })
+        mutableProjectiles.clear()
         pendingEvents.clear()
         retraction = null
         slowTimer = 0f
@@ -471,15 +477,15 @@ class GameEngine(private val random: Random = Random.Default) {
     }
 
     private fun updateProjectiles(delta: Float) {
-        val iterator = projectiles.iterator()
+        val iterator = mutableProjectiles.iterator()
         while (iterator.hasNext()) {
             val projectile = iterator.next()
             val previous = projectile.position
             val next = previous + projectile.velocity * delta
             var nearestIndex = -1
             var nearestDistance = Float.MAX_VALUE
-            for (index in balls.indices) {
-                val point = positionOnRoute(balls[index].progress)
+            for (index in mutableBalls.indices) {
+                val point = positionOnRoute(mutableBalls[index].progress)
                 val distance = distanceToSegmentSquared(point, previous, next)
                 if (distance < nearestDistance) {
                     nearestDistance = distance
@@ -489,7 +495,7 @@ class GameEngine(private val random: Random = Random.Default) {
             val hitDistance = BALL_RADIUS + PROJECTILE_RADIUS
             if (nearestIndex >= 0 && nearestDistance <= hitDistance * hitDistance) {
                 val color = projectile.colorIndex
-                val hitProgress = balls[nearestIndex].progress
+                val hitProgress = mutableBalls[nearestIndex].progress
                 val tangent = tangentOnRoute(hitProgress)
                 val movingWithChain =
                     projectile.velocity.x * tangent.x + projectile.velocity.y * tangent.y >= 0f
@@ -507,17 +513,17 @@ class GameEngine(private val random: Random = Random.Default) {
     }
 
     internal fun insertBallAt(hitIndex: Int, colorIndex: Int, insertInFront: Boolean) {
-        if (retraction != null || balls.isEmpty() || hitIndex !in balls.indices) return
+        if (retraction != null || mutableBalls.isEmpty() || hitIndex !in mutableBalls.indices) return
         if (colorIndex !in 0 until activeColorCount) return
         val insertIndex = if (insertInFront) hitIndex else hitIndex + 1
-        val hitProgress = balls[hitIndex].progress
+        val hitProgress = mutableBalls[hitIndex].progress
         val newProgress = if (insertInFront) hitProgress + BALL_SPACING else hitProgress - BALL_SPACING
-        balls.add(insertIndex, Ball(colorIndex, newProgress))
+        mutableBalls.add(insertIndex, Ball(colorIndex, newProgress))
 
         if (insertInFront) {
             for (index in insertIndex - 1 downTo 0) {
-                val minimum = balls[index + 1].progress + BALL_SPACING
-                if (balls[index].progress < minimum) balls[index].progress = minimum
+                val minimum = mutableBalls[index + 1].progress + BALL_SPACING
+                if (mutableBalls[index].progress < minimum) mutableBalls[index].progress = minimum
             }
             enforceSpacingForward(insertIndex + 1)
         } else {
@@ -527,26 +533,26 @@ class GameEngine(private val random: Random = Random.Default) {
     }
 
     private fun enforceSpacingForward(startIndex: Int) {
-        for (index in startIndex until balls.size) {
-            val maximum = balls[index - 1].progress - BALL_SPACING
-            if (balls[index].progress > maximum) balls[index].progress = maximum
+        for (index in startIndex until mutableBalls.size) {
+            val maximum = mutableBalls[index - 1].progress - BALL_SPACING
+            if (mutableBalls[index].progress > maximum) mutableBalls[index].progress = maximum
         }
     }
 
     private fun resolveMatchAt(probe: Int) {
-        if (probe !in balls.indices || retraction != null) return
-        val color = balls[probe].colorIndex
+        if (probe !in mutableBalls.indices || retraction != null) return
+        val color = mutableBalls[probe].colorIndex
         var start = probe
         var end = probe
-        while (start > 0 && balls[start - 1].colorIndex == color) start--
-        while (end < balls.lastIndex && balls[end + 1].colorIndex == color) end++
+        while (start > 0 && mutableBalls[start - 1].colorIndex == color) start--
+        while (end < mutableBalls.lastIndex && mutableBalls[end + 1].colorIndex == color) end++
         if (end - start + 1 < 3) return
         removeRange(start, end, pointsPerBall = 10 * level, allowCascade = true)
     }
 
     private fun removeRange(start: Int, end: Int, pointsPerBall: Int, allowCascade: Boolean) {
-        if (start !in balls.indices || end !in balls.indices || start > end) return
-        val removed = balls.subList(start, end + 1).toList()
+        if (start !in mutableBalls.indices || end !in mutableBalls.indices || start > end) return
+        val removed = mutableBalls.subList(start, end + 1).toList()
         val count = removed.size
         val color = removed[count / 2].colorIndex
         val centerProgress = removed.map { it.progress }.average().toFloat()
@@ -557,18 +563,18 @@ class GameEngine(private val random: Random = Random.Default) {
             removedPositions = removed.map { positionOnRoute(it.progress) }
         )
         score += count * pointsPerBall
-        balls.subList(start, end + 1).clear()
+        mutableBalls.subList(start, end + 1).clear()
 
-        if (balls.isEmpty()) {
+        if (mutableBalls.isEmpty()) {
             completeLevel()
             return
         }
 
         val hasFront = start > 0
-        val hasRear = start < balls.size
+        val hasRear = start < mutableBalls.size
         if (hasFront && hasRear) {
             val retreat = count * BALL_SPACING
-            val moves = balls.take(start).map { ball ->
+            val moves = mutableBalls.take(start).map { ball ->
                 RetractionMove(ball, ball.progress, ball.progress - retreat)
             }
             retraction = Retraction(

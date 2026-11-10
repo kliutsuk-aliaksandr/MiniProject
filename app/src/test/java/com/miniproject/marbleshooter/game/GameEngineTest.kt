@@ -203,7 +203,7 @@ class GameEngineTest {
         val firstCount = engine.targetBallCount
 
         repeat(3) {
-            engine.balls.clear()
+            engine.mutableBalls.clear()
             engine.update(0.01f)
             assertEquals(GameStatus.WON, engine.status)
             assertTrue(engine.startNextLevel())
@@ -264,7 +264,7 @@ class GameEngineTest {
     fun tutorialWinCannotAdvanceTheCampaign() {
         val engine = GameEngine(Random(302))
         engine.startTutorial()
-        engine.balls.clear()
+        engine.mutableBalls.clear()
         engine.update(0.016f)
 
         assertEquals(GameStatus.WON, engine.status)
@@ -277,7 +277,7 @@ class GameEngineTest {
     @Test
     fun bombAndColorChangeDoNotConsumeChargesWhenTheChainIsEmpty() {
         val engine = GameEngine(Random(303))
-        engine.balls.clear()
+        engine.mutableBalls.clear()
         val inventoryBefore = engine.boosters
 
         assertFalse(engine.activateBooster(BoosterType.BOMB))
@@ -346,9 +346,9 @@ class GameEngineTest {
         val engine = GameEngine(Random(35))
         engine.startLevel(3)
         val obstacle = engine.obstacles.first { it.type == ObstacleType.MUD }
-        engine.balls.clear()
-        engine.balls += Ball(0, obstacle.progress)
-        engine.balls += Ball(1, obstacle.progress - GameEngine.BALL_SPACING)
+        engine.mutableBalls.clear()
+        engine.mutableBalls += Ball(0, obstacle.progress)
+        engine.mutableBalls += Ball(1, obstacle.progress - GameEngine.BALL_SPACING)
         val before = engine.headProgress
 
         engine.update(0.05f)
@@ -359,7 +359,7 @@ class GameEngineTest {
     @Test
     fun emptyingLevelAwardsThreeStarsAndEmitsCompletion() {
         val engine = GameEngine(Random(36))
-        engine.balls.clear()
+        engine.mutableBalls.clear()
 
         engine.update(0.01f)
 
@@ -422,10 +422,36 @@ class GameEngineTest {
         assertFalse(engine.restoreState(invalid))
     }
 
+
+    @Test
+    fun exposedEntityCollectionsRejectStructuralMutation() {
+        val engine = GameEngine(Random(39))
+        val initialBallCount = engine.ballCount
+
+        var ballMutationRejected = false
+        try {
+            (engine.balls as MutableList<*>).clear()
+        } catch (_: UnsupportedOperationException) {
+            ballMutationRejected = true
+        }
+        assertTrue(ballMutationRejected)
+        assertEquals(initialBallCount, engine.ballCount)
+
+        engine.fireShot()
+        var projectileMutationRejected = false
+        try {
+            (engine.projectiles as MutableList<*>).clear()
+        } catch (_: UnsupportedOperationException) {
+            projectileMutationRejected = true
+        }
+        assertTrue(projectileMutationRejected)
+        assertEquals(1, engine.projectileCount)
+    }
+
     private fun setChain(engine: GameEngine, colors: List<Int>) {
-        engine.balls.clear()
+        engine.mutableBalls.clear()
         colors.forEachIndexed { index, color ->
-            engine.balls += Ball(color, 800f - index * GameEngine.BALL_SPACING)
+            engine.mutableBalls += Ball(color, 800f - index * GameEngine.BALL_SPACING)
         }
     }
 }

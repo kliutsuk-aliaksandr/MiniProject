@@ -37,7 +37,7 @@ MainActivity
 - LevelCatalog.kt — декларативные параметры 30 уровней и четыре полилинии маршрута.
 - domain/model/GameModels.kt — Vec2, Ball, Projectile, статусы, инвентарь бустеров, препятствия, GameSaveState и GameEvent.
 
-Доменный слой не импортирует Android API. GameEngine является владельцем состояния симуляции; UI получает изменения через типизированные GameEvent.
+Доменный слой не импортирует Android API. GameEngine является владельцем состояния симуляции; UI получает изменения через типизированные GameEvent. Структура цепочки и активных снарядов доступна внешним слоям только через unmodifiable live views; операции изменения коллекций выполняются внутри GameEngine.
 
 ### Data: game/data
 
