@@ -1,66 +1,146 @@
-# Technical Design Document — MiniProject
+# Technical Design — Marble Frog 0.5.x
 
-## Платформа и стек
+## 1. Платформа
 
-- Android, Kotlin.
-- Android Gradle Plugin 8.13.2, Gradle 8.13, JDK 17.
-- Android SDK 36, minSdk 23.
-- Рендеринг: собственный View и Android Canvas.
-- Логика игры отделена от Android UI и находится в GameEngine.
+| Параметр | Значение |
+|---|---|
+| Язык | Kotlin |
+| Android Gradle Plugin | 8.13.2 |
+| Gradle / JDK | 8.13 / 17 |
+| compileSdk / targetSdk | 36 |
+| minSdk | 23 |
+| Application ID | com.miniproject.marbleshooter |
+| versionCode / versionName | 5 / 0.5.0 |
+| Графика | Android View + Canvas |
+| Звук | Android ToneGenerator |
+| Хранение | SharedPreferences |
+| Unit-тесты | JUnit 4 |
 
-## Архитектура
+Проект полностью офлайн. В AndroidManifest.xml отсутствует INTERNET permission; рекламные и аналитические SDK не подключены.
 
-### MainActivity
+## 2. Архитектура
 
-Создаёт GameView, фиксирует портретную ориентацию, приостанавливает игровой цикл при уходе приложения в фон и освобождает аудиоресурсы.
+```text
+MainActivity
+  └── GameView (Android View / UI coordinator)
+       ├── GameEngine (pure Kotlin domain aggregate)
+       ├── GameRenderer (Canvas presentation)
+       ├── GameSaveRepository ── GameSaveCodec
+       ├── LevelProgressRepository
+       ├── GameAudio
+       └── GameAccessibilityNodeProvider
+```
 
-### GameView
+### Domain: game/domain
 
-Отвечает за:
-- масштабирование логического поля 420×900 под экран устройства;
-- отрисовку фона, дорожки, шаров, пушки, HUD и экранов паузы/завершения;
-- преобразование координат касания в игровое пространство;
-- запуск/остановку кадрового цикла;
-- отрисовку частиц после совпадений;
-- воспроизведение звуков и переключение звука;
-- сохранение рекорда и снимка игрового состояния в SharedPreferences.
+- GameEngine.kt — состояние партии, движение цепочки и снарядов, столкновения, вставка, комбинации, каскады, откат, бустеры, препятствия, счёт, звёзды, snapshot/restore.
+- LevelCatalog.kt — декларативные параметры 30 уровней и четыре полилинии маршрута.
+- domain/model/GameModels.kt — Vec2, Ball, Projectile, статусы, инвентарь бустеров, препятствия, GameSaveState и GameEvent.
 
-### GameEngine
+Доменный слой не импортирует Android API. GameEngine является владельцем состояния симуляции; UI получает изменения через типизированные GameEvent.
 
-Чистая Kotlin-модель:
-- хранит цепочку, снаряды, счёт, уровень и состояние раунда;
-- перемещает цепочку с сохранением равного расстояния между шарами;
-- проверяет пересечение снаряда с отрезком его движения, чтобы снизить риск tunneling;
-- вставляет шар спереди или сзади задетого шара согласно направлению столкновения относительно касательной дорожки;
-- удаляет группы от трёх шаров и проверяет каскадные совпадения на месте схлопывания цепочки;
-- определяет победу и поражение;
-- увеличивает длину/скорость цепочки по уровням и число доступных цветов каждые три уровня;
-- создаёт/восстанавливает сериализуемый GameSaveState.
+### Data: game/data
 
-### GameAudio
+- GameSaveRepository — сохранение и восстановление незавершённой кампании.
+- GameSaveCodec — чистый Kotlin-кодек токенов цепочки.
+- LevelProgressRepository — открытый уровень, звёзды и рекорд.
 
-Использует Android ToneGenerator для лёгких офлайн-звуковых сигналов. Звуковые ресурсы и интернет-соединение не требуются.
+### Render: game/render
 
-## Сохранение
+GameRenderer рисует меню, карту уровней, обучение, настройки, privacy screen, дорожку, препятствия, цепочку, снаряды, лягушку, HUD, бустеры, эффекты и overlay. Он не обрабатывает касания и не читает SharedPreferences.
 
-В SharedPreferences записываются:
-- лучший счёт;
-- текущий уровень и счёт;
-- цвета текущего и следующего шаров;
-- координата прицеливания;
-- список шаров с цветом и прогрессом по дорожке;
-- настройка звука.
+### UI: game/ui
 
-После перезапуска приложения текущая партия загружается на паузе. Снаряды, находившиеся в полёте, не сохраняются.
+GameView преобразует координаты касаний, управляет экранами и жизненным циклом игры, выполняет фиксированные simulation ticks, обрабатывает события и создаёт GameRenderState. GameAccessibilityNodeProvider представляет Canvas-кнопки как виртуальные узлы AccessibilityNodeProvider с названием, bounds и click action.
 
-## Координаты
+### Audio: game/audio
 
-Внутреннее игровое поле имеет размер 420×900 условных единиц. Canvas масштабируется с сохранением пропорций и центрируется. Игровая логика использует координаты, независимые от плотности экрана.
+GameAudio оборачивает ToneGenerator. Сигналы генерируются локально; release() вызывается при уничтожении Activity.
 
-## Сборка и тесты
+## 3. Координаты и кадровый цикл
 
-Debug-сборка: gradlew assembleDebug.
+Логический мир — 420 × 900. Canvas сохраняет пропорции и центрирует поле. Ввод переводится обратным преобразованием offset/scale.
 
-Unit-тесты: gradlew testDebugUnitTest.
+GameView использует accumulator и фиксированный шаг 1/60 секунды. Время одного кадра ограничено 250 мс, catch-up — максимум 16 шагов. При pause/resume accumulator сбрасывается, поэтому время в фоне не симулируется как игровое.
 
-Android SDK Platform 36 и JDK 17+ должны быть установлены. В CI Gradle 8.13 устанавливается действием setup-gradle.
+GameEngine.update() дополнительно ограничивает delta до 50 мс. Отрисовка и время симуляции таким образом не зависят напрямую от колебаний частоты кадров.
+
+## 4. Уровни и кеш маршрута
+
+| Уровни | Тип маршрута |
+|---|---|
+| 1–8 | Classic |
+| 9–15 | Double Loop |
+| 16–22 | Switchback |
+| 23–30 | Spiral |
+
+LevelCatalog.definition(level) ограничивает ID диапазоном 1–30. При смене уровня, запуске tutorial или успешном restore метод setDefinition пересобирает routePointsCache, routeLengthCache и obstaclesCache. positionOnRoute, столкновения и renderer используют уже рассчитанные данные.
+
+Количество шаров: min(12 + 2 × (level − 1), 70). Скорость: min(32 + 1.7 × (level − 1), 78). Количество цветов: clamp(4 + floor((level − 1)/3), 4, 6).
+
+## 5. Формат сохранений
+
+Файл preferences: mini_project.
+
+| Ключ | Значение |
+|---|---|
+| saved_schema_version | Версия схемы; отсутствие означает legacy schema 0, актуальная схема 1 |
+| saved_balls | Список colorIndex:progress через точку с запятой |
+| saved_level, saved_score | Уровень и счёт |
+| saved_ammo, saved_next | Текущий и следующий цвета |
+| saved_aim_x, saved_aim_y | Последняя точка прицеливания |
+| saved_shots | Количество выстрелов |
+| booster_slow, booster_bomb, booster_color, booster_reverse | Инвентарь бустеров |
+
+Схема 0 — прежний неверсированный формат 0.4/0.5. При успешном восстановлении репозиторий записывает schema 1. Неизвестная версия или повреждённый токен отклоняют весь snapshot. Engine дополнительно проверяет уровень, цвета, конечность чисел, порядок цепочки, границы маршрута и количество зарядов.
+
+Снаряды в полёте и временные эффекты не сохраняются. После восстановления партия открывается на паузе. Учебные партии исключены из persistence.
+
+Прогресс хранится в level_progress: unlocked_level, best_score и stars_1…stars_30. Завершение уровня не уменьшает ранее сохранённые звёзды или открытый прогресс.
+
+## 6. Бустеры и препятствия
+
+- Slow Time: 5 секунд, множитель скорости 0.34.
+- Bomb: удаляет до пяти последовательных шаров около шара, ближайшего к переданной мировой точке aimTarget. HUD touch coordinates не передаются в домен.
+- Color Change: выбирает наиболее частый цвет цепочки, отличный от текущего; если выбрать нечего, действие недоступно.
+- Reverse Chain: 3 секунды движения от финиша с множителем 0.65.
+
+Применимость проверяется до consume(). Пустая цепочка не расходует Bomb или Color Change.
+
+Препятствия применяют множитель скорости ко всей цепочке, если ведущий шар рядом с obstacle progress: Mud 0.55, Ice 1.20, Rock 0.72. Rock сейчас не физический объект, а speed modifier.
+
+## 7. Поток событий
+
+| Событие | Реакция UI |
+|---|---|
+| ShotFired | Звук выстрела |
+| MatchCleared | Звук, fading marbles, particle burst, save |
+| LevelStarted | Нет дополнительного side effect |
+| LevelCompleted | Победа; запись звёзд/разблокировки только для кампании; очистка save |
+| BoosterActivated | Click/haptic, save |
+| GameLost | Звук поражения; очистка campaign save |
+
+Учебная сессия не обновляет звёзды, unlocked level или обычный save. Повтор обучения запускает новый tutorial; tutorial win не запускает следующий campaign level.
+
+## 8. Доступность
+
+GameAccessibilityNodeProvider выдаёт виртуальные дочерние узлы для экранных кнопок Canvas. Каждый узел содержит локализованный label, пиксельные bounds и действие click. Набор узлов зависит от активного экрана и статуса партии.
+
+Это улучшает навигацию TalkBack и switch access, но живое игровое поле всё ещё не имеет полного spoken-description для положения каждого шара и состояния цепочки. Нужна отдельная проверка на физическом Android-устройстве.
+
+## 9. Тесты и CI
+
+```bash
+./gradlew testDebugUnitTest
+./gradlew lintDebug
+./gradlew assembleDebug
+./gradlew bundleRelease
+```
+
+CI выполняет debug build, JVM tests, lint и unsigned release AAB. Unit-тесты покрывают движение, collision/insertion, match/cascade, pause/restore, уровни, бустеры, кеш маршрутов, tutorial progression guard и строгий parser.
+
+SharedPreferences repository пока требует Robolectric/instrumentation tests; физическое устройство, FPS, TalkBack и масштабирование проверяются вручную. CI-сборка не заменяет эти проверки.
+
+## 10. Приватность
+
+Сохранения и прогресс остаются в SharedPreferences на устройстве. Cloud backup и device transfer отключены. Нет разрешения INTERNET, серверов, аккаунтов, рекламы и аналитики.

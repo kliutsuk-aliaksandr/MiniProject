@@ -1,40 +1,49 @@
-# Release checklist — Marble Frog 0.4.0
+# Release checklist — Marble Frog 0.5.0
 
-## Prepared in the repository
+## Реализовано в репозитории
 
-- [x] App launcher icon (legacy vector and Android 8+ adaptive icon).
-- [x] App label set to Marble Frog.
-- [x] Store listing metadata draft in Russian and English.
-- [x] Privacy policy in Markdown and HTML.
-- [x] Privacy policy readable inside the app (Settings → Privacy Policy).
-- [x] Android cloud backup and device-transfer of saved SharedPreferences disabled.
-- [x] targetSdk is Android 16 / API 36.
-- [x] Release build uses R8 minification.
-- [x] CI builds debug APK, tests and an unsigned release AAB.
+- [x] Launcher icon (legacy vector и adaptive icon).
+- [x] Название Marble Frog и draft store listing RU/EN.
+- [x] Privacy policy в Markdown, HTML и внутри приложения.
+- [x] Cloud backup и device transfer отключены.
+- [x] targetSdk 36 / Android 16, minSdk 23.
+- [x] R8 minification для release.
+- [x] CI: debug APK, JVM tests, Android lint и unsigned release AAB.
+- [x] Публичный адрес поддержки указан в privacy materials: alex.kliutsuk@gmail.com.
 
-## Still requires the developer / Play Console
+## Требует ручных действий разработчика / Play Console
 
-- [ ] Add `alex.kliutsuk@gmail.com` to the Play Console developer contact fields and confirm it is monitored.
-- [ ] In repository Settings → Pages select GitHub Actions as the source; the deploy-privacy-policy workflow will publish docs/privacy-policy.html as the page root. Verify the generated HTTPS URL is globally accessible without sign-in or geofencing.
-- [ ] Export the final 512 × 512 PNG store icon and 1024 × 500 feature graphic; confirm current requirements in Play Console.
-- [ ] Capture genuine screenshots from the actual release build on supported phones/tablets.
-- [ ] Test on physical low/mid-range and newer Android devices; check frame stability, pause/resume, background/foreground and small displays.
-- [ ] Create and back up a private upload keystore. Never commit the keystore or passwords to Git.
-- [ ] Sign the AAB with the upload key. The CI AAB is unsigned and cannot be uploaded as-is.
-- [ ] Complete Play Console app content, Data safety, content rating, target audience and ads declaration. The Data safety form and privacy-policy URL are required even when the app does not collect user data.
-- [ ] Create a closed test and invite testers if the developer account is subject to that requirement. For personal developer accounts created after 13 November 2023, Google currently requires at least 12 testers opted in continuously for 14 days before applying for production access.
-- [ ] Submit the signed build for review and publish only after approval.
+- [ ] Добавить alex.kliutsuk@gmail.com в контактные поля Play Console и проверить получение писем.
+- [ ] Включить GitHub Pages через GitHub Actions и проверить публичный HTTPS URL политики.
+- [ ] Подготовить финальную иконку PNG 512×512 и feature graphic 1024×500.
+- [ ] Сделать реальные скриншоты release build на поддерживаемых устройствах.
+- [ ] Проверить на физических устройствах разных классов: управление, pause/resume, сохранения, масштабирование, FPS, звук, вибрация и TalkBack.
+- [ ] Создать приватный upload keystore и резервную копию вне репозитория.
+- [ ] Подписать AAB: CI artifact намеренно unsigned и не предназначен для прямой загрузки в Play Console.
+- [ ] Заполнить App content, Data safety, content rating, target audience и ads declaration.
+- [ ] Проверить требования закрытого тестирования для конкретного developer account.
+- [ ] Отправить подписанную сборку на review после закрытия release gates.
 
-## Signing the AAB locally
+## Подписание AAB
 
-1. Download the CI artifact miniproject-release-aab.
-2. In Android Studio select **Build → Generate Signed Bundle / APK**.
-3. Choose **Android App Bundle** and create or select a private upload key.
-4. Store the keystore and passwords outside the repository; keep a secure backup.
-5. Generate the signed release bundle and upload that file to Play Console.
+1. Скачать CI artifact miniproject-release-aab.
+2. В Android Studio выбрать Build → Generate Signed Bundle / APK.
+3. Выбрать Android App Bundle и создать/выбрать приватный upload key.
+4. Хранить keystore и пароли вне Git и CI logs; сделать защищённую резервную копию.
+5. Загрузить подписанный AAB в Play Console.
 
-The repository does not contain signing keys or passwords. The CI AAB is intentionally unsigned.
+## Device QA matrix
 
-## Screenshot capture guide
+| Сценарий | Ожидаемый результат |
+|---|---|
+| Restore после force-stop | Уровень, счёт, цвета, цепочка и заряды восстановлены; игра paused |
+| Tutorial retry / loss | Campaign save не изменяется; остаёмся в тренировке |
+| Tutorial win | Не открывает следующий campaign level и не выдаёт campaign stars |
+| Bomb | Удаляет участок около последней точки прицеливания |
+| Недоступный бустер | Заряд остаётся неизменным |
+| Переход 8→9, 15→16, 22→23 | Активируется ожидаемый маршрут |
+| RU/EN и маленький экран | Тексты и hit areas читаемы; подписи не перекрываются |
+| Pause/background/resume | Время в фоне не ускоряет цепочку |
+| TalkBack | Кнопки меню, карты, настроек, паузы и бустеров читаемы и доступны |
 
-Capture gameplay before a match, the rollback animation, menu and settings in both languages, pause and level-complete screens. Use a device screenshot or Android Studio emulator screenshot. Ensure images reflect the real build and contain no private notifications or account details.
+Физическое устройство и Play Console должны быть проверены вручную. Успешная сборка не заменяет эти проверки.
