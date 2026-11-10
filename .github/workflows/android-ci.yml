@@ -46,7 +46,12 @@ jobs:
         run: gradle testDebugUnitTest --no-daemon
 
       - name: Run Android lint
-        run: gradle lintDebug --no-daemon
+        run: |
+          set +e
+          gradle lintDebug --no-daemon
+          lint_status=$?
+          cat app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt || true
+          exit $lint_status
 
       - name: Build unsigned release AAB
         run: gradle bundleRelease --no-daemon

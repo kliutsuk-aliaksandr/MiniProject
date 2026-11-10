@@ -5,6 +5,7 @@ import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.KeyEvent
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.window.OnBackInvokedCallback
@@ -70,10 +71,12 @@ class MainActivity : Activity() {
         super.onPause()
     }
 
-    @Suppress("DEPRECATION")
-    override fun onBackPressed() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) dispatchBack()
-        else super.onBackPressed()
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            dispatchBack()
+            return true
+        }
+        return super.onKeyUp(keyCode, event)
     }
 
     override fun onDestroy() {
