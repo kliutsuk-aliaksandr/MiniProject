@@ -402,7 +402,11 @@ internal class GameNavigationController(
             }
         }
 
-        if (engine.status == GameStatus.RUNNING && target.x in 340f..405f && target.y in 80f..140f) {
+        if (!session.isStartInputLocked &&
+            engine.status == GameStatus.RUNNING &&
+            target.x in 340f..405f &&
+            target.y in 80f..140f
+        ) {
             engine.swapAmmo()
             session.playClick()
             session.saveGameState(isGameScreen = true)

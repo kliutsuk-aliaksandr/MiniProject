@@ -88,7 +88,7 @@ tasks.register<JacocoReport>("jacocoDebugUnitTestReport") {
 
     val generatedClassExcludes = listOf(
         "**/R.class",
-        "**/R$*.class",
+        "**/R\$*.class",
         "**/BuildConfig.*",
         "**/Manifest*.*",
         "**/*Test*.*",

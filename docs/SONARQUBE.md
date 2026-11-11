@@ -27,7 +27,7 @@ In **Repository Settings → Secrets and variables → Actions**, add:
 
 The Android CI always generates and uploads the unit-test coverage report. When `SONAR_TOKEN` is present, the workflow switches to JDK 21 and runs the `sonar` task. Without that secret, only the scanner step is skipped; build, tests, lint and the coverage artifact still run.
 
-The scanner imports JaCoCo XML, JUnit XML and Android Lint results. The `prepareSonarCoverageReport` task discovers the AGP-generated XML report and copies it to a stable root build path used by Sonar.
+The scanner imports JaCoCo XML, JUnit XML and Android Lint results. The `jacocoDebugUnitTestReport` task runs the JVM/Robolectric tests and produces an explicit XML file at `app/build/reports/jacoco/debugUnitTest/report.xml` plus an HTML report in the same directory. The root Sonar task depends on that report task.
 
 ## Coverage scope
 

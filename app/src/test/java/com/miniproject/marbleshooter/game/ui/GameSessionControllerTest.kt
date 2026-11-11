@@ -7,6 +7,7 @@ import com.miniproject.marbleshooter.game.domain.model.BoosterType
 import com.miniproject.marbleshooter.game.domain.model.OfflineAchievement
 import com.miniproject.marbleshooter.game.render.GameScreen
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -117,6 +118,30 @@ class GameSessionControllerTest {
                 .edit().clear().apply()
             context.getSharedPreferences("offline_challenge_progress", Context.MODE_PRIVATE)
                 .edit().clear().apply()
+        }
+    }
+
+
+    @Test
+    fun campaignStartLocksGameplayInputUntilCountdownIsCancelledOrCompleted() {
+        val context = freshContext(vibrationEnabled = false)
+        val session = GameSessionController(context) { }
+
+        try {
+            session.startNewGame()
+            assertTrue(session.isStartInputLocked)
+
+            session.fireShot(com.miniproject.marbleshooter.game.domain.model.Vec2(120f, 300f), true)
+            assertEquals(0, session.engine.shotsFired)
+            assertFalse(session.activateBooster(BoosterType.SLOW_TIME, true))
+            assertEquals(3, session.engine.boosters.slowTime)
+
+            // Tutorial/practice starts immediately and deliberately skips the campaign intro.
+            session.startTutorialPractice()
+            assertFalse(session.isStartInputLocked)
+        } finally {
+            session.disposeGame(GameScreen.MENU)
+            clearPreferences(context)
         }
     }
 

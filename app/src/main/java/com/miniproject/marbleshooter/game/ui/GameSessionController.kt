@@ -160,6 +160,7 @@ internal class GameSessionController(
 
     fun startLevel(level: Int): Boolean {
         if (!progressPresentation.isUnlocked(level)) return false
+        gameLoopController.resetAccumulator()
         engine.startLevel(level)
         startSequence.start()
         clearEffects()
