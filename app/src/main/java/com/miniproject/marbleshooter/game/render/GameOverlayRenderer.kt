@@ -35,12 +35,18 @@ internal class GameOverlayRenderer(resources: GameRenderResources) : GameCanvasR
                 else -> tr(state, R.string.game_over)
             }
             val subtitle = when {
-                challenge != null -> tr(
+                challenge != null && challenge.timeLimitSeconds != null -> tr(
                     state,
-                    R.string.challenge_result_summary,
+                    R.string.challenge_result_timed,
                     engine.shotsFired,
                     challenge.maxShots,
                     engine.challengeTimeRemaining.toInt()
+                )
+                challenge != null -> tr(
+                    state,
+                    R.string.challenge_result_shots,
+                    engine.shotsFired,
+                    challenge.maxShots
                 )
                 engine.isTutorial -> tr(state, R.string.practice_score, engine.score)
                 else -> tr(state, R.string.level_score, engine.level, engine.score)

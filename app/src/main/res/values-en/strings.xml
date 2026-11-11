@@ -139,7 +139,8 @@
     <string name="challenge_best_stars">BEST: %1$s</string>
     <string name="challenge_complete">CHALLENGE CLEARED!</string>
     <string name="challenge_failed">CHALLENGE FAILED</string>
-    <string name="challenge_result_summary">Shots: %1$d / %2$d • Time left: %3$d s</string>
+    <string name="challenge_result_timed">Shots: %1$d / %2$d • Time left: %3$d s</string>
+    <string name="challenge_result_shots">Shots: %1$d / %2$d</string>
     <string name="challenge_retry">RETRY</string>
     <string name="challenge_list">CHALLENGES</string>
     <string name="challenge_pause_subtitle">Challenge paused</string>

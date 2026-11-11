@@ -149,8 +149,8 @@ class GameAccessibilityInstrumentedTest {
             tapAccessibilityTarget(device, scenario, 51)
             assertTargetText(scenario, 72, "CHALLENGES")
             tapAccessibilityTarget(device, scenario, 72)
-            assertTargetText(scenario, 133, "Main menu")
-            tapAccessibilityTarget(device, scenario, 133)
+            assertTargetText(scenario, 140, "Main menu")
+            tapAccessibilityTarget(device, scenario, 140)
             assertTargetText(scenario, 4, "Tutorial")
 
             // Exercise all tutorial pages through real touch injection, then return to the menu.

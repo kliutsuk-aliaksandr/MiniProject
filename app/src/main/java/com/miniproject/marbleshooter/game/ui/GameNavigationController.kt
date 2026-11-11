@@ -137,7 +137,7 @@ internal class GameNavigationController(
                         handleChallengesTap(Vec2(210f, top + 65f))
                     }
                 }
-                add(133, localized(R.string.a11y_main_menu), 78f, 750f, 342f, 810f) {
+                add(140, localized(R.string.a11y_main_menu), 78f, 750f, 342f, 810f) {
                     screen = GameScreen.MENU
                     session.playClick()
                 }
