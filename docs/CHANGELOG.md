@@ -2,11 +2,6 @@
 
 ## Unreleased — dev branch
 
-- Добавлены 3 Android instrumentation-сценария для MainActivity/accessibility tree, действий AccessibilityNodeProvider и UIAutomator screen taps по bounds virtual controls. UIAutomator проверяет menu/settings/privacy/language/level map/tutorial navigation.
-- Добавлена зависимость AndroidX UIAutomator 2.3.0; CI instrumentation job расширен до API 23/29/36 с отдельными отчётами для каждого API. Все 9 emulator test executions прошли в [CI run 43020812369](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43020812369).
-- Virtual accessibility nodes помечаются как visible-to-user. Физический QA, TalkBack/switch access и Xiaomi/MIUI остаются отдельными незакрытыми проверками.
-
-
 - Перенесено 97 RU/EN UI-текстов в Android string resources; GameTextResources кэширует locale-specific Resources и разделяется renderer/navigation. Добавлены два теста language selection и resource-key parity.
 
 - Добавлен стандартный Gradle Wrapper 8.13: официальный JAR с проверенным SHA-256, checksum дистрибутива в properties, CI использует ./gradlew. Добавлена Windows smoke-проверка gradlew.bat.
