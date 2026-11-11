@@ -10,25 +10,19 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
-import com.miniproject.marbleshooter.game.domain.GameEngine
 import com.miniproject.marbleshooter.game.ui.GameView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.math.min
 
 /**
  * Exercises the real Activity, Canvas view and virtual accessibility actions on an emulator.
- * No test-only production hooks are used: actions travel through AccessibilityNodeProvider.
+ * Accessibility provider actions and externally injected touch taps are tested separately.
  */
 @RunWith(AndroidJUnit4::class)
 class GameAccessibilityInstrumentedTest {
-
-    private companion object {
-        const val UI_TIMEOUT_MS = 5_000L
-    }
 
     @Test
     fun mainActivityExposesCanvasMenuAsAccessibleVirtualControls() {
@@ -116,7 +110,7 @@ class GameAccessibilityInstrumentedTest {
     }
 
     @Test
-    fun uiAutomatorInjectsScreenTapsThroughSettingsMapAndGameplay() {
+    fun uiAutomatorInjectsTapsAtAccessibleBoundsThroughSettingsMapAndGameplay() {
         clearGamePreferences()
 
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
@@ -124,31 +118,30 @@ class GameAccessibilityInstrumentedTest {
             val device = UiDevice.getInstance(instrumentation)
             instrumentation.waitForIdleSync()
 
-            // Verify the initial menu's virtual accessibility label, then use real screen taps.
-            assertTargetText(scenario, 5, "Настройки")
-            tapWorldPoint(device, scenario, 210f, 671f)
+            // Use the virtual control's screen bounds, but inject a real coordinate tap.
+            tapAccessibilityTarget(device, scenario, 5)
             assertTargetText(scenario, 34, "Политика конфиденциальности")
 
-            tapWorldPoint(device, scenario, 210f, 662f)
+            tapAccessibilityTarget(device, scenario, 34)
             assertTargetText(scenario, 40, "Назад")
-            tapWorldPoint(device, scenario, 210f, 817f)
+            tapAccessibilityTarget(device, scenario, 40)
             assertTargetText(scenario, 35, "Назад")
 
-            // Choose English and verify that the selected app language is reflected by controls.
-            tapWorldPoint(device, scenario, 300f, 380f)
+            // Choose English and verify the selected app language is reflected by controls.
+            tapAccessibilityTarget(device, scenario, 31)
             assertTargetText(scenario, 35, "Back")
-            tapWorldPoint(device, scenario, 210f, 765f)
+            tapAccessibilityTarget(device, scenario, 35)
             assertTargetText(scenario, 3, "Level map")
 
             // Open the map, select the first unlocked level, then pause and resume.
-            tapWorldPoint(device, scenario, 210f, 535f)
+            tapAccessibilityTarget(device, scenario, 3)
             assertTargetText(scenario, 101, "Level 1")
-            tapWorldPoint(device, scenario, 56f, 249f, awaitIdle = false)
+            tapAccessibilityTarget(device, scenario, 101, awaitIdle = false)
             assertTargetText(scenario, 51, "Pause")
 
-            tapWorldPoint(device, scenario, 377f, 50f)
+            tapAccessibilityTarget(device, scenario, 51)
             assertTargetText(scenario, 70, "Resume")
-            tapWorldPoint(device, scenario, 210f, 475f, awaitIdle = false)
+            tapAccessibilityTarget(device, scenario, 70, awaitIdle = false)
             assertTargetText(scenario, 51, "Pause")
         }
     }
@@ -167,35 +160,33 @@ class GameAccessibilityInstrumentedTest {
     }
 
     /**
-     * Converts a 420x900 game-world point to the real screen and injects a UIAutomator tap.
-     * This exercises Android touch dispatch rather than calling AccessibilityNodeProvider directly.
+     * Uses the actual bounds exposed by a virtual accessibility control, then injects
+     * a screen-coordinate tap with UiDevice. This exercises Android touch dispatch.
      */
-    private fun tapWorldPoint(
+    private fun tapAccessibilityTarget(
         device: UiDevice,
         scenario: ActivityScenario<MainActivity>,
-        worldX: Float,
-        worldY: Float,
+        targetId: Int,
         awaitIdle: Boolean = true
     ) {
         var screenX = 0
         var screenY = 0
+        var screenBounds = Rect()
         scenario.onActivity { activity ->
-            val view = gameView(activity)
-            assertTrue("GameView must be laid out before injecting a tap", view.width > 0 && view.height > 0)
-
-            val location = IntArray(2)
-            view.getLocationOnScreen(location)
-            val scale = min(
-                view.width / GameEngine.WORLD_WIDTH,
-                view.height / GameEngine.WORLD_HEIGHT
+            val target = node(accessibilityProvider(gameView(activity)), targetId)
+            target.getBoundsInScreen(screenBounds)
+            assertTrue(
+                "Accessibility target $targetId must expose non-empty screen bounds: $screenBounds",
+                screenBounds.width() > 0 && screenBounds.height() > 0
             )
-            val offsetX = (view.width - GameEngine.WORLD_WIDTH * scale) / 2f
-            val offsetY = (view.height - GameEngine.WORLD_HEIGHT * scale) / 2f
-            screenX = (location[0] + offsetX + worldX * scale).toInt()
-            screenY = (location[1] + offsetY + worldY * scale).toInt()
+            screenX = screenBounds.centerX()
+            screenY = screenBounds.centerY()
         }
 
-        assertTrue("UIAutomator must inject tap at ($screenX, $screenY)", device.click(screenX, screenY))
+        assertTrue(
+            "UIAutomator must inject tap for accessibility target $targetId at ($screenX, $screenY)",
+            device.click(screenX, screenY)
+        )
         if (awaitIdle) InstrumentationRegistry.getInstrumentation().waitForIdleSync()
     }
 
