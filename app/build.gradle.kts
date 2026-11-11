@@ -19,6 +19,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
+        }
         release {
             // CI produces an unsigned AAB; sign it with a private upload key before Play upload.
             isMinifyEnabled = true
@@ -32,6 +36,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    testCoverage {
+        jacocoVersion = "0.8.15"
     }
 
     testOptions {

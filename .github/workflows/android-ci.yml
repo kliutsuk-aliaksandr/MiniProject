@@ -14,6 +14,10 @@ jobs:
   build:
     name: Build, tests and release bundle
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || 'https://sonarcloud.io' }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || 'kliutsuk-aliaksandr_MiniProject' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -43,6 +47,9 @@ jobs:
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --no-daemon
 
+      - name: Generate unit-test coverage report
+        run: ./gradlew :app:createDebugUnitTestCoverageReport --no-daemon
+
       - name: Run Android lint
         run: |
           set +e
@@ -53,6 +60,24 @@ jobs:
 
       - name: Build unsigned release AAB
         run: ./gradlew bundleRelease --no-daemon
+
+      - name: Upload unit-test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: miniproject-unit-test-coverage
+          path: app/build/reports/coverage/test/debug/
+          if-no-files-found: error
+
+      - name: Set up JDK 21 for SonarScanner
+        if: env.SONAR_TOKEN != ''
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Run SonarQube analysis
+        if: env.SONAR_TOKEN != ''
+        run: ./gradlew sonar --no-daemon
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
