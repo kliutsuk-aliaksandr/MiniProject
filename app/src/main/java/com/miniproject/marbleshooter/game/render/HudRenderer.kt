@@ -12,8 +12,7 @@ import com.miniproject.marbleshooter.game.domain.model.GameStatus
 /** Draws the score/status HUD and booster inventory. */
 internal class HudRenderer(resources: GameRenderResources) : GameCanvasRendererBase(resources) {
     internal fun drawHud(canvas: Canvas, engine: GameEngine, state: GameRenderState) {
-            fillPaint.color = Color.argb(165, 7, 13, 29)
-            canvas.drawRoundRect(RectF(18f, 20f, 402f, 132f), 23f, 23f, fillPaint)
+            drawPanel(canvas, RectF(18f, 20f, 402f, 132f), 23f, Color.argb(205, 7, 13, 29))
             textPaint.textAlign = Paint.Align.LEFT
             textPaint.textSize = 13f
             textPaint.color = MUTED
@@ -53,6 +52,7 @@ internal class HudRenderer(resources: GameRenderResources) : GameCanvasRendererB
         }
 
     internal fun drawBoosters(canvas: Canvas, engine: GameEngine, state: GameRenderState) {
+            drawPanel(canvas, RectF(18f, 686f, 402f, 779f), 22f, Color.argb(175, 8, 17, 34))
             val items = listOf(
                 Triple(BoosterType.SLOW_TIME, tr(state, R.string.booster_slow), engine.boosters.slowTime),
                 Triple(BoosterType.BOMB, tr(state, R.string.booster_bomb), engine.boosters.bomb),

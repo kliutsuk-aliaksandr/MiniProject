@@ -47,6 +47,7 @@ internal class GameRenderResources(internal val textResources: GameTextResources
     internal companion object {
         val GREEN = Color.rgb(66, 194, 130)
         val BLUE = Color.rgb(65, 92, 135)
+        val PURPLE = Color.rgb(112, 91, 164)
         val MUTED = Color.rgb(174, 193, 224)
     }
 }
@@ -73,6 +74,12 @@ internal abstract class GameCanvasRendererBase(
         backgroundPaint.shader = backgroundShader
         canvas.drawRect(0f, 0f, GameEngine.WORLD_WIDTH, GameEngine.WORLD_HEIGHT, backgroundPaint)
         backgroundPaint.shader = null
+        fillPaint.color = Color.argb(24, 75, 148, 255)
+        canvas.drawCircle(70f, 245f, 175f, fillPaint)
+        fillPaint.color = Color.argb(18, 56, 207, 164)
+        canvas.drawCircle(360f, 640f, 205f, fillPaint)
+        fillPaint.color = Color.argb(16, 166, 112, 255)
+        canvas.drawCircle(315f, 270f, 125f, fillPaint)
         fillPaint.color = Color.argb(28, 255, 255, 255)
         for (index in 0 until 26) {
             val x = ((index * 73) % 410 + 5).toFloat()
@@ -83,6 +90,8 @@ internal abstract class GameCanvasRendererBase(
 
     protected fun drawMarble(canvas: Canvas, x: Float, y: Float, colorIndex: Int, radius: Float) {
         val color = palette[colorIndex.coerceIn(0, palette.lastIndex)]
+        fillPaint.color = Color.argb(28, Color.red(color), Color.green(color), Color.blue(color))
+        canvas.drawCircle(x, y, radius + 6f, fillPaint)
         fillPaint.color = Color.argb(85, 0, 0, 0)
         canvas.drawCircle(x + 2f, y + 4f, radius + 1f, fillPaint)
         fillPaint.color = darken(color)
@@ -93,6 +102,9 @@ internal abstract class GameCanvasRendererBase(
         canvas.drawCircle(x - radius * 0.3f, y - radius * 0.35f, radius * 0.28f, fillPaint)
         fillPaint.color = Color.argb(65, 255, 255, 255)
         canvas.drawCircle(x + radius * 0.25f, y + radius * 0.28f, radius * 0.18f, fillPaint)
+        strokePaint.color = Color.argb(135, 255, 255, 255)
+        strokePaint.strokeWidth = 1f
+        canvas.drawCircle(x, y, radius - 0.7f, strokePaint)
     }
 
     protected fun drawFrog(canvas: Canvas, center: Vec2, target: Vec2, colorIndex: Int) {
@@ -123,10 +135,32 @@ internal abstract class GameCanvasRendererBase(
         canvas.restore()
     }
 
-    protected fun button(canvas: Canvas, left: Float, top: Float, right: Float, bottom: Float, label: String, color: Int) {
+    protected fun drawPanel(
+        canvas: Canvas,
+        bounds: RectF,
+        radius: Float = 20f,
+        color: Int = Color.argb(180, 15, 26, 47)
+    ) {
+        fillPaint.color = Color.argb(75, 0, 0, 0)
+        canvas.drawRoundRect(bounds.left, bounds.top + 5f, bounds.right, bounds.bottom + 5f, radius, radius, fillPaint)
         fillPaint.color = color
-        canvas.drawRoundRect(RectF(left, top, right, bottom), 16f, 16f, fillPaint)
-        centeredText(canvas, label, if (label.length > 18) 13f else 15f, Color.WHITE, (left + right) / 2f, (top + bottom) / 2f + 5f)
+        canvas.drawRoundRect(bounds, radius, radius, fillPaint)
+        strokePaint.color = Color.argb(72, 210, 232, 255)
+        strokePaint.strokeWidth = 1.2f
+        canvas.drawRoundRect(bounds, radius, radius, strokePaint)
+    }
+
+    protected fun button(canvas: Canvas, left: Float, top: Float, right: Float, bottom: Float, label: String, color: Int) {
+        fillPaint.color = Color.argb(105, 0, 0, 0)
+        canvas.drawRoundRect(left, top + 5f, right, bottom + 5f, 17f, 17f, fillPaint)
+        fillPaint.color = color
+        canvas.drawRoundRect(left, top, right, bottom, 17f, 17f, fillPaint)
+        fillPaint.color = Color.argb(32, 255, 255, 255)
+        canvas.drawRoundRect(left + 4f, top + 3f, right - 4f, top + 10f, 8f, 8f, fillPaint)
+        strokePaint.color = Color.argb(100, 225, 243, 255)
+        strokePaint.strokeWidth = 1.2f
+        canvas.drawRoundRect(left, top, right, bottom, 17f, 17f, strokePaint)
+        centeredText(canvas, label, if (label.length > 20) 13f else 16f, Color.WHITE, (left + right) / 2f, (top + bottom) / 2f + 5f)
     }
 
     protected fun centeredText(canvas: Canvas, text: String, size: Float, color: Int, x: Float, y: Float) {
