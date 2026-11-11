@@ -143,6 +143,17 @@ class GameAccessibilityInstrumentedTest {
             tapAccessibilityTarget(device, scenario, 10)
             assertTargetText(scenario, 4, "Tutorial")
 
+            // Open the offline challenge list, start a challenge, pause and return to its list.
+            tapAccessibilityTarget(device, scenario, 11)
+            assertTargetText(scenario, 131, "Challenge: PRECISION")
+            tapAccessibilityTarget(device, scenario, 131)
+            assertTargetText(scenario, 51, "Pause")
+            tapAccessibilityTarget(device, scenario, 51)
+            assertTargetText(scenario, 72, "CHALLENGES")
+            tapAccessibilityTarget(device, scenario, 72)
+            assertTargetText(scenario, 133, "Main menu")
+            tapAccessibilityTarget(device, scenario, 133)
+
             // Exercise all tutorial pages through real touch injection, then return to the menu.
             tapAccessibilityTarget(device, scenario, 4)
             repeat(4) { tapAccessibilityTarget(device, scenario, 22) }
@@ -208,6 +219,10 @@ class GameAccessibilityInstrumentedTest {
     private fun clearGamePreferences() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .commit()
+        context.getSharedPreferences("offline_challenge_progress", Context.MODE_PRIVATE)
             .edit()
             .clear()
             .commit()

@@ -8,6 +8,7 @@ import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.miniproject.marbleshooter.game.domain.LevelCatalog
+import com.miniproject.marbleshooter.game.domain.ChallengeCatalog
 import com.miniproject.marbleshooter.game.domain.TrackId
 import com.miniproject.marbleshooter.game.domain.model.ObstacleType
 import com.miniproject.marbleshooter.game.domain.model.GameEvent as DomainGameEvent
