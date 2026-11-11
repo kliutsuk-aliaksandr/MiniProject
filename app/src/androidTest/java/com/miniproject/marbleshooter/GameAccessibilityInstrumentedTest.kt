@@ -178,16 +178,25 @@ class GameAccessibilityInstrumentedTest {
     ) {
         var screenX = 0
         var screenY = 0
-        var screenBounds = Rect()
         scenario.onActivity { activity ->
-            val target = node(accessibilityProvider(gameView(activity)), targetId)
-            target.getBoundsInScreen(screenBounds)
+            val view = gameView(activity)
+            val target = node(accessibilityProvider(view), targetId)
+            val boundsInParent = Rect()
+            target.getBoundsInParent(boundsInParent)
             assertTrue(
-                "Accessibility target $targetId must expose non-empty screen bounds: $screenBounds",
-                screenBounds.width() > 0 && screenBounds.height() > 0
+                "Accessibility target $targetId must expose non-empty parent bounds: $boundsInParent",
+                boundsInParent.width() > 0 && boundsInParent.height() > 0
             )
-            screenX = screenBounds.centerX()
-            screenY = screenBounds.centerY()
+            assertTrue(
+                "Accessibility target $targetId must stay inside GameView: $boundsInParent",
+                Rect(0, 0, view.width, view.height).contains(boundsInParent)
+            )
+
+            val viewLocation = IntArray(2)
+            view.getLocationOnScreen(viewLocation)
+            boundsInParent.offset(viewLocation[0], viewLocation[1])
+            screenX = boundsInParent.centerX()
+            screenY = boundsInParent.centerY()
         }
 
         assertTrue(
