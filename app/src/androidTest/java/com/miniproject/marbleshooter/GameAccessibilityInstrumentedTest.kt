@@ -144,11 +144,17 @@ class GameAccessibilityInstrumentedTest {
             // Open the offline challenge list, start a challenge, pause and return to its list.
             tapAccessibilityTarget(device, scenario, 11)
             assertTargetText(scenario, 131, "Challenge: PRECISION")
-            tapAccessibilityTarget(device, scenario, 131)
+            scenario.onActivity { activity ->
+                click(accessibilityProvider(gameView(activity)), 131)
+            }
             assertTargetText(scenario, 51, "Pause")
-            tapAccessibilityTarget(device, scenario, 51)
+            scenario.onActivity { activity ->
+                click(accessibilityProvider(gameView(activity)), 51)
+            }
             assertTargetText(scenario, 72, "CHALLENGES")
-            tapAccessibilityTarget(device, scenario, 72)
+            scenario.onActivity { activity ->
+                click(accessibilityProvider(gameView(activity)), 72)
+            }
             assertTargetText(scenario, 140, "Main menu")
             tapAccessibilityTarget(device, scenario, 140)
             assertTargetText(scenario, 4, "Tutorial")
