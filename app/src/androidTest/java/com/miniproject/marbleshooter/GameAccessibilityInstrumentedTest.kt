@@ -137,7 +137,7 @@ class GameAccessibilityInstrumentedTest {
             tapAccessibilityTarget(device, scenario, 3)
             assertTargetText(scenario, 101, "Level 1")
             tapAccessibilityTarget(device, scenario, 10)
-            assertTargetText(scenario, 4, "Обучение")
+            assertTargetText(scenario, 4, "Tutorial")
 
             // Enter the slower, isolated practice round to avoid a timing-sensitive campaign run.
             tapAccessibilityTarget(device, scenario, 4)
