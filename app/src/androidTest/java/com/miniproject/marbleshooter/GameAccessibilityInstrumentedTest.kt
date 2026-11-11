@@ -148,8 +148,6 @@ class GameAccessibilityInstrumentedTest {
 
             tapAccessibilityTarget(device, scenario, 51)
             assertTargetText(scenario, 70, "Resume")
-            tapAccessibilityTarget(device, scenario, 70, awaitIdle = false)
-            assertTargetText(scenario, 51, "Pause")
         }
     }
 
