@@ -10,7 +10,7 @@
 
 ## Дополнение: gameplay polish и первый срез Этапа 7 — 11 ноября 2026
 
-Кодовый snapshot feature-ветки: `f693df43eecb71ca268d80782968b988d49a81fa`. Полный [GitHub Actions run 43028846127](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43028846127) завершился успешно: 5 из 5 jobs.
+Кодовый snapshot feature-ветки: `14cccb21aa9a280c52d52f7f393bb6993f7ccf68`. Полный [GitHub Actions PR run 43031140238](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43031140238) завершился успешно: 5 из 5 jobs.
 
 - Цепочка начинает движение от входа маршрута; отрицательный progress сохраняется как позиция шаров, которые ещё не вышли на экран.
 - Вставка запускает отдельную короткую impact-анимацию: соседние шары разъезжаются, входящий занимает промежуток; каскад проверяется после посадки.

@@ -6,7 +6,7 @@
 **База:** main = 20ce0d75928c3988628de93a784683a411307ff2
 **PR №3:** открыт, Draft, feature/gameplay-polish-offline-content → dev; PR №2 закрыт как устаревший, без merge
 
-Рабочий поток организован как feature/* → dev → main. Текущая feature-ветка ответвлена от dev (14 коммитов сверх dev на момент проверки). Ветка dev остаётся на 93dc1c6, main — на 20ce0d7, fix — на a2a48d6. PR №3 открыт Draft feature → dev; старый PR №2 fix → main закрыт как устаревший и не сливался. Ветки main/dev/fix не обновлялись этой feature-работой.
+Рабочий поток организован как feature/* → dev → main. Текущая feature-ветка ответвлена от dev (16 коммитов сверх dev на момент проверки). Ветка dev остаётся на 93dc1c6, main — на 20ce0d7, fix — на a2a48d6. PR №3 открыт Draft feature → dev; старый PR №2 fix → main закрыт как устаревший и не сливался. Ветки main/dev/fix не обновлялись этой feature-работой.
 
 ## 1. Что выполнено
 

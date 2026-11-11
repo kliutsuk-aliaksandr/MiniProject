@@ -32,7 +32,7 @@ Enable:
 4. **Require branches to be up to date before merging** (strict checks).
 5. **Block force pushes**.
 
-For pull request approvals, keep the required approval count at **0** while this is maintained by a single active developer; self-approval does not provide meaningful review and would block the PR workflow. Once another maintainer/reviewer is available, raise this to **1 approving review** (and optionally dismiss stale approvals).
+Start with **0 required approvals** to avoid blocking merges when no independent reviewer is available; self-approval does not provide meaningful review. When a second maintainer/reviewer is available, raise this to **1 approving review** (and optionally dismiss stale approvals).
 
 ### Required status checks
 
