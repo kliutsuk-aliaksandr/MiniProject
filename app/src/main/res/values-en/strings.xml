@@ -123,4 +123,30 @@
     <string name="achievement_level_ten">Level ten</string>
     <string name="achievement_campaign_complete">Campaign complete</string>
 
+ 
+    <string name="challenges">CHALLENGES</string>
+    <string name="challenges_title">OFFLINE CHALLENGES</string>
+    <string name="challenge_start_hint">Choose a challenge and earn up to three stars</string>
+    <string name="challenge_precision_title">PRECISION</string>
+    <string name="challenge_precision_body">Clear a short chain without exceeding the shot limit.</string>
+    <string name="challenge_speed_title">AGAINST TIME</string>
+    <string name="challenge_speed_body">Clear the chain before the timer and shot limit run out.</string>
+    <string name="challenge_expert_title">EXPERT</string>
+    <string name="challenge_expert_body">A tougher chain, more colors and tighter limits.</string>
+    <string name="challenge_shot_limit">SHOTS: %1$d</string>
+    <string name="challenge_time_shot_limit">TIME: %1$d S • SHOTS: %2$d</string>
+    <string name="challenge_no_record">NOT CLEARED YET</string>
+    <string name="challenge_best_stars">BEST: %1$s</string>
+    <string name="challenge_complete">CHALLENGE CLEARED!</string>
+    <string name="challenge_failed">CHALLENGE FAILED</string>
+    <string name="challenge_result_summary">Shots: %1$d / %2$d • Time left: %3$d s</string>
+    <string name="challenge_retry">RETRY</string>
+    <string name="challenge_list">CHALLENGES</string>
+    <string name="challenge_pause_subtitle">Challenge paused</string>
+    <string name="challenge_hud_shots">SHOTS %1$d/%2$d</string>
+    <string name="challenge_hud_timed">%1$d/%2$d SHOTS • %3$d S</string>
+    <string name="a11y_challenges">Offline challenges</string>
+    <string name="a11y_challenge">Challenge: %1$s</string>
+    <string name="a11y_retry_challenge">Retry challenge</string>
+
 </resources>

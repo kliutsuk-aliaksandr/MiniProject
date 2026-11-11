@@ -123,4 +123,30 @@
     <string name="achievement_level_ten">Десятый уровень</string>
     <string name="achievement_campaign_complete">Вся кампания</string>
 
+ 
+    <string name="challenges">ИСПЫТАНИЯ</string>
+    <string name="challenges_title">ОФЛАЙН-ИСПЫТАНИЯ</string>
+    <string name="challenge_start_hint">Выбери испытание и заработай до трёх звёзд</string>
+    <string name="challenge_precision_title">ТОЧНОСТЬ</string>
+    <string name="challenge_precision_body">Очисти короткую цепочку, не превысив лимит выстрелов.</string>
+    <string name="challenge_speed_title">НАПЕРЕГОНКИ</string>
+    <string name="challenge_speed_body">Очисти цепочку за ограниченное время и число выстрелов.</string>
+    <string name="challenge_expert_title">ЭКСПЕРТ</string>
+    <string name="challenge_expert_body">Сложная цепочка, больше цветов и строгие ограничения.</string>
+    <string name="challenge_shot_limit">ВЫСТРЕЛЫ: %1$d</string>
+    <string name="challenge_time_shot_limit">ВРЕМЯ: %1$d С • ВЫСТРЕЛЫ: %2$d</string>
+    <string name="challenge_no_record">ЕЩЁ НЕ ПРОЙДЕНО</string>
+    <string name="challenge_best_stars">ЛУЧШИЙ РЕЗУЛЬТАТ: %1$s</string>
+    <string name="challenge_complete">ИСПЫТАНИЕ ПРОЙДЕНО!</string>
+    <string name="challenge_failed">ИСПЫТАНИЕ ПРОВАЛЕНО</string>
+    <string name="challenge_result_summary">Выстрелы: %1$d / %2$d • Осталось: %3$d с</string>
+    <string name="challenge_retry">ПОВТОРИТЬ</string>
+    <string name="challenge_list">К ИСПЫТАНИЯМ</string>
+    <string name="challenge_pause_subtitle">Испытание приостановлено</string>
+    <string name="challenge_hud_shots">ВЫСТРЕЛЫ %1$d/%2$d</string>
+    <string name="challenge_hud_timed">%1$d/%2$d ВЫСТР. • %3$d С</string>
+    <string name="a11y_challenges">Офлайн-испытания</string>
+    <string name="a11y_challenge">Испытание: %1$s</string>
+    <string name="a11y_retry_challenge">Повторить испытание</string>
+
 </resources>
