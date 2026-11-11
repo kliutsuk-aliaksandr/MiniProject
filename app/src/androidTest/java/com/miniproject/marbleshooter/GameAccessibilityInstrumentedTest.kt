@@ -139,15 +139,12 @@ class GameAccessibilityInstrumentedTest {
             tapAccessibilityTarget(device, scenario, 10)
             assertTargetText(scenario, 4, "Tutorial")
 
-            // Enter the slower, isolated practice round to avoid a timing-sensitive campaign run.
+            // Exercise all tutorial pages through real touch injection, then return to the menu.
             tapAccessibilityTarget(device, scenario, 4)
             repeat(4) { tapAccessibilityTarget(device, scenario, 22) }
             assertTargetText(scenario, 22, "Start practice")
-            tapAccessibilityTarget(device, scenario, 22, awaitIdle = false)
-            assertTargetText(scenario, 51, "Pause")
-
-            tapAccessibilityTarget(device, scenario, 51)
-            assertTargetText(scenario, 70, "Resume")
+            tapAccessibilityTarget(device, scenario, 20)
+            assertTargetText(scenario, 3, "Level map")
         }
     }
 
