@@ -410,6 +410,84 @@ class GameEngineTest {
     }
 
     @Test
+    fun challengeCatalogProvidesThreeOfflineChallengesWithValidLimits() {
+        assertEquals(3, ChallengeCatalog.all.size)
+        ChallengeCatalog.all.forEach { challenge ->
+            assertTrue(challenge.levelId in 1..LevelCatalog.MAX_LEVELS)
+            assertTrue(challenge.maxShots > 0)
+            assertTrue(challenge.timeLimitSeconds == null || challenge.timeLimitSeconds > 0f)
+        }
+        assertEquals(18, ChallengeCatalog.find(1)?.maxShots)
+        assertEquals(25f, ChallengeCatalog.find(2)?.timeLimitSeconds ?: 0f, 0.001f)
+        assertEquals(45f, ChallengeCatalog.find(3)?.timeLimitSeconds ?: 0f, 0.001f)
+        assertEquals(null, ChallengeCatalog.find(99))
+    }
+
+    @Test
+    fun challengeTimerFailsRoundWithoutCompletingCampaignProgress() {
+        val engine = GameEngine(Random(45))
+        assertTrue(engine.startChallenge(2))
+        engine.drainEvents()
+
+        repeat(500) { engine.update(0.05f) }
+
+        assertEquals(GameStatus.LOST, engine.status)
+        assertTrue(engine.isChallenge)
+        assertEquals(0f, engine.challengeTimeRemaining, 0.001f)
+        assertTrue(engine.drainEvents().any { it == DomainGameEvent.GameLost })
+    }
+
+    @Test
+    fun challengeFailsAfterTheLastAllowedProjectileHasFinished() {
+        val engine = GameEngine(Random(46))
+        assertTrue(engine.startChallenge(1))
+        val challenge = requireNotNull(engine.challengeDefinition)
+
+        repeat(challenge.maxShots) { engine.fireShot() }
+        assertEquals(challenge.maxShots, engine.shotsFired)
+        assertEquals(GameStatus.RUNNING, engine.status)
+
+        // Once all last-shot projectiles have left the field, an uncleared chain fails.
+        engine.mutableProjectiles.clear()
+        engine.update(0.01f)
+
+        assertEquals(GameStatus.LOST, engine.status)
+    }
+
+    @Test
+    fun clearingChallengeEmitsChallengeResultButNeverCampaignCompletion() {
+        val engine = GameEngine(Random(47))
+        assertTrue(engine.startChallenge(1))
+        engine.drainEvents()
+        engine.mutableBalls.clear()
+
+        engine.update(0.01f)
+
+        assertEquals(GameStatus.WON, engine.status)
+        assertTrue(engine.isChallenge)
+        val events = engine.drainEvents()
+        val result = events.filterIsInstance<DomainGameEvent.ChallengeCompleted>().single()
+        assertEquals(1, result.challengeId)
+        assertEquals(3, result.stars)
+        assertTrue(events.none { it is DomainGameEvent.LevelCompleted })
+        assertFalse(engine.startNextLevel())
+    }
+
+    @Test
+    fun startingCampaignOrTutorialClearsChallengeRulesAndTimer() {
+        val engine = GameEngine(Random(48))
+        assertTrue(engine.startChallenge(2))
+        engine.startNewGame()
+        assertFalse(engine.isChallenge)
+        assertEquals(0f, engine.challengeTimeRemaining, 0.001f)
+
+        assertTrue(engine.startChallenge(3))
+        engine.startTutorial()
+        assertFalse(engine.isChallenge)
+        assertEquals(0f, engine.challengeTimeRemaining, 0.001f)
+    }
+
+    @Test
     fun legacyFourVersionChainKeepsItsTailBeforeTheTrackEntrance() {
         val oldBalls = (0 until 22).map { index ->
             Ball(index % 5, 620f - index * GameEngine.BALL_SPACING)

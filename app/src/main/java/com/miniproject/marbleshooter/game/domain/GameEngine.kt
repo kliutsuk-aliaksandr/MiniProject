@@ -58,6 +58,8 @@ class GameEngine(private val random: Random = Random.Default) {
     private var obstaclesCache: List<TrackObstacle> = buildObstacles(definition, routeLengthCache)
     private var retraction: Retraction? = null
     private var insertionAnimation: InsertionAnimation? = null
+    private var activeChallenge: ChallengeDefinition? = null
+    private var challengeRemainingSeconds = 0f
     private var slowTimer = 0f
     private var reverseTimer = 0f
     private val pendingEvents = mutableListOf<GameEvent>()
@@ -91,6 +93,9 @@ class GameEngine(private val random: Random = Random.Default) {
         private set
     var isTutorial: Boolean = false
         private set
+    val isChallenge: Boolean get() = activeChallenge != null
+    val challengeDefinition: ChallengeDefinition? get() = activeChallenge
+    val challengeTimeRemaining: Float get() = challengeRemainingSeconds
 
     /** Immutable definition for the active campaign or practice level. */
     val levelDefinition: LevelDefinition get() = definition
@@ -119,6 +124,8 @@ class GameEngine(private val random: Random = Random.Default) {
 
     /** Resets the campaign and starts level one. */
     fun startNewGame() {
+        activeChallenge = null
+        challengeRemainingSeconds = 0f
         score = 0
         shotsFired = 0
         lastStars = 0
@@ -129,6 +136,8 @@ class GameEngine(private val random: Random = Random.Default) {
 
     /** Starts a selected level; UI callers must check unlock state first. */
     fun startLevel(levelId: Int) {
+        activeChallenge = null
+        challengeRemainingSeconds = 0f
         score = 0
         shotsFired = 0
         lastStars = 0
@@ -139,15 +148,31 @@ class GameEngine(private val random: Random = Random.Default) {
 
     /** Advances the campaign after a win. Practice sessions cannot advance campaign levels. */
     fun startNextLevel(): Boolean {
-        if (isTutorial || status != GameStatus.WON || level >= LevelCatalog.MAX_LEVELS) return false
+        if (isTutorial || isChallenge || status != GameStatus.WON || level >= LevelCatalog.MAX_LEVELS) return false
         shotsFired = 0
         isTutorial = false
         startLevelInternal(level + 1)
         return true
     }
 
+    /** Starts one catalogued challenge without changing campaign progression or save data. */
+    fun startChallenge(challengeId: Int): Boolean {
+        val selected = ChallengeCatalog.find(challengeId) ?: return false
+        activeChallenge = selected
+        challengeRemainingSeconds = selected.timeLimitSeconds ?: 0f
+        score = 0
+        shotsFired = 0
+        lastStars = 0
+        boosters = BoosterInventory()
+        isTutorial = false
+        startLevelInternal(selected.levelId)
+        return true
+    }
+
     /** Starts an isolated practice chain without changing campaign progression. */
     fun startTutorial() {
+        activeChallenge = null
+        challengeRemainingSeconds = 0f
         score = 0
         shotsFired = 0
         lastStars = 0
@@ -255,6 +280,10 @@ class GameEngine(private val random: Random = Random.Default) {
     /** Fires the loaded marble along the current aim vector. */
     fun fireShot() {
         if (status != GameStatus.RUNNING || isAnimatingRetraction) return
+        if (activeChallenge?.let { shotsFired >= it.maxShots } == true) {
+            checkChallengeShotLimit()
+            return
+        }
         normalizeShotColors()
         val direction = (aimTarget - shooterPosition).normalized()
         mutableProjectiles += Projectile(
@@ -327,14 +356,24 @@ class GameEngine(private val random: Random = Random.Default) {
         val delta = deltaSeconds.coerceIn(0f, 0.05f)
         if (delta <= 0f) return
 
+        if (activeChallenge?.timeLimitSeconds != null) {
+            challengeRemainingSeconds = (challengeRemainingSeconds - delta).coerceAtLeast(0f)
+            if (challengeRemainingSeconds <= 0f) {
+                loseRound()
+                return
+            }
+        }
+
         if (insertionAnimation != null) {
             updateInsertionAnimation(delta)
             updateBoosterTimers(delta)
+            checkChallengeShotLimit()
             return
         }
         if (retraction != null) {
             updateRetraction(delta)
             updateBoosterTimers(delta)
+            checkChallengeShotLimit()
             return
         }
 
@@ -356,13 +395,13 @@ class GameEngine(private val random: Random = Random.Default) {
         enforceSpacingForward(1)
 
         if (reverseTimer <= 0f) updateProjectiles(delta)
+        checkChallengeShotLimit()
 
+        if (status != GameStatus.RUNNING) return
         if (mutableBalls.isEmpty()) {
             completeLevel()
         } else if (mutableBalls.first().progress >= routeLength - BALL_RADIUS) {
-            status = GameStatus.LOST
-            mutableProjectiles.clear()
-            pendingEvents += GameEvent.GameLost
+            loseRound()
         }
     }
 
@@ -386,16 +425,53 @@ class GameEngine(private val random: Random = Random.Default) {
         if (status == GameStatus.WON) return
         status = GameStatus.WON
         retraction = null
+        insertionAnimation = null
         mutableProjectiles.clear()
-        val threeStarLimit = max(4, (targetBallCount * 0.45f).toInt())
-        val twoStarLimit = max(7, (targetBallCount * 0.8f).toInt())
-        val stars = when {
-            shotsFired <= threeStarLimit -> 3
-            shotsFired <= twoStarLimit -> 2
-            else -> 1
+        val challenge = activeChallenge
+        if (challenge != null) {
+            val shotStars = when {
+                shotsFired <= challenge.maxShots * 0.55f -> 3
+                shotsFired <= challenge.maxShots * 0.8f -> 2
+                else -> 1
+            }
+            val timeLimit = challenge.timeLimitSeconds
+            val timeStars = if (timeLimit == null) 3 else when {
+                challengeRemainingSeconds >= timeLimit * 0.4f -> 3
+                challengeRemainingSeconds >= timeLimit * 0.15f -> 2
+                else -> 1
+            }
+            lastStars = min(shotStars, timeStars)
+            pendingEvents += GameEvent.ChallengeCompleted(
+                challengeId = challenge.id,
+                stars = lastStars,
+                shotsFired = shotsFired,
+                remainingSeconds = challengeRemainingSeconds
+            )
+        } else {
+            val threeStarLimit = max(4, (targetBallCount * 0.45f).toInt())
+            val twoStarLimit = max(7, (targetBallCount * 0.8f).toInt())
+            val stars = when {
+                shotsFired <= threeStarLimit -> 3
+                shotsFired <= twoStarLimit -> 2
+                else -> 1
+            }
+            lastStars = stars
+            pendingEvents += GameEvent.LevelCompleted(level, stars, score)
         }
-        lastStars = stars
-        pendingEvents += GameEvent.LevelCompleted(level, stars, score)
+    }
+
+    private fun checkChallengeShotLimit() {
+        val challenge = activeChallenge ?: return
+        if (status != GameStatus.RUNNING || shotsFired < challenge.maxShots) return
+        if (mutableProjectiles.isNotEmpty() || isAnimatingRetraction || mutableBalls.isEmpty()) return
+        loseRound()
+    }
+
+    private fun loseRound() {
+        if (status != GameStatus.RUNNING) return
+        status = GameStatus.LOST
+        mutableProjectiles.clear()
+        pendingEvents += GameEvent.GameLost
     }
 
     fun drainEvents(): List<GameEvent> {
@@ -463,6 +539,8 @@ class GameEngine(private val random: Random = Random.Default) {
         reverseTimer = 0f
         lastStars = 0
         isTutorial = false
+        activeChallenge = null
+        challengeRemainingSeconds = 0f
         status = if (state.isPaused) GameStatus.PAUSED else GameStatus.RUNNING
         return true
     }

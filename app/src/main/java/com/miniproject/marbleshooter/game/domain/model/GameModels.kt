@@ -93,6 +93,12 @@ sealed interface GameEvent {
     ) : GameEvent
     data class LevelStarted(val level: Int) : GameEvent
     data class LevelCompleted(val level: Int, val stars: Int, val score: Int) : GameEvent
+    data class ChallengeCompleted(
+        val challengeId: Int,
+        val stars: Int,
+        val shotsFired: Int,
+        val remainingSeconds: Float
+    ) : GameEvent
     data class BoosterActivated(val type: BoosterType) : GameEvent
     data object GameLost : GameEvent
 }
