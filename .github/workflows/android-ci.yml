@@ -48,7 +48,7 @@ jobs:
         run: ./gradlew testDebugUnitTest --no-daemon
 
       - name: Generate unit-test coverage report
-        run: ./gradlew :app:createDebugUnitTestCoverageReport --no-daemon
+        run: ./gradlew :app:jacocoDebugUnitTestReport --no-daemon
 
       - name: Run Android lint
         run: |
@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: miniproject-unit-test-coverage
-          path: app/build/reports/coverage/test/debug/
+          path: app/build/reports/jacoco/debugUnitTest/
           if-no-files-found: error
 
       - name: Set up JDK 21 for SonarScanner

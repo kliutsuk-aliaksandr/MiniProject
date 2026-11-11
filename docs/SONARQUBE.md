@@ -11,7 +11,7 @@ export SONAR_TOKEN="your-project-token"
 export SONAR_HOST_URL="https://your-sonarqube-host"
 export SONAR_PROJECT_KEY="your-existing-project-key"
 ./gradlew testDebugUnitTest
-./gradlew :app:createDebugUnitTestCoverageReport
+./gradlew :app:jacocoDebugUnitTestReport
 ./gradlew sonar
 ```
 
@@ -35,6 +35,6 @@ The first Sonar gate imports JVM/Robolectric test coverage. Android instrumentat
 
 ## Useful Gradle tasks
 
-- `./gradlew :app:createDebugUnitTestCoverageReport` — JVM/Robolectric coverage.
+- `./gradlew :app:jacocoDebugUnitTestReport` — JVM/Robolectric JaCoCo XML/HTML coverage.
 - `./gradlew :app:createDebugAndroidTestCoverageReport` — connected-device coverage (requires an available emulator or device).
 - `./gradlew sonar` — import coverage, JUnit and lint data and submit the analysis.
