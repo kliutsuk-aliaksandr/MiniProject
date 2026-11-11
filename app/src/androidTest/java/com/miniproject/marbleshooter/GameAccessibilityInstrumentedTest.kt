@@ -140,8 +140,6 @@ class GameAccessibilityInstrumentedTest {
             // Open the map and verify its first unlocked level with a real screen tap.
             tapAccessibilityTarget(device, scenario, 3)
             assertTargetText(scenario, 101, "Level 1")
-            tapAccessibilityTarget(device, scenario, 10)
-            assertTargetText(scenario, 4, "Tutorial")
 
             // Open the offline challenge list, start a challenge, pause and return to its list.
             tapAccessibilityTarget(device, scenario, 11)
@@ -153,6 +151,7 @@ class GameAccessibilityInstrumentedTest {
             tapAccessibilityTarget(device, scenario, 72)
             assertTargetText(scenario, 133, "Main menu")
             tapAccessibilityTarget(device, scenario, 133)
+            assertTargetText(scenario, 4, "Tutorial")
 
             // Exercise all tutorial pages through real touch injection, then return to the menu.
             tapAccessibilityTarget(device, scenario, 4)
