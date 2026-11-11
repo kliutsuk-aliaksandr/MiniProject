@@ -40,7 +40,9 @@ data class GameRenderState(
     val offlineStatistics: OfflineStatistics = OfflineStatistics(),
     val unlockedAchievements: Set<OfflineAchievement> = emptySet(),
     val particles: List<ParticleVisual> = emptyList(),
-    val clearingBalls: List<ClearingBallVisual> = emptyList()
+    val clearingBalls: List<ClearingBallVisual> = emptyList(),
+    val startCountdownNumber: Int? = null,
+    val showStartPrompt: Boolean = false
 )
 
 /** Canvas renderer façade. Each visual concern is delegated to a focused layer. */

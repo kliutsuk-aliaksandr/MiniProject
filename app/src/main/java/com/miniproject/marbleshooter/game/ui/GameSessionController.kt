@@ -49,6 +49,7 @@ internal class GameSessionController(
     private val particles = mutableListOf<MutableParticle>()
     private val clearingBalls = mutableListOf<ClearingBallVisual>()
     private val gameLoopController = GameLoopController(::updateFixedStep)
+    private val startSequence = GameStartSequence()
 
     var language: String = preferences.getString("language", "ru") ?: "ru"
         private set
@@ -63,6 +64,7 @@ internal class GameSessionController(
     val unlockedLevel: Int get() = progressPresentation.unlockedLevel
     val starsByLevel: Map<Int, Int> get() = progressPresentation.starsByLevel
     val hasSavedGame: Boolean get() = saveRepository.hasSavedGame()
+    val isStartInputLocked: Boolean get() = startSequence.isInputLocked
 
     init {
         saveRepository.restore(engine)
@@ -86,7 +88,9 @@ internal class GameSessionController(
             particles = particles.map {
                 ParticleVisual(it.x, it.y, it.life, it.maxLife, it.color, it.radius)
             },
-            clearingBalls = clearingBalls.toList()
+            clearingBalls = clearingBalls.toList(),
+            startCountdownNumber = startSequence.countdownNumber,
+            showStartPrompt = startSequence.showStartPrompt
         )
 
     /** Starts a new monotonic timing window when the Activity becomes active. */
@@ -147,6 +151,7 @@ internal class GameSessionController(
     fun startNewGame() {
         gameLoopController.resetAccumulator()
         engine.startNewGame()
+        startSequence.start()
         clearEffects()
         saveGameState(isGameScreen = true)
         playClick()
@@ -155,6 +160,7 @@ internal class GameSessionController(
     fun startLevel(level: Int): Boolean {
         if (!progressPresentation.isUnlocked(level)) return false
         engine.startLevel(level)
+        startSequence.start()
         clearEffects()
         saveGameState(isGameScreen = true)
         playClick()
@@ -165,19 +171,32 @@ internal class GameSessionController(
         if (ChallengeCatalog.find(challengeId) == null) return false
         gameLoopController.resetAccumulator()
         if (!engine.startChallenge(challengeId)) return false
+        startSequence.start()
         clearEffects()
+        playClick()
+        return true
+    }
+
+    fun startNextLevel(): Boolean {
+        gameLoopController.resetAccumulator()
+        if (!engine.startNextLevel()) return false
+        startSequence.start()
+        clearEffects()
+        saveGameState(isGameScreen = true)
         playClick()
         return true
     }
 
     fun startTutorialPractice() {
         gameLoopController.resetAccumulator()
+        startSequence.cancel()
         engine.startTutorial()
         clearEffects()
         playClick()
     }
 
     fun openSavedGame() {
+        startSequence.cancel()
         if (!saveRepository.restore(engine)) {
             startNewGame()
             return
@@ -299,7 +318,15 @@ internal class GameSessionController(
     }
 
     private fun updateFixedStep(deltaSeconds: Float) {
-        engine.update(deltaSeconds)
+        val startsRollout = engine.status == GameStatus.RUNNING &&
+            startSequence.advance(deltaSeconds)
+        if (startsRollout) engine.startFastChainRollout(
+            durationSeconds = startSequence.rolloutDurationSeconds,
+            speedMultiplier = 2.5f
+        )
+        if (!startSequence.isActive || startSequence.isRollingOut) {
+            engine.update(deltaSeconds)
+        }
         updateEffects(deltaSeconds)
     }
 
