@@ -440,8 +440,8 @@ class GameEngine(private val random: Random = Random.Default) {
                     it.progress > candidateRouteLength
             }
         ) return false
-        // Negative tail progress is valid: it represents marbles still entering the
-        // track. Preserve it across save/restore instead of snapping the chain on-screen.
+        // 0.4.0 allowed the tail of long chains to extend beyond the route start.
+        // Shift the whole chain forward on migration, preserving all spacing.
         if (state.balls.first().progress > candidateRouteLength - BALL_RADIUS) return false
 
         setDefinition(candidate)
