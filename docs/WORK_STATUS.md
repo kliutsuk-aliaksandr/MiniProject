@@ -2,11 +2,11 @@
 
 **Снимок:** 11 ноября 2026 года
 **Рабочая ветка:** dev (ответвлена от fix)
-**Кодовый snapshot:** 43341985a2bd5c4cc6f46e3e10e91399b86f9d68
+**Кодовый snapshot:** 026fc8d0227d31c545dcda26171d3e842e724d44
 **База:** main = 20ce0d75928c3988628de93a784683a411307ff2
 **PR №2:** открыт, Draft, fix → main
 
-Ветка dev унаследовала текущий результат fix и теперь содержит стандартный Gradle Wrapper 8.13 с проверенными checksum и CI через ./gradlew. Production source не менялся. main и fix не изменялись; PR №2 остаётся Draft.
+Ветка dev унаследовала текущий результат fix и теперь содержит стандартный Gradle Wrapper 8.13 с проверенными checksum, CI через ./gradlew и локализацию RU/EN через Android string resources. main и fix не изменялись; PR №2 остаётся Draft.
 
 ## 1. Что выполнено
 
@@ -14,7 +14,7 @@
 - GameSessionController владеет session lifecycle, simulation loop, repositories, audio, GameEvent side effects и transient effects.
 - GameNavigationController владеет экранами, переходами, hit areas и accessibility targets.
 - GameInputRouter маршрутизирует DOWN/MOVE/UP/CANCEL и остаётся независимым от Android API.
-- GameRenderer является небольшим façade; MenuScreenRenderer отвечает за menu/map/tutorial/settings/privacy.
+- GameRenderer является небольшим façade; MenuScreenRenderer отвечает за menu/map/tutorial/settings/privacy. GameTextResources кэширует RU/EN Resources и передаёт выбранный язык renderer/navigation.
 - GameplayRenderer координирует TrackRenderer, GameEntitiesRenderer, GameEffectsRenderer, HudRenderer и GameOverlayRenderer.
 - GameRenderResources владеет общим Paint/Path/Shader cache и переиспользуемыми Canvas primitives. Внутренний базовый renderer не входит в public API.
 - Fixed-step simulation loop и progression presentation выделены в GameLoopController и ProgressPresentationCache.
@@ -46,7 +46,7 @@ Render layers share one resource instance. They do not own input, persistence or
 
 ## 3. Автоматические тесты
 
-Текущий test source содержит **58 JVM-тестов в 10 файлах**:
+Текущий test source содержит **60 JVM-тестов в 11 файлах**:
 
 | Test class | Тестов |
 |---|---:|
@@ -60,19 +60,19 @@ Render layers share one resource instance. They do not own input, persistence or
 | GameInputRouterTest | 3 |
 | GameSessionControllerTest | 2 |
 | GameRendererTest | 1 |
-| **Итого** | **58** |
+| GameTextResourcesTest | 2 |
+| **Итого** | **60** |
 
 Robolectric tests используют API 35. App minSdk 23 / targetSdk 36 не менялись.
 
 ## 4. CI
 
-Текущий dev snapshot `43341985a2bd5c4cc6f46e3e10e91399b86f9d68` прошёл полный [Android CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42985668241):
+Текущий dev snapshot `026fc8d0227d31c545dcda26171d3e842e724d44` прошёл полный [Android CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42988455144):
 
-- Linux: `./gradlew assembleDebug`, `testDebugUnitTest` (58 tests), `lintDebug`, `bundleRelease`, upload debug APK и unsigned release AAB — success.
+- Linux: `./gradlew assembleDebug`, `testDebugUnitTest` (60 tests), `lintDebug`, `bundleRelease`, upload debug APK и unsigned release AAB — success.
 - Windows: `gradlew.bat --version` — success.
-- Gradle `setup-gradle@v6` подтвердил, что wrapper JAR совпадает с известным официальным checksum.
-
-Ранее настраиваемый wrapper URL имел ошибку экранирования; она исправлена в `a5230be`. Финальный запуск выше относится к последующей конфигурации и завершился success.
+- Gradle `setup-gradle@v6` подтвердил валидность wrapper JAR и официальный checksum.
+- Два теста локализации проверяют одинаковые RU/EN resource keys и explicit language selection независимо от системной locale.
 
 ## 5. Что не подтверждено на реальном устройстве
 
@@ -90,6 +90,6 @@ Robolectric tests используют API 35. App minSdk 23 / targetSdk 36 не
 - main остаётся на 20ce0d75928c3988628de93a784683a411307ff2.
 - Текущие исправления выполняются fast-forward в dev; fix оставлена неизменной как база Draft PR.
 - PR №2 остаётся Draft; merge не выполнялся.
-- Сравнение dev с main: 33 commits ahead, 0 behind; dev опережает fix на 3 commits.
+- main и fix остаются нетронутыми; dev содержит полный текущий результат и дополнительные исправления.
 
 Дальнейший порядок работ — по приоритетам из REFACTOR_AUDIT.md. Не следует снимать Draft до закрытия P1 и release/device gates.

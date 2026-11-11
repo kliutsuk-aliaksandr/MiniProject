@@ -43,7 +43,7 @@
 - [x] Препятствия Mud, Ice и Rock.
 - [x] Миграция прежних сохранений.
 
-## Этап 6 — технический hardening (ветка fix)
+## Этап 6 — технический hardening (ветка dev)
 
 - [x] Исправить Bomb target: aim point вместо HUD touch point.
 - [x] Изолировать tutorial от campaign save/progression; запретить переход в следующий уровень.
@@ -66,7 +66,7 @@
 - [x] Разделить gameplay rendering на TrackRenderer, GameEntitiesRenderer, GameEffectsRenderer, HudRenderer и GameOverlayRenderer.
 - [x] Добавить Robolectric smoke test для отрисовки всех верхнеуровневых экранов.
 - [x] Учитывать настройку вибрации при haptic feedback бустера; добавить regression tests для on/off.
-- [ ] Перенести весь UI copy из RU/EN пар в Android string resources.
+- [x] Перенести весь UI copy из RU/EN пар в Android string resources; добавить RU/EN key parity и language-selection tests.
 - [x] Добавить Robolectric tests для SharedPreferences repositories: save/restore, schema migration, corrupted payload/typed values и progression unlock rules.
 - [ ] Добавить instrumented UI tests и automated accessibility checks.
 - [ ] Проверить FPS, TalkBack, масштабирование и touch на физических устройствах.

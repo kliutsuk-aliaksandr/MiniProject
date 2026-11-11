@@ -2,7 +2,7 @@
 
 **Дата аудита:** 11 ноября 2026 года
 **Проверенная ветка:** dev (создана от fix)
-**Кодовый snapshot:** 43341985a2bd5c4cc6f46e3e10e91399b86f9d68
+**Кодовый snapshot:** 026fc8d0227d31c545dcda26171d3e842e724d44
 **База сравнения:** main = 20ce0d75928c3988628de93a784683a411307ff2
 **PR:** #2, fix → main, открыт Draft
 
@@ -45,7 +45,7 @@
 | ID | Наблюдение и доказательство | Рекомендованное действие |
 |---|---|---|
 | P1-1 | **ИСПРАВЛЕНО в dev.** В коммите `34ad19e` добавлены официальные Gradle 8.13 `gradle-wrapper.jar`, `gradlew` и `gradlew.bat`; JAR сверён с опубликованным SHA-256 `81a82aa...ae45f`. В `gradle-wrapper.properties` закреплён SHA-256 дистрибутива `20f1b117...0aed78` (корректировка URL — `a5230be`). CI использует `./gradlew`; `setup-gradle@v6` автоматически проверяет wrapper JAR. Подтверждено [зелёным Linux + Windows CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42985668241): assembleDebug, 58 tests, lintDebug, bundleRelease, upload APK/AAB и `gradlew.bat --version` прошли. | Закрыто. При обновлении Gradle повторять проверку JAR и distribution checksum. |
-| P1-2 | **Локализация хранится в коде.** res/values/strings.xml содержит только app_name; values-en отсутствует. RU/EN пары, tutorial copy, privacy text и accessibility labels находятся в renderer/navigation Kotlin. Это усложняет обновление текста, проверку полноты переводов и поддержку Android locale/configuration changes. | Перенести весь UI copy в values/strings.xml и values-en/strings.xml. Включить tutorial, HUD, boosters, overlays, settings, privacy и content descriptions. Добавить тест, сравнивающий набор resource keys для обоих языков. |
+| P1-2 | **ИСПРАВЛЕНО в dev.** 97 ключей UI-текста перенесены в `res/values/strings.xml` (RU) и `res/values-en/strings.xml` (EN): меню, карта уровней, tutorial, настройки, privacy, HUD, бустеры, gameplay hints, overlays и accessibility labels. `GameTextResources` создаёт кэшированные locale-specific Resources и использует явный выбор языка из session, независимо от locale устройства. Одна и та же инстанция передаётся renderer и navigation. Добавлены два теста: паритет ключей RU/EN и explicit language selection. Полный [Linux + Windows CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42988455144) прошёл: APK, 60 unit tests, lint, AAB, artifact upload и Windows Wrapper smoke test. | Закрыто. Новые строки добавлять сразу в оба resource-файла; parity test обязателен. |
 | P1-3 | **Нет end-to-end Android UI tests и подтверждённого device QA.** Сейчас тесты JVM/Robolectric. Нет src/androidTest, Espresso/UIAutomator сценариев или device matrix. Наличие renderer smoke test не доказывает правильность расположения controls, touch hit areas, TalkBack, системных панелей и lifecycle на реальном устройстве. | Добавить instrumentation tests для меню → карта → уровень, tutorial, booster, pause/resume, win/loss, settings, save/restore и accessibility click. Затем пройти device matrix: минимум API 23, промежуточный Android и API 36; отдельно проверить Xiaomi/MIUI, TalkBack, touch и звук/вибрацию. |
 
 ### P2 — следующий архитектурный и performance проход
@@ -84,7 +84,7 @@
 ## 5. Рекомендуемый порядок следующего этапа
 
 1. [x] P1-1: стандартный и проверяемый Gradle Wrapper + CI через wrapper (полный Linux/Windows CI: 42985668241).
-2. P1-2: полный перенос copy в RU/EN Android string resources и автоматическая проверка resource parity.
+2. [x] P1-2: полный перенос copy в RU/EN Android string resources и автоматическая проверка resource parity (97 ключей, 2 теста, CI 42988455144).
 3. P1-3: instrumentation/UI tests и device QA.
 4. P2-1/P2-2/P2-6: выделение settings, event/effects и accessibility layout boundaries.
 5. P2-4/P2-5: профилирование allocations/frame scheduling и оптимизация по результатам.

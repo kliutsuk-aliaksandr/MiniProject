@@ -2,6 +2,8 @@
 
 ## Unreleased — dev branch
 
+- Перенесено 97 RU/EN UI-текстов в Android string resources; GameTextResources кэширует locale-specific Resources и разделяется renderer/navigation. Добавлены два теста language selection и resource-key parity.
+
 - Добавлен стандартный Gradle Wrapper 8.13: официальный JAR с проверенным SHA-256, checksum дистрибутива в properties, CI использует ./gradlew. Добавлена Windows smoke-проверка gradlew.bat.
 - Разделён GameRenderer: façade, MenuScreenRenderer, GameplayRenderer и GameRenderResources с общими Paint/Path; gameplay coordinator делегирует track/entities/effects/HUD/overlay пяти отдельным renderers. Добавлен Robolectric smoke test для всех экранов.
 - Исправлен haptic feedback бустера: теперь он учитывает настройку вибрации; добавлены два controller regression tests.

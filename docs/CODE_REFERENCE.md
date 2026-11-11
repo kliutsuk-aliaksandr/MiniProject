@@ -21,7 +21,8 @@
 | game/render/GameEffectsRenderer.kt | Исчезающие шары и частицы | drawClearingBalls, drawParticles |
 | game/render/HudRenderer.kt | Счёт, панель статуса и бустеры | drawHud, drawBoosters |
 | game/render/GameOverlayRenderer.kt | Pause, win/loss overlays | drawPauseOverlay, drawEndOverlay |
-| game/render/GameRenderResources.kt | Общий Paint/Path cache и primitives; базовый renderer имеет internal visibility | drawBackground, drawMarble, drawFrog, button, centeredText |
+| game/render/GameRenderResources.kt | Общий Paint/Path cache, primitives и общий GameTextResources | drawBackground, drawMarble, drawFrog, button, centeredText |
+| game/render/GameTextResources.kt | Кэшированные RU/EN Resources; явный язык из session не зависит от locale устройства | getString |
 | game/ui/GameView.kt | Android View adapter: lifecycle, Canvas, coordinate mapping and platform events | onDraw, onTouchEvent, handleSystemBack |
 | game/ui/GameSessionController.kt | Gameplay session, engine lifecycle, saves, progress, event side effects, audio and effects | resumeGame, pauseGame, fireShot, handlePendingEvents, saveGameState |
 | game/ui/GameNavigationController.kt | Screen state, hit areas, transitions and virtual accessibility targets | handleSystemBack, handleTap, handleBoosterTap, accessibilityTargets |
@@ -99,6 +100,7 @@ UI не должен дублировать игровые правила: он 
 - MainActivityTest.kt: Robolectric regression test for Activity startup after DecorView/content initialization.
 - ProgressPresentationCacheTest.kt: начальный snapshot, update после completion и монотонное обновление рекорда.
 - GameRendererTest.kt: smoke test отрисовки всех верхнеуровневых экранов с общим render resource instance.
+- GameTextResourcesTest.kt: одинаковый набор RU/EN string resource keys и выбор языка игры независимо от device locale.
 - GameSessionControllerTest.kt: проверка учёта настройки вибрации при haptic feedback бустера.
 - GameSaveCodecTest.kt: legacy round-trip, malformed tokens, blank payload и полнота цепочки.
 - GameSaveRepositoryTest.kt: save/restore, upgrade неверсированной schema 0, повреждённые payload/типы SharedPreferences, будущая schema и защита tutorial save.

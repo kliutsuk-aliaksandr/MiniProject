@@ -70,7 +70,8 @@ Render слой разделён на четыре роли:
 - GameEffectsRenderer рисует clearing-ball animation и particle feedback.
 - HudRenderer рисует score/status panel и четыре бустера.
 - GameOverlayRenderer рисует pause, win и loss overlays.
-- GameRenderResources хранит общий Paint/Shader/Path cache и переиспользуемые Canvas primitives. Внутренний базовый renderer имеет internal visibility и не входит в публичный API.
+- GameRenderResources хранит общий Paint/Shader/Path cache, переиспользуемые Canvas primitives и общий GameTextResources. Внутренний базовый renderer имеет internal visibility и не входит в публичный API.
+- GameTextResources создаёт locale-specific Resources для RU и EN один раз; renderer и navigation используют один объект, а язык берётся из session, а не из системной locale.
 
 Renderer не обрабатывает касания, не читает SharedPreferences и не меняет GameEngine. Он получает domain state и GameRenderState.
 
@@ -79,7 +80,7 @@ Renderer не обрабатывает касания, не читает SharedP
 GameView — тонкий Android View adapter: управляет View lifecycle, рисует Canvas через GameRenderer façade, преобразует MotionEvent в мировые координаты и связывает Android callback с контроллерами.
 
 - GameSessionController владеет экземпляром GameEngine, игровым loop, save/progress repositories, настройками, аудио, обработкой доменных событий и временными эффектами. Он создаёт presentation snapshot, не обращаясь к Canvas.
-- GameNavigationController владеет активным экраном, страницей обучения, hit areas, переходами, а также формирует виртуальные accessibility targets. Навигационные действия едины для обычного touch и accessibility.
+- GameNavigationController владеет активным экраном, страницей обучения, hit areas, переходами, а также формирует виртуальные accessibility targets. Навигационные действия едины для обычного touch и accessibility. Для подписей он использует тот же GameTextResources, что и renderer.
 - GameInputRouter не зависит от Android API. Он управляет жестами DOWN/MOVE/UP/CANCEL и делегирует aim/fire/booster/screen tap через callbacks.
 - GameLoopController отдельно владеет accumulator, фиксированным шагом 1/60 секунды, ограничением frame delta и catch-up.
 - ProgressPresentationCache хранит snapshot best score, unlocked level и stars; обновление репозитория происходит при изменении прогресса, а не в onDraw.
