@@ -133,10 +133,17 @@ class GameAccessibilityInstrumentedTest {
             tapAccessibilityTarget(device, scenario, 35)
             assertTargetText(scenario, 3, "Level map")
 
-            // Open the map, select the first unlocked level, then pause and resume.
+            // Open the map and verify its first unlocked level with a real screen tap.
             tapAccessibilityTarget(device, scenario, 3)
             assertTargetText(scenario, 101, "Level 1")
-            tapAccessibilityTarget(device, scenario, 101, awaitIdle = false)
+            tapAccessibilityTarget(device, scenario, 10)
+            assertTargetText(scenario, 4, "Обучение")
+
+            // Enter the slower, isolated practice round to avoid a timing-sensitive campaign run.
+            tapAccessibilityTarget(device, scenario, 4)
+            repeat(4) { tapAccessibilityTarget(device, scenario, 22) }
+            assertTargetText(scenario, 22, "Start practice")
+            tapAccessibilityTarget(device, scenario, 22, awaitIdle = false)
             assertTargetText(scenario, 51, "Pause")
 
             tapAccessibilityTarget(device, scenario, 51)
