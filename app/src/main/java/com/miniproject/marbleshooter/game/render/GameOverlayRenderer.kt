@@ -1,6 +1,7 @@
 package com.miniproject.marbleshooter.game.render
 
 import android.graphics.Canvas
+import com.miniproject.marbleshooter.R
 import android.graphics.Color
 import android.graphics.RectF
 import com.miniproject.marbleshooter.game.domain.GameEngine
@@ -9,48 +10,47 @@ import com.miniproject.marbleshooter.game.domain.GameEngine
 internal class GameOverlayRenderer(resources: GameRenderResources) : GameCanvasRendererBase(resources) {
     internal fun drawPauseOverlay(canvas: Canvas, state: GameRenderState) {
             overlayBackdrop(canvas)
-            overlayPanel(canvas, tr(state, "ПАУЗА", "PAUSED"), tr(state, "Прогресс сохранён", "Progress saved"))
-            button(canvas, 80f, 445f, 340f, 505f, tr(state, "ПРОДОЛЖИТЬ", "RESUME"), GREEN)
-            button(canvas, 80f, 515f, 340f, 575f, tr(state, "НАЧАТЬ ЗАНОВО", "RESTART"), BLUE)
-            button(canvas, 80f, 585f, 340f, 645f, tr(state, "К КАРТЕ УРОВНЕЙ", "LEVEL MAP"), BLUE)
-            button(canvas, 80f, 655f, 340f, 715f, tr(state, "В ГЛАВНОЕ МЕНЮ", "MAIN MENU"), BLUE)
+            overlayPanel(canvas, tr(state, R.string.pause), tr(state, R.string.progress_saved))
+            button(canvas, 80f, 445f, 340f, 505f, tr(state, R.string.resume), GREEN)
+            button(canvas, 80f, 515f, 340f, 575f, tr(state, R.string.restart), BLUE)
+            button(canvas, 80f, 585f, 340f, 645f, tr(state, R.string.level_map_short), BLUE)
+            button(canvas, 80f, 655f, 340f, 715f, tr(state, R.string.main_menu), BLUE)
         }
 
     internal fun drawEndOverlay(canvas: Canvas, engine: GameEngine, state: GameRenderState, won: Boolean) {
             overlayBackdrop(canvas)
             val title = when {
-                won && engine.isTutorial -> tr(state, "ОБУЧЕНИЕ ПРОЙДЕНО!", "PRACTICE COMPLETE!")
-                won -> tr(state, "УРОВЕНЬ ПРОЙДЕН!", "LEVEL COMPLETE!")
-                else -> tr(state, "ИГРА ОКОНЧЕНА", "GAME OVER")
+                won && engine.isTutorial -> tr(state, R.string.practice_complete)
+                won -> tr(state, R.string.level_complete)
+                else -> tr(state, R.string.game_over)
             }
             val subtitle = if (engine.isTutorial) {
-                tr(state, "Тренировка • счёт ", "Practice • score ") + engine.score
+                tr(state, R.string.practice_score, engine.score)
             } else {
-                tr(state, "Уровень ", "Level ") + engine.level + "  •  " +
-                    tr(state, "Счёт ", "Score ") + engine.score
+                tr(state, R.string.level_score, engine.level, engine.score)
             }
             overlayPanel(canvas, title, subtitle)
             if (won) {
                 button(
                     canvas, 65f, 455f, 355f, 515f,
-                    if (engine.isTutorial) tr(state, "ПОВТОРИТЬ ТРЕНИРОВКУ", "RETRY PRACTICE")
-                    else tr(state, "СЛЕДУЮЩИЙ УРОВЕНЬ", "NEXT LEVEL"), GREEN
+                    if (engine.isTutorial) tr(state, R.string.retry_practice)
+                    else tr(state, R.string.next_level), GREEN
                 )
                 button(
                     canvas, 80f, 525f, 340f, 585f,
-                    if (engine.isTutorial) tr(state, "К УРОКАМ", "BACK TO LESSONS")
-                    else tr(state, "К КАРТЕ УРОВНЕЙ", "LEVEL MAP"), BLUE
+                    if (engine.isTutorial) tr(state, R.string.back_to_lessons)
+                    else tr(state, R.string.level_map_short), BLUE
                 )
-                button(canvas, 80f, 595f, 340f, 655f, tr(state, "В ГЛАВНОЕ МЕНЮ", "MAIN MENU"), BLUE)
+                button(canvas, 80f, 595f, 340f, 655f, tr(state, R.string.main_menu), BLUE)
                 if (!engine.isTutorial) centeredText(canvas, starsLine(engine.lastStars), 27f, Color.rgb(255, 209, 88), 210f, 420f)
             } else {
                 button(
                     canvas, 80f, 500f, 340f, 560f,
-                    if (engine.isTutorial) tr(state, "ПОВТОРИТЬ ТРЕНИРОВКУ", "RETRY PRACTICE")
-                    else tr(state, "ИГРАТЬ СНОВА", "PLAY AGAIN"), GREEN
+                    if (engine.isTutorial) tr(state, R.string.retry_practice)
+                    else tr(state, R.string.play_again), GREEN
                 )
-                button(canvas, 80f, 575f, 340f, 635f, tr(state, "К КАРТЕ УРОВНЕЙ", "LEVEL MAP"), BLUE)
-                button(canvas, 80f, 650f, 340f, 710f, tr(state, "В ГЛАВНОЕ МЕНЮ", "MAIN MENU"), BLUE)
+                button(canvas, 80f, 575f, 340f, 635f, tr(state, R.string.level_map_short), BLUE)
+                button(canvas, 80f, 650f, 340f, 710f, tr(state, R.string.main_menu), BLUE)
             }
         }
 

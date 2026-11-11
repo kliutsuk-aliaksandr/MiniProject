@@ -1,5 +1,6 @@
 package com.miniproject.marbleshooter.game.render
 
+import android.content.Context
 import android.graphics.Canvas
 import com.miniproject.marbleshooter.game.domain.GameEngine
 import com.miniproject.marbleshooter.game.domain.model.Vec2
@@ -38,8 +39,8 @@ data class GameRenderState(
 )
 
 /** Canvas renderer façade. Each visual concern is delegated to a focused layer. */
-class GameRenderer {
-    private val resources = GameRenderResources()
+class GameRenderer(context: Context) {
+    private val resources = GameRenderResources(GameTextResources(context))
     private val backgroundRenderer = GameBackgroundRenderer(resources)
     private val menuRenderer = MenuScreenRenderer(resources)
     private val gameplayRenderer = GameplayRenderer(resources)

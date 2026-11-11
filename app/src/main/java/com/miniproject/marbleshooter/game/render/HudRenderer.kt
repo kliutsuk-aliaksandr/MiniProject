@@ -1,6 +1,7 @@
 package com.miniproject.marbleshooter.game.render
 
 import android.graphics.Canvas
+import com.miniproject.marbleshooter.R
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
@@ -16,23 +17,23 @@ internal class HudRenderer(resources: GameRenderResources) : GameCanvasRendererB
             textPaint.textAlign = Paint.Align.LEFT
             textPaint.textSize = 13f
             textPaint.color = MUTED
-            canvas.drawText("MARBLE FROG", 32f, 46f, textPaint)
+            canvas.drawText(tr(state, R.string.game_title), 32f, 46f, textPaint)
             textPaint.textSize = 12f
             textPaint.color = Color.rgb(111, 228, 164)
-            canvas.drawText(tr(state, "УРОВЕНЬ ", "LEVEL ") + engine.level, 32f, 65f, textPaint)
+            canvas.drawText(tr(state, R.string.level_score_label, engine.level), 32f, 65f, textPaint)
             textPaint.textSize = 27f
             textPaint.color = Color.WHITE
             canvas.drawText(engine.score.toString(), 32f, 98f, textPaint)
             textPaint.textSize = 10f
             textPaint.color = MUTED
-            canvas.drawText(tr(state, "РЕКОРД ", "BEST ") + state.bestScore, 32f, 118f, textPaint)
+            canvas.drawText(tr(state, R.string.best_score_hud, state.bestScore), 32f, 118f, textPaint)
     
             drawSmallIconButton(canvas, 320f, 48f, state.soundEnabled, true)
             drawSmallIconButton(canvas, 374f, 48f, engine.status == GameStatus.PAUSED, false)
             textPaint.textAlign = Paint.Align.CENTER
             textPaint.textSize = 10f
             textPaint.color = MUTED
-            canvas.drawText("NEXT", 370f, 80f, textPaint)
+            canvas.drawText(tr(state, R.string.next), 370f, 80f, textPaint)
             drawMarble(canvas, 370f, 106f, engine.nextColor, 15f)
             textPaint.textAlign = Paint.Align.LEFT
         }
@@ -53,10 +54,10 @@ internal class HudRenderer(resources: GameRenderResources) : GameCanvasRendererB
 
     internal fun drawBoosters(canvas: Canvas, engine: GameEngine, state: GameRenderState) {
             val items = listOf(
-                Triple(BoosterType.SLOW_TIME, tr(state, "МЕДЛ", "SLOW"), engine.boosters.slowTime),
-                Triple(BoosterType.BOMB, tr(state, "БОМБА", "BOMB"), engine.boosters.bomb),
-                Triple(BoosterType.COLOR_CHANGE, tr(state, "ЦВЕТ", "COLOR"), engine.boosters.colorChange),
-                Triple(BoosterType.REVERSE_CHAIN, tr(state, "РЕВЕРС", "REVERSE"), engine.boosters.reverseChain)
+                Triple(BoosterType.SLOW_TIME, tr(state, R.string.booster_slow), engine.boosters.slowTime),
+                Triple(BoosterType.BOMB, tr(state, R.string.booster_bomb), engine.boosters.bomb),
+                Triple(BoosterType.COLOR_CHANGE, tr(state, R.string.booster_color), engine.boosters.colorChange),
+                Triple(BoosterType.REVERSE_CHAIN, tr(state, R.string.booster_reverse), engine.boosters.reverseChain)
             )
             val centers = listOf(40f, 150f, 270f, 380f)
             items.forEachIndexed { index, item ->

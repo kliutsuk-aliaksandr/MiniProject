@@ -1,6 +1,7 @@
 package com.miniproject.marbleshooter.game.render
 
 import android.graphics.Canvas
+import com.miniproject.marbleshooter.R
 import android.graphics.Paint
 import android.graphics.Color
 import android.graphics.RectF
@@ -11,40 +12,39 @@ import com.miniproject.marbleshooter.game.domain.model.Vec2
 /** Renders the menu, campaign map, tutorial, settings and privacy screens. */
 internal class MenuScreenRenderer(resources: GameRenderResources) : GameCanvasRendererBase(resources) {
     internal fun drawMenu(canvas: Canvas, engine: GameEngine, state: GameRenderState) {
-        centeredText(canvas, "MARBLE FROG", 39f, Color.WHITE, 210f, 145f)
+        centeredText(canvas, tr(state, R.string.game_title), 39f, Color.WHITE, 210f, 145f)
         centeredText(
             canvas,
-            tr(state, "ЦВЕТНАЯ ГОЛОВОЛОМКА С ЛЯГУШКОЙ", "A COLORFUL FROG MARBLE PUZZLE"),
+            tr(state, R.string.game_tagline),
             14f, Color.rgb(174, 193, 224), 210f, 180f
         )
         drawFrog(canvas, Vec2(210f, 305f), Vec2(210f, 155f), engine.ammoColor)
         centeredText(
             canvas,
-            tr(state, "РЕКОРД  ", "BEST  ") + state.bestScore,
+            tr(state, R.string.best_score_menu, state.bestScore),
             15f, Color.rgb(194, 212, 240), 210f, 378f
         )
 
         if (state.savedGameAvailable) {
-            button(canvas, 78f, 410f, 342f, 464f, tr(state, "ПРОДОЛЖИТЬ", "CONTINUE"), GREEN)
-            button(canvas, 78f, 474f, 342f, 528f, tr(state, "НОВАЯ ИГРА", "NEW GAME"), BLUE)
-            button(canvas, 78f, 538f, 342f, 592f, tr(state, "КАРТА УРОВНЕЙ", "LEVEL MAP"), BLUE)
-            button(canvas, 78f, 602f, 342f, 656f, tr(state, "ОБУЧЕНИЕ", "TUTORIAL"), BLUE)
-            button(canvas, 78f, 666f, 342f, 720f, tr(state, "НАСТРОЙКИ", "SETTINGS"), BLUE)
+            button(canvas, 78f, 410f, 342f, 464f, tr(state, R.string.continue_game), GREEN)
+            button(canvas, 78f, 474f, 342f, 528f, tr(state, R.string.new_game), BLUE)
+            button(canvas, 78f, 538f, 342f, 592f, tr(state, R.string.level_map), BLUE)
+            button(canvas, 78f, 602f, 342f, 656f, tr(state, R.string.tutorial), BLUE)
+            button(canvas, 78f, 666f, 342f, 720f, tr(state, R.string.settings), BLUE)
         } else {
-            button(canvas, 78f, 438f, 342f, 496f, tr(state, "ИГРАТЬ", "PLAY"), GREEN)
-            button(canvas, 78f, 506f, 342f, 564f, tr(state, "КАРТА УРОВНЕЙ", "LEVEL MAP"), BLUE)
-            button(canvas, 78f, 574f, 342f, 632f, tr(state, "ОБУЧЕНИЕ", "TUTORIAL"), BLUE)
-            button(canvas, 78f, 642f, 342f, 700f, tr(state, "НАСТРОЙКИ", "SETTINGS"), BLUE)
+            button(canvas, 78f, 438f, 342f, 496f, tr(state, R.string.play), GREEN)
+            button(canvas, 78f, 506f, 342f, 564f, tr(state, R.string.level_map), BLUE)
+            button(canvas, 78f, 574f, 342f, 632f, tr(state, R.string.tutorial), BLUE)
+            button(canvas, 78f, 642f, 342f, 700f, tr(state, R.string.settings), BLUE)
         }
-        centeredText(canvas, "OFFLINE  •  0.5.0", 12f, Color.rgb(122, 143, 177), 210f, 835f)
+        centeredText(canvas, tr(state, R.string.offline_version), 12f, Color.rgb(122, 143, 177), 210f, 835f)
     }
 
     internal fun drawLevelMap(canvas: Canvas, state: GameRenderState) {
-        centeredText(canvas, tr(state, "КАРТА УРОВНЕЙ", "LEVEL MAP"), 29f, Color.WHITE, 210f, 160f)
+        centeredText(canvas, tr(state, R.string.level_map), 29f, Color.WHITE, 210f, 160f)
         centeredText(
             canvas,
-            tr(state, "Открыто уровней: ", "Levels unlocked: ") + state.unlockedLevel +
-                " / " + LevelCatalog.MAX_LEVELS,
+            tr(state, R.string.levels_unlocked, state.unlockedLevel, LevelCatalog.MAX_LEVELS),
             14f, MUTED, 210f, 192f
         )
 
@@ -84,22 +84,20 @@ internal class MenuScreenRenderer(resources: GameRenderResources) : GameCanvasRe
         }
 
         drawTrackLegend(canvas, state)
-        button(canvas, 78f, 750f, 342f, 810f, tr(state, "В ГЛАВНОЕ МЕНЮ", "MAIN MENU"), GREEN)
+        button(canvas, 78f, 750f, 342f, 810f, tr(state, R.string.main_menu), GREEN)
     }
 
     private fun drawTrackLegend(canvas: Canvas, state: GameRenderState) {
         centeredText(
             canvas,
-            tr(state, "Новые типы дорожек открываются по мере прохождения",
-                "New track styles unlock as you progress"),
+            tr(state, R.string.track_unlock_hint),
             11f, MUTED, 210f, 695f
         )
         textPaint.textSize = 11f
         textPaint.textAlign = Paint.Align.CENTER
         textPaint.color = Color.rgb(178, 196, 221)
         canvas.drawText(
-            tr(state, "1–8: Классика   9–15: Петли   16–22: Зигзаг   23–30: Спираль",
-                "1–8: Classic   9–15: Loops   16–22: Switchback   23–30: Spiral"),
+            tr(state, R.string.track_legend),
             210f, 720f, textPaint
         )
         textPaint.textAlign = Paint.Align.LEFT
@@ -107,61 +105,35 @@ internal class MenuScreenRenderer(resources: GameRenderResources) : GameCanvasRe
 
     internal fun drawTutorial(canvas: Canvas, state: GameRenderState) {
         val page = state.tutorialPage.coerceIn(0, 4)
-        val titlesRu = listOf(
-            "Прицелься пальцем",
-            "Выбери нужный шар",
-            "Собирай комбинации",
-            "Используй бустеры",
-            "Следи за дорожкой"
-        )
-        val titlesEn = listOf(
-            "Aim with your finger",
-            "Choose the right marble",
-            "Make matches",
-            "Use boosters",
-            "Watch the track"
-        )
-        val bodiesRu = listOf(
-            "Коснись поля и веди пальцем — лягушка повернётся за ним. Отпусти палец, чтобы выстрелить.",
-            "В пасти лягушки показан текущий шар. Кнопка NEXT меняет его со следующим.",
-            "Попади в группу из трёх или более шаров одного цвета. Передняя часть цепочки откатится назад, дальняя останется на месте.",
-            "Замедление даёт время на прицел. Бомба убирает участок цепочки. Смена цвета выбирает наиболее частый цвет. Реверс временно двигает цепочку назад.",
-            "Грязь замедляет цепочку, лёд ускоряет её, камни создают опасные участки. Каждая группа уровней меняет форму дорожки."
-        )
-        val bodiesEn = listOf(
-            "Touch the field and drag. The frog follows your finger. Release to shoot.",
-            "The marble in the frog's mouth is the loaded shot. NEXT swaps it with the upcoming marble.",
-            "Hit a group of three or more marbles of the same color. The front segment rolls backward while the far side stays still.",
-            "Slow Time gives you room to aim. Bomb clears a chain segment. Color Change selects the most common chain color. Reverse moves the chain backward briefly.",
-            "Mud slows the chain, ice speeds it up, and rocks mark hazardous sections. Track layouts change between level groups."
-        )
+        val titleResources = listOf(R.string.tutorial_aim_title, R.string.tutorial_choose_title, R.string.tutorial_match_title, R.string.tutorial_boosters_title, R.string.tutorial_track_title)
+        val bodyResources = listOf(R.string.tutorial_aim_body, R.string.tutorial_choose_body, R.string.tutorial_match_body, R.string.tutorial_boosters_body, R.string.tutorial_track_body)
 
-        centeredText(canvas, tr(state, "ОБУЧЕНИЕ", "TUTORIAL"), 29f, Color.WHITE, 210f, 145f)
-        centeredText(canvas, (page + 1).toString() + " / 5", 13f, MUTED, 210f, 177f)
+        centeredText(canvas, tr(state, R.string.tutorial), 29f, Color.WHITE, 210f, 145f)
+        centeredText(canvas, tr(state, R.string.tutorial_page, page + 1), 13f, MUTED, 210f, 177f)
         fillPaint.color = Color.rgb(30, 43, 71)
         canvas.drawRoundRect(RectF(26f, 210f, 394f, 625f), 24f, 24f, fillPaint)
-        drawTutorialIllustration(canvas, page)
+        drawTutorialIllustration(canvas, page, state)
         centeredText(
             canvas,
-            if (state.language == "en") titlesEn[page] else titlesRu[page],
+            tr(state, titleResources[page]),
             22f, Color.WHITE, 210f, 405f
         )
         drawParagraph(
             canvas,
-            if (state.language == "en") bodiesEn[page] else bodiesRu[page],
+            tr(state, bodyResources[page]),
             15f, Color.rgb(205, 218, 240), RectF(55f, 430f, 365f, 570f)
         )
 
         if (page == 4) {
-            button(canvas, 60f, 640f, 360f, 695f, tr(state, "ПОПРОБОВАТЬ В ИГРЕ", "TRY IT IN GAME"), GREEN)
+            button(canvas, 60f, 640f, 360f, 695f, tr(state, R.string.tutorial_try), GREEN)
         } else {
-            button(canvas, 80f, 640f, 340f, 695f, tr(state, "ДАЛЕЕ", "NEXT"), GREEN)
+            button(canvas, 80f, 640f, 340f, 695f, tr(state, R.string.next), GREEN)
         }
-        button(canvas, 80f, 712f, 340f, 760f, tr(state, "НАЗАД", "BACK"), BLUE)
-        button(canvas, 80f, 775f, 340f, 825f, tr(state, "В ГЛАВНОЕ МЕНЮ", "MAIN MENU"), BLUE)
+        button(canvas, 80f, 712f, 340f, 760f, tr(state, R.string.back), BLUE)
+        button(canvas, 80f, 775f, 340f, 825f, tr(state, R.string.main_menu), BLUE)
     }
 
-    private fun drawTutorialIllustration(canvas: Canvas, page: Int) {
+    private fun drawTutorialIllustration(canvas: Canvas, page: Int, state: GameRenderState) {
         when (page) {
             0 -> {
                 drawFrog(canvas, Vec2(210f, 330f), Vec2(120f, 235f), 2)
@@ -170,7 +142,7 @@ internal class MenuScreenRenderer(resources: GameRenderResources) : GameCanvasRe
             1 -> {
                 drawMarble(canvas, 165f, 290f, 0, 19f)
                 drawMarble(canvas, 255f, 290f, 3, 19f)
-                centeredText(canvas, "NEXT", 14f, MUTED, 210f, 345f)
+                centeredText(canvas, tr(state, R.string.next), 14f, MUTED, 210f, 345f)
             }
             2 -> {
                 drawMarble(canvas, 145f, 285f, 1, 19f)
@@ -204,63 +176,42 @@ internal class MenuScreenRenderer(resources: GameRenderResources) : GameCanvasRe
     }
 
     internal fun drawSettings(canvas: Canvas, state: GameRenderState) {
-        centeredText(canvas, tr(state, "НАСТРОЙКИ", "SETTINGS"), 30f, Color.WHITE, 210f, 225f)
-        centeredText(canvas, tr(state, "ЯЗЫК", "LANGUAGE"), 16f, MUTED, 210f, 320f)
+        centeredText(canvas, tr(state, R.string.settings), 30f, Color.WHITE, 210f, 225f)
+        centeredText(canvas, tr(state, R.string.language), 16f, MUTED, 210f, 320f)
         button(
-            canvas, 35f, 350f, 200f, 410f, "РУССКИЙ",
+            canvas, 35f, 350f, 200f, 410f, tr(state, R.string.language_russian),
             if (state.language == "ru") GREEN else BLUE
         )
         button(
-            canvas, 220f, 350f, 385f, 410f, "ENGLISH",
+            canvas, 220f, 350f, 385f, 410f, tr(state, R.string.language_english),
             if (state.language == "en") GREEN else BLUE
         )
         button(
             canvas, 60f, 465f, 360f, 525f,
-            tr(state, "ЗВУК: ", "SOUND: ") + tr(state, "ВКЛ", "ON").takeIf { state.soundEnabled }
-                .orEmpty().ifBlank { tr(state, "ВЫКЛ", "OFF") },
+            tr(state, R.string.sound_setting, tr(state, if (state.soundEnabled) R.string.enabled else R.string.disabled)),
             BLUE
         )
         button(
             canvas, 60f, 540f, 360f, 600f,
-            tr(state, "ВИБРАЦИЯ: ", "HAPTICS: ") + tr(state, "ВКЛ", "ON").takeIf { state.vibrationEnabled }
-                .orEmpty().ifBlank { tr(state, "ВЫКЛ", "OFF") },
+            tr(state, R.string.haptics_setting, tr(state, if (state.vibrationEnabled) R.string.enabled else R.string.disabled)),
             BLUE
         )
-        button(canvas, 60f, 635f, 360f, 690f, tr(state, "ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ", "PRIVACY POLICY"), BLUE)
-        button(canvas, 80f, 735f, 340f, 795f, tr(state, "НАЗАД", "BACK"), GREEN)
+        button(canvas, 60f, 635f, 360f, 690f, tr(state, R.string.privacy_policy), BLUE)
+        button(canvas, 80f, 735f, 340f, 795f, tr(state, R.string.back), GREEN)
     }
 
     internal fun drawPrivacy(canvas: Canvas, state: GameRenderState) {
-        centeredText(canvas, tr(state, "КОНФИДЕНЦИАЛЬНОСТЬ", "PRIVACY"), 24f, Color.WHITE, 210f, 150f)
-        val lines = if (state.language == "en") {
-            listOf(
-                "Marble Frog works offline. No account or network access is needed.",
-                "The game does not collect, transmit or share personal data.",
-                "No ads, analytics SDKs or server sync are included.",
-                "Best score, saved game, level stars, language and settings",
-                "are stored locally on this device with Android preferences.",
-                "Cloud backup and device transfer of these preferences are disabled.",
-                "Local data can be removed in Android app settings or by uninstalling.",
-                "Support: alex.kliutsuk@gmail.com"
-            )
-        } else {
-            listOf(
-                "Marble Frog работает без интернета. Аккаунт не требуется.",
-                "Игра не собирает, не передаёт и не раскрывает персональные данные.",
-                "Рекламы, аналитических SDK и синхронизации с сервером нет.",
-                "Рекорд, сохранённая игра, звёзды, язык и настройки",
-                "хранятся локально на этом устройстве в Android preferences.",
-                "Облачное резервирование и перенос этих данных отключены.",
-                "Данные можно удалить в настройках Android или удалив игру.",
-                "Поддержка: alex.kliutsuk@gmail.com"
-            )
-        }
+        centeredText(canvas, tr(state, R.string.privacy_title), 24f, Color.WHITE, 210f, 150f)
+        val lines = listOf(
+            R.string.privacy_line_1, R.string.privacy_line_2, R.string.privacy_line_3, R.string.privacy_line_4,
+            R.string.privacy_line_5, R.string.privacy_line_6, R.string.privacy_line_7, R.string.privacy_line_8
+        ).map { tr(state, it) }
         lines.forEachIndexed { index, line ->
             drawParagraph(
                 canvas, line, 13f, Color.rgb(205, 218, 240),
                 RectF(36f, 220f + index * 62f, 384f, 270f + index * 62f)
             )
         }
-        button(canvas, 80f, 790f, 340f, 845f, tr(state, "НАЗАД", "BACK"), GREEN)
+        button(canvas, 80f, 790f, 340f, 845f, tr(state, R.string.back), GREEN)
     }
 }

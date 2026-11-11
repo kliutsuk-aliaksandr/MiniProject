@@ -16,7 +16,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /** Shared Paint/Path cache. Renderers share one instance and are used on the UI thread. */
-internal class GameRenderResources {
+internal class GameRenderResources(internal val textResources: GameTextResources) {
     internal val palette = intArrayOf(
         Color.rgb(255, 91, 105),
         Color.rgb(255, 194, 67),
@@ -189,8 +189,8 @@ internal abstract class GameCanvasRendererBase(
         repeat(3) { append(if (it < stars) "★" else "☆") }
     }
 
-    protected fun tr(state: GameRenderState, russian: String, english: String): String =
-        if (state.language == "en") english else russian
+    protected fun tr(state: GameRenderState, resourceId: Int, vararg formatArgs: Any): String =
+        drawing.textResources.getString(state.language, resourceId, *formatArgs)
 }
 
 /** Gives the façade access to shared background painting without exposing the base class. */

@@ -1,6 +1,7 @@
 package com.miniproject.marbleshooter.game.render
 
 import android.graphics.Canvas
+import com.miniproject.marbleshooter.R
 import android.graphics.Color
 import com.miniproject.marbleshooter.game.domain.GameEngine
 import com.miniproject.marbleshooter.game.domain.model.GameStatus
@@ -30,15 +31,13 @@ internal class GameplayRenderer(resources: GameRenderResources) : GameCanvasRend
         if (engine.isTutorial) {
             centeredText(
                 canvas,
-                tr(state, "ТРЕНИРОВКА • ПОПРОБУЙ БУСТЕРЫ И КОМБИНАЦИИ",
-                    "PRACTICE • TRY BOOSTERS AND MATCHES"),
+                tr(state, R.string.practice_footer),
                 11f, Color.rgb(255, 223, 122), 210f, 675f
             )
         } else {
             centeredText(
                 canvas,
-                tr(state, "ВЕДИ ПАЛЬЦЕМ ДЛЯ ПРИЦЕЛА • ОТПУСТИ ДЛЯ ВЫСТРЕЛА",
-                    "DRAG TO AIM • RELEASE TO SHOOT"),
+                tr(state, R.string.aim_fire_hint),
                 11f, MUTED, 210f, 880f
             )
         }
