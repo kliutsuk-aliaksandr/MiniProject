@@ -115,7 +115,6 @@ class GameAccessibilityInstrumentedTest {
         }
     }
 
-
     @Test
     fun uiAutomatorCanTapVirtualCanvasControlsAsAnExternalUser() {
         clearGamePreferences()
@@ -131,7 +130,7 @@ class GameAccessibilityInstrumentedTest {
             clickAccessibleText(device, "Назад")
 
             // Change the app language and continue through the level map into gameplay.
-            clickAccessibleText(device, "English")
+            clickAccessibleText(device, "ENGLISH")
             clickAccessibleText(device, "Back")
             clickAccessibleText(device, "Level map")
             clickAccessibleText(device, "Level 1")
@@ -155,7 +154,6 @@ class GameAccessibilityInstrumentedTest {
         val control = device.findObject(By.text(text))
             ?: throw AssertionError("Expected accessibility control '$text'")
         control.click()
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
     }
 
     private fun clearGamePreferences() {
