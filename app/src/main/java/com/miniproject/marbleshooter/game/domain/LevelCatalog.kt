@@ -2,6 +2,7 @@ package com.miniproject.marbleshooter.game.domain
 
 import com.miniproject.marbleshooter.game.domain.model.ObstacleType
 import com.miniproject.marbleshooter.game.domain.model.Vec2
+import kotlin.random.Random
 
 /** Stable route identifiers used by level definitions and renderer caches. */
 enum class TrackId { CLASSIC, DOUBLE_LOOP, SWITCHBACK, SPIRAL }
@@ -75,7 +76,47 @@ object LevelCatalog {
         )
     }
 
-    /** Builds the logical polyline for a route; the active engine caches this list. */
+    /** Every campaign level owns its deterministic route geometry. */
+    fun routeForLevel(levelId: Int): List<Vec2> {
+        val id = levelId.coerceIn(1, MAX_LEVELS)
+        if (id == 1) return route(TrackId.CLASSIC)
+        return uniqueRoutes.getValue(id)
+    }
+
+    private val uniqueRoutes: Map<Int, List<Vec2>> by lazy {
+        (2..MAX_LEVELS).associateWith(::buildUniqueRoute)
+    }
+
+    private fun buildUniqueRoute(levelId: Int): List<Vec2> {
+        val random = Random(levelId * 104_729)
+        val leftBase = 34f + random.nextFloat() * 34f
+        val rightBase = 350f + random.nextFloat() * 36f
+        val rows = 6 + levelId % 2
+        val top = 138f + random.nextFloat() * 22f
+        val bottom = 690f + random.nextFloat() * 28f
+        val verticalStep = (bottom - top) / (rows - 1)
+        val points = mutableListOf<Vec2>()
+
+        repeat(rows) { row ->
+            val y = top + row * verticalStep + random.nextFloat() * 12f - 6f
+            val left = (leftBase + random.nextFloat() * 18f - 9f).coerceIn(30f, 105f)
+            val right = (rightBase + random.nextFloat() * 18f - 9f).coerceIn(315f, 390f)
+            val fromLeft = row % 2 == 0
+            val startX = if (fromLeft) left else right
+            val endX = if (fromLeft) right else left
+            val middleX = ((left + right) / 2f + random.nextFloat() * 76f - 38f)
+                .coerceIn(left + 48f, right - 48f)
+            val middleY = (y + random.nextFloat() * 32f - 16f).coerceIn(125f, 770f)
+            points += Vec2(startX, y)
+            points += Vec2(middleX, middleY)
+            points += Vec2(endX, y + random.nextFloat() * 10f - 5f)
+        }
+        points += Vec2(210f + random.nextFloat() * 44f - 22f, 735f)
+        points += Vec2(210f, 735f)
+        return points
+    }
+
+    /** Builds the logical polyline for a legacy route family. */
     fun route(trackId: TrackId): List<Vec2> = when (trackId) {
         TrackId.CLASSIC -> listOf(
             Vec2(42f, 160f), Vec2(378f, 160f), Vec2(378f, 300f),
