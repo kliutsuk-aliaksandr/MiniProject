@@ -130,7 +130,7 @@ internal class GameSessionController(
     }
 
     fun fireShot(target: Vec2, isGameScreen: Boolean) {
-        if (engine.status != GameStatus.RUNNING) return
+        if (engine.status != GameStatus.RUNNING || startSequence.isInputLocked) return
         engine.aimAt(target)
         engine.fireShot()
         handlePendingEvents(isGameScreen)
@@ -139,6 +139,7 @@ internal class GameSessionController(
     }
 
     fun activateBooster(type: BoosterType, isGameScreen: Boolean): Boolean {
+        if (startSequence.isInputLocked) return false
         if (!engine.activateBooster(type, engine.aimTarget)) {
             audio.playClick(soundEnabled)
             return false

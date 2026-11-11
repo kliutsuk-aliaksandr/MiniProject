@@ -15,7 +15,6 @@ internal class GameStartSequence(
 
     private var phase = Phase.IDLE
     private var remainingSeconds = 0f
-    private val rolloutDurationSecondsInternal = rolloutDurationSeconds
 
     init {
         require(countdownDurationSeconds.isFinite() && countdownDurationSeconds > 0f)
@@ -29,8 +28,6 @@ internal class GameStartSequence(
     val isInputLocked: Boolean get() = isActive
 
     val isRollingOut: Boolean get() = phase == Phase.ROLLOUT
-
-    val rolloutDurationSeconds: Float get() = rolloutDurationSecondsInternal
 
     val countdownNumber: Int?
         get() = if (phase == Phase.COUNTDOWN) ceil(remainingSeconds).toInt().coerceIn(1, 3) else null
