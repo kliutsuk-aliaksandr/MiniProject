@@ -117,10 +117,10 @@ class OfflineProgressRepository(context: Context) {
         const val KEY_LARGEST_MATCH = "largest_match"
         const val KEY_BEST_SCORE = "best_score"
         const val KEY_USED_BOOSTERS = "used_boosters"
-        const val BOOSTER_SLOW_TIME_MASK = 1 shl 0
-        const val BOOSTER_BOMB_MASK = 1 shl 1
-        const val BOOSTER_COLOR_CHANGE_MASK = 1 shl 2
-        const val BOOSTER_REVERSE_CHAIN_MASK = 1 shl 3
+        const val BOOSTER_SLOW_TIME_MASK = 1
+        const val BOOSTER_BOMB_MASK = 2
+        const val BOOSTER_COLOR_CHANGE_MASK = 4
+        const val BOOSTER_REVERSE_CHAIN_MASK = 8
         const val ALL_BOOSTERS_MASK = 0b1111
     }
 }
