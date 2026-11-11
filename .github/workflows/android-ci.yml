@@ -65,3 +65,22 @@ jobs:
         with:
           name: miniproject-release-aab
           path: app/build/outputs/bundle/release/app-release.aab
+
+  wrapper-windows:
+    name: Verify Gradle Wrapper on Windows
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Verify Windows wrapper
+        run: .\\gradlew.bat --version
