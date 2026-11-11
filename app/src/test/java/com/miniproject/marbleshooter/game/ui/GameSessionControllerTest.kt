@@ -3,6 +3,7 @@ package com.miniproject.marbleshooter.game.ui
 import android.content.Context
 import com.miniproject.marbleshooter.game.data.OfflineProgressRepository
 import com.miniproject.marbleshooter.game.domain.model.BoosterType
+import com.miniproject.marbleshooter.game.domain.model.OfflineAchievement
 import com.miniproject.marbleshooter.game.render.GameScreen
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -71,7 +72,9 @@ class GameSessionControllerTest {
             val stats = OfflineProgressRepository(context).statistics
             assertEquals(1, stats.totalShots)
             assertEquals(0, stats.usedBoosterMask)
-            assertTrue(OfflineProgressRepository(context).unlockedAchievements.isEmpty())
+            val achievements = OfflineProgressRepository(context).unlockedAchievements
+            assertTrue(achievements.contains(OfflineAchievement.FIRST_SHOT))
+            assertTrue(achievements.none { it == OfflineAchievement.BOOSTER_COLLECTOR })
         } finally {
             session.disposeGame(GameScreen.MENU)
             clearPreferences(context)
