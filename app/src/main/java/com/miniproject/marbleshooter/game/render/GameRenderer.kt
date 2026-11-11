@@ -40,7 +40,8 @@ data class GameRenderState(
 
 /** Canvas renderer façade. Each visual concern is delegated to a focused layer. */
 class GameRenderer(context: Context) {
-    private val resources = GameRenderResources(GameTextResources(context))
+    internal val textResources = GameTextResources(context)
+    private val resources = GameRenderResources(textResources)
     private val backgroundRenderer = GameBackgroundRenderer(resources)
     private val menuRenderer = MenuScreenRenderer(resources)
     private val gameplayRenderer = GameplayRenderer(resources)
