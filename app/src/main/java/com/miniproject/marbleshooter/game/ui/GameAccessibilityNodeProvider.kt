@@ -30,6 +30,7 @@ internal class GameAccessibilityNodeProvider(
                 className = host.javaClass.name
                 setBoundsInParent(Rect(0, 0, host.width, host.height))
                 isEnabled = host.isEnabled
+                isVisibleToUser = host.isShown
                 isFocusable = true
                 for (target in targetsProvider()) addChild(host, target.id)
             }
@@ -42,6 +43,7 @@ internal class GameAccessibilityNodeProvider(
             className = Button::class.java.name
             text = target.label
             setBoundsInParent(Rect(target.bounds))
+            isVisibleToUser = host.isShown
             isFocusable = true
             isClickable = true
             isEnabled = true

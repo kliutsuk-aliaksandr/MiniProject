@@ -86,9 +86,13 @@ jobs:
         run: .\\gradlew.bat --version
 
   instrumentation:
-    name: UI instrumentation tests (Android 35)
+    name: UI instrumentation tests (API ${{ matrix.api-level }})
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [23, 29, 36]
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -112,7 +116,7 @@ jobs:
       - name: Run Android instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2.38.0
         with:
-          api-level: 35
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           profile: pixel_2
@@ -123,7 +127,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: miniproject-instrumentation-test-reports
+          name: miniproject-instrumentation-api-${{ matrix.api-level }}-reports
           path: |
             app/build/reports/androidTests/connected/
             app/build/outputs/androidTest-results/connected/

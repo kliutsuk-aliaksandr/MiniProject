@@ -9,6 +9,9 @@ import android.view.accessibility.AccessibilityNodeProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
 import com.miniproject.marbleshooter.game.ui.GameView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -22,6 +25,10 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class GameAccessibilityInstrumentedTest {
+
+    private companion object {
+        const val UI_TIMEOUT_MS = 5_000L
+    }
 
     @Test
     fun mainActivityExposesCanvasMenuAsAccessibleVirtualControls() {
@@ -106,6 +113,49 @@ class GameAccessibilityInstrumentedTest {
                 assertEquals("Pause", node(provider, 51).text.toString())
             }
         }
+    }
+
+
+    @Test
+    fun uiAutomatorCanTapVirtualCanvasControlsAsAnExternalUser() {
+        clearGamePreferences()
+
+        ActivityScenario.launch(MainActivity::class.java).use {
+            val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+
+            // UiAutomator discovers virtual controls through Android's accessibility tree,
+            // then injects real screen taps at their exposed bounds.
+            clickAccessibleText(device, "Настройки")
+            clickAccessibleText(device, "Политика конфиденциальности")
+            assertAccessibleText(device, "Назад")
+            clickAccessibleText(device, "Назад")
+
+            // Change the app language and continue through the level map into gameplay.
+            clickAccessibleText(device, "English")
+            clickAccessibleText(device, "Back")
+            clickAccessibleText(device, "Level map")
+            clickAccessibleText(device, "Level 1")
+
+            // Verify the externally injected taps reach the game controls too.
+            clickAccessibleText(device, "Pause")
+            clickAccessibleText(device, "Resume")
+            assertAccessibleText(device, "Pause")
+        }
+    }
+
+    private fun assertAccessibleText(device: UiDevice, text: String) {
+        assertTrue(
+            "Expected visible accessibility control '$text'",
+            device.wait(Until.hasObject(By.text(text)), UI_TIMEOUT_MS)
+        )
+    }
+
+    private fun clickAccessibleText(device: UiDevice, text: String) {
+        assertAccessibleText(device, text)
+        val control = device.findObject(By.text(text))
+            ?: throw AssertionError("Expected accessibility control '$text'")
+        control.click()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
     }
 
     private fun clearGamePreferences() {
