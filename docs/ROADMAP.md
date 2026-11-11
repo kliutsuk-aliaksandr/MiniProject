@@ -1,6 +1,6 @@
 # Roadmap — Marble Frog
 
-Статусы описывают текущее состояние исходного кода. Проверки на устройстве и в Play Console не отмечаются готовыми по факту одной CI-сборки. Подробный снимок текущего состояния, CI и план следующих действий: [WORK_STATUS.md](WORK_STATUS.md).
+Статусы описывают текущее состояние исходного кода. Проверки на устройстве и в Play Console не отмечаются готовыми по факту одной CI-сборки. Подробный снимок текущего состояния, CI и план следующих действий: [WORK_STATUS.md](WORK_STATUS.md). Полный статический аудит и backlog: [REFACTOR_AUDIT.md](REFACTOR_AUDIT.md).
 
 ## Этап 1 — прототип (0.1.0) — завершён
 
@@ -62,7 +62,9 @@
 - [x] Извлечь fixed-step loop из GameView в GameLoopController и покрыть независимыми JVM-тестами.
 - [x] Извлечь ProgressPresentationCache из GameView и покрыть snapshot/update logic unit tests.
 - [x] Разделить GameView на GameSessionController (сессия, события, сохранения/прогресс, эффекты), GameNavigationController (экраны, переходы, hit areas и accessibility targets) и GameInputRouter (pointer gestures). GameView оставлен тонким Android View adapter; добавлены JVM-тесты роутинга ввода.
-- [ ] Разбить GameRenderer на отдельные screen/field/HUD/effects renderers.
+- [x] Разделить GameRenderer на façade, MenuScreenRenderer и GameplayRenderer; общие Paint/Path и Canvas primitives вынести в GameRenderResources.
+- [x] Добавить Robolectric smoke test для отрисовки всех верхнеуровневых экранов.
+- [x] Учитывать настройку вибрации при haptic feedback бустера; добавить regression tests для on/off.
 - [ ] Перенести весь UI copy из RU/EN пар в Android string resources.
 - [x] Добавить Robolectric tests для SharedPreferences repositories: save/restore, schema migration, corrupted payload/typed values и progression unlock rules.
 - [ ] Добавить instrumented UI tests и automated accessibility checks.

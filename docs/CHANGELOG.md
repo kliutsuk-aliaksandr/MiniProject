@@ -2,6 +2,9 @@
 
 ## Unreleased — fix branch
 
+- Разделён GameRenderer: façade, MenuScreenRenderer, GameplayRenderer и GameRenderResources с общими Paint/Path; добавлен Robolectric smoke test для всех экранов.
+- Исправлен haptic feedback бустера: теперь он учитывает настройку вибрации; добавлены два controller regression tests.
+- Добавлен системный аудит docs/REFACTOR_AUDIT.md с приоритетным списком дальнейших улучшений.
 - Завершён рефакторинг GameView: session/event/save/progress/audio/effects перенесены в GameSessionController, экраны/hit areas/accessibility targets — в GameNavigationController, жесты — в platform-independent GameInputRouter. GameView сокращён с 712 до 145 строк и оставлен Android View/Canvas adapter.
 - Добавлены 3 JVM regression tests для drag-to-aim/fire-on-release, booster gesture isolation и cancellation в GameInputRouter.
 - Fixed startup crash when configuring immersive system bars before the Window DecorView existed; immersive mode is now applied after content setup and restored when the Activity regains focus.

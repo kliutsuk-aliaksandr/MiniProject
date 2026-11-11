@@ -90,7 +90,11 @@ app/src/main/java/com/miniproject/marbleshooter/
     │   ├── GameEngine.kt                   # platform-independent simulation
     │   ├── LevelCatalog.kt                  # levels and route definitions
     │   └── model/GameModels.kt              # values, state and domain events
-    ├── render/GameRenderer.kt               # Canvas screens and gameplay renderer
+    ├── render/
+    │   ├── GameRenderer.kt                  # small Canvas renderer façade
+    │   ├── MenuScreenRenderer.kt             # menu, map, tutorial, settings and privacy
+    │   ├── GameplayRenderer.kt                # field, HUD, boosters, effects and overlays
+    │   └── GameRenderResources.kt             # shared Paint/Path cache and Canvas primitives
     └── ui/
         ├── GameView.kt                     # Android View, Canvas and coordinate adapter
         ├── GameSessionController.kt        # gameplay lifecycle, events, saves, audio and effects
@@ -114,6 +118,7 @@ domain не зависит от Android. data владеет SharedPreferences. 
 - docs/GAME_DESIGN.md — правила, уровни, препятствия, бустеры и очки.
 - docs/ROADMAP.md — завершённые этапы и технический backlog.
 - docs/WORK_STATUS.md — актуальный снимок: что сделано, что остаётся и следующий план работ.
+- docs/REFACTOR_AUDIT.md — системный аудит проекта и список улучшений для следующего этапа.
 - docs/RELEASE_CHECKLIST.md — оставшиеся ручные и Play Console проверки.
 - docs/PRIVACY_POLICY.md — политика конфиденциальности.
 

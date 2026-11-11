@@ -13,7 +13,10 @@
 | game/data/GameSaveRepository.kt | Сохранение текущей кампании | save, restore, clear |
 | game/data/GameSaveCodec.kt | Строгая сериализация цепочки | encodeBalls, decodeBalls |
 | game/data/LevelProgressRepository.kt | Открытые уровни, звёзды и рекорд | recordCompletion, updateBestScore |
-| game/render/GameRenderer.kt | Canvas-отрисовка всех экранов и игрового поля | draw, drawMenu, drawGame, drawEndOverlay |
+| game/render/GameRenderer.kt | Небольшой Canvas façade: выбор слоя по GameScreen | draw |
+| game/render/MenuScreenRenderer.kt | Меню, карта, обучение, настройки и privacy screen | drawMenu, drawLevelMap, drawTutorial, drawSettings, drawPrivacy |
+| game/render/GameplayRenderer.kt | Дорожка, препятствия, сущности, HUD, бустеры, эффекты и игровые overlays | drawGame, drawTrack, drawHud, drawEndOverlay |
+| game/render/GameRenderResources.kt | Общий Paint/Path cache и primitives; базовый renderer имеет internal visibility | drawBackground, drawMarble, drawFrog, button, centeredText |
 | game/ui/GameView.kt | Android View adapter: lifecycle, Canvas, coordinate mapping and platform events | onDraw, onTouchEvent, handleSystemBack |
 | game/ui/GameSessionController.kt | Gameplay session, engine lifecycle, saves, progress, event side effects, audio and effects | resumeGame, pauseGame, fireShot, handlePendingEvents, saveGameState |
 | game/ui/GameNavigationController.kt | Screen state, hit areas, transitions and virtual accessibility targets | handleSystemBack, handleTap, handleBoosterTap, accessibilityTargets |
@@ -90,6 +93,8 @@ UI не должен дублировать игровые правила: он 
 - GameInputRouterTest.kt: drag-to-aim, fire on release, isolated booster gesture and cancellation.
 - MainActivityTest.kt: Robolectric regression test for Activity startup after DecorView/content initialization.
 - ProgressPresentationCacheTest.kt: начальный snapshot, update после completion и монотонное обновление рекорда.
+- GameRendererTest.kt: smoke test отрисовки всех верхнеуровневых экранов с общим render resource instance.
+- GameSessionControllerTest.kt: проверка учёта настройки вибрации при haptic feedback бустера.
 - GameSaveCodecTest.kt: legacy round-trip, malformed tokens, blank payload и полнота цепочки.
 - GameSaveRepositoryTest.kt: save/restore, upgrade неверсированной schema 0, повреждённые payload/типы SharedPreferences, будущая schema и защита tutorial save.
 - LevelProgressRepositoryTest.kt: monotonic unlock/stars/score, валидация входа, legacy fallback и повреждённые SharedPreferences values.
@@ -97,10 +102,10 @@ UI не должен дублировать игровые правила: он 
 
 ## Известные точки дальнейшего рефакторинга
 
-Основные обязанности GameView вынесены: GameSessionController отвечает за сессию и события, GameNavigationController — за экраны/переходы/accessibility targets, GameInputRouter — за pointer gestures. GameView оставлен тонким Android-адаптером. Следующий крупный UI-этап — декомпозиция GameRenderer по screen/track/HUD/effects слоям.
+GameView оставлен тонким Android-адаптером. GameSessionController отвечает за сессию, сохранения, прогресс и события; GameNavigationController — за экраны, переходы, hit areas и accessibility targets; GameInputRouter — за pointer gestures.
 
-GameRenderer.kt пока рисует разные экраны и все игровые слои. Разделение на ScreenRenderer, TrackRenderer, HudRenderer и EffectsRenderer следует выполнить отдельным небольшим рефакторингом с golden/screenshot tests.
+GameRenderer разделён на façade, MenuScreenRenderer и GameplayRenderer. Общие Paint/Path и Canvas primitives переиспользуются через GameRenderResources; renderer layers не владеют вводом или сохранениями. Следующая архитектурная задача — снизить связанность session/navigation controllers и вынести доступность/компоновку controls в единое описание.
 
-Тексты RU/EN пока находятся в вызовах renderer. Их перенос в Android string resources потребует отдельного UI localization pass и тестов для обоих языков.
+Тексты RU/EN пока находятся в Kotlin renderer/navigation. Их перенос в Android string resources остаётся отдельной задачей с проверкой полноты значений для обоих языков. Полный приоритетный список найденных улучшений находится в docs/REFACTOR_AUDIT.md.
 
 SharedPreferences repositories покрыты Robolectric integration tests. Физическое устройство всё ещё требуется для проверки FPS, TalkBack, touch scaling, звука/вибрации и поведения при background/foreground.

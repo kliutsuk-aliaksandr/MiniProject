@@ -32,7 +32,10 @@ MainActivity
        │    └── transient particles / clearing effects / GameEvent side effects
        ├── GameNavigationController (screens, transitions, hit areas, accessibility targets)
        ├── GameInputRouter (pointer gesture state and callback routing)
-       ├── GameRenderer (Canvas presentation)
+       ├── GameRenderer (small Canvas façade)
+       │    ├── MenuScreenRenderer
+       │    ├── GameplayRenderer
+       │    └── GameRenderResources (shared Paint/Path cache + primitives)
        └── GameAccessibilityNodeProvider (Android virtual-node adapter)
 ```
 
@@ -52,11 +55,18 @@ MainActivity
 
 ### Render: game/render
 
-GameRenderer рисует меню, карту уровней, обучение, настройки, privacy screen, дорожку, препятствия, цепочку, снаряды, лягушку, HUD, бустеры, эффекты и overlay. Он не обрабатывает касания и не читает SharedPreferences.
+Render слой разделён на четыре роли:
+
+- GameRenderer — небольшой façade, который рисует общий фон и выбирает слой по GameScreen.
+- MenuScreenRenderer рисует меню, карту уровней, обучение, настройки и privacy screen.
+- GameplayRenderer рисует дорожку, препятствия, цепочку, снаряды, лягушку, HUD, бустеры, clearing/particle effects и pause/end overlays.
+- GameRenderResources хранит общий Paint/Shader/Path cache и переиспользуемые Canvas primitives. Внутренний базовый renderer имеет internal visibility и не входит в публичный API.
+
+Renderer не обрабатывает касания, не читает SharedPreferences и не меняет GameEngine. Он получает domain state и GameRenderState.
 
 ### UI: game/ui
 
-GameView — тонкий Android View adapter: управляет View lifecycle, рисует Canvas, преобразует MotionEvent в мировые координаты и связывает Android callback с контроллерами.
+GameView — тонкий Android View adapter: управляет View lifecycle, рисует Canvas через GameRenderer façade, преобразует MotionEvent в мировые координаты и связывает Android callback с контроллерами.
 
 - GameSessionController владеет экземпляром GameEngine, игровым loop, save/progress repositories, настройками, аудио, обработкой доменных событий и временными эффектами. Он создаёт presentation snapshot, не обращаясь к Canvas.
 - GameNavigationController владеет активным экраном, страницей обучения, hit areas, переходами, а также формирует виртуальные accessibility targets. Навигационные действия едины для обычного touch и accessibility.
