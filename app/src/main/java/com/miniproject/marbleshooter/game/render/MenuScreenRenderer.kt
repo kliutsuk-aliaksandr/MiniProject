@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.RectF
 import com.miniproject.marbleshooter.game.domain.GameEngine
 import com.miniproject.marbleshooter.game.domain.LevelCatalog
+import com.miniproject.marbleshooter.game.domain.ChallengeCatalog
 import com.miniproject.marbleshooter.game.domain.model.Vec2
 import com.miniproject.marbleshooter.game.domain.model.OfflineAchievement
 
@@ -88,8 +89,61 @@ internal class MenuScreenRenderer(resources: GameRenderResources) : GameCanvasRe
             )
         }
 
+        button(canvas, 78f, 620f, 342f, 670f, tr(state, R.string.challenges), PURPLE)
         drawTrackLegend(canvas, state)
         button(canvas, 78f, 750f, 342f, 810f, tr(state, R.string.main_menu), GREEN)
+    }
+
+    internal fun drawChallenges(canvas: Canvas, state: GameRenderState) {
+        centeredText(canvas, tr(state, R.string.challenges_title), 27f, Color.WHITE, 210f, 130f)
+        centeredText(canvas, tr(state, R.string.challenge_start_hint), 12f, MUTED, 210f, 162f)
+
+        ChallengeCatalog.all.forEachIndexed { index, challenge ->
+            val top = 205f + index * 145f
+            val bottom = top + 130f
+            val bestStars = state.challengeStarsById[challenge.id] ?: 0
+            drawPanel(canvas, RectF(24f, top, 396f, bottom), 18f, Color.argb(180, 15, 26, 47))
+            centeredText(
+                canvas,
+                tr(state, challengeTitleResource(challenge.id)),
+                16f, Color.WHITE, 210f, top + 27f
+            )
+            drawParagraph(
+                canvas,
+                tr(state, challengeDescriptionResource(challenge.id)),
+                11f, MUTED, RectF(42f, top + 39f, 378f, top + 77f)
+            )
+            val limit = if (challenge.timeLimitSeconds == null) {
+                tr(state, R.string.challenge_shot_limit, challenge.maxShots)
+            } else {
+                tr(
+                    state,
+                    R.string.challenge_time_shot_limit,
+                    challenge.timeLimitSeconds.toInt(),
+                    challenge.maxShots
+                )
+            }
+            centeredText(canvas, limit, 11f, Color.rgb(111, 228, 164), 210f, top + 94f)
+            centeredText(
+                canvas,
+                if (bestStars == 0) tr(state, R.string.challenge_no_record)
+                else tr(state, R.string.challenge_best_stars, starsLine(bestStars)),
+                11f, Color.rgb(255, 209, 88), 210f, top + 116f
+            )
+        }
+        button(canvas, 78f, 750f, 342f, 810f, tr(state, R.string.main_menu), GREEN)
+    }
+
+    private fun challengeTitleResource(id: Int): Int = when (id) {
+        1 -> R.string.challenge_precision_title
+        2 -> R.string.challenge_speed_title
+        else -> R.string.challenge_expert_title
+    }
+
+    private fun challengeDescriptionResource(id: Int): Int = when (id) {
+        1 -> R.string.challenge_precision_body
+        2 -> R.string.challenge_speed_body
+        else -> R.string.challenge_expert_body
     }
 
     private fun drawTrackLegend(canvas: Canvas, state: GameRenderState) {
