@@ -59,7 +59,7 @@ class OfflineProgressRepository(context: Context) {
     }
 
     fun recordBooster(type: BoosterType) {
-        val updatedMask = readInt(KEY_USED_BOOSTERS).coerceAtLeast(0) or (1 shl type.ordinal)
+        val updatedMask = readInt(KEY_USED_BOOSTERS).coerceAtLeast(0) or boosterBit(type)
         preferences.edit().putInt(KEY_USED_BOOSTERS, updatedMask).apply()
     }
 
@@ -102,6 +102,13 @@ class OfflineProgressRepository(context: Context) {
 
     private fun starsKey(level: Int) = "stars_$level"
 
+    private fun boosterBit(type: BoosterType): Int = when (type) {
+        BoosterType.SLOW_TIME -> BOOSTER_SLOW_TIME_MASK
+        BoosterType.BOMB -> BOOSTER_BOMB_MASK
+        BoosterType.COLOR_CHANGE -> BOOSTER_COLOR_CHANGE_MASK
+        BoosterType.REVERSE_CHAIN -> BOOSTER_REVERSE_CHAIN_MASK
+    }
+
     private companion object {
         const val PREFERENCES_NAME = "offline_progress"
         const val KEY_TOTAL_SHOTS = "total_shots"
@@ -110,6 +117,10 @@ class OfflineProgressRepository(context: Context) {
         const val KEY_LARGEST_MATCH = "largest_match"
         const val KEY_BEST_SCORE = "best_score"
         const val KEY_USED_BOOSTERS = "used_boosters"
-        val ALL_BOOSTERS_MASK = BoosterType.values().fold(0) { mask, type -> mask or (1 shl type.ordinal) }
+        const val BOOSTER_SLOW_TIME_MASK = 1 shl 0
+        const val BOOSTER_BOMB_MASK = 1 shl 1
+        const val BOOSTER_COLOR_CHANGE_MASK = 1 shl 2
+        const val BOOSTER_REVERSE_CHAIN_MASK = 1 shl 3
+        const val ALL_BOOSTERS_MASK = 0b1111
     }
 }

@@ -56,6 +56,7 @@ class OfflineProgressRepositoryTest {
 
         BoosterType.values().forEach(repository::recordBooster)
 
+        assertEquals(15, repository.statistics.usedBoosterMask)
         assertTrue(repository.unlockedAchievements.contains(OfflineAchievement.BOOSTER_COLLECTOR))
     }
 
