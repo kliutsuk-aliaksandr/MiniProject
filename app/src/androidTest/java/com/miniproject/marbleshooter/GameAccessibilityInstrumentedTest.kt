@@ -131,6 +131,10 @@ class GameAccessibilityInstrumentedTest {
             tapAccessibilityTarget(device, scenario, 31)
             assertTargetText(scenario, 35, "Back")
             tapAccessibilityTarget(device, scenario, 35)
+            assertTargetText(scenario, 6, "Achievements and statistics")
+            tapAccessibilityTarget(device, scenario, 6)
+            assertTargetText(scenario, 120, "Main menu")
+            tapAccessibilityTarget(device, scenario, 120)
             assertTargetText(scenario, 3, "Level map")
 
             // Open the map and verify its first unlocked level with a real screen tap.

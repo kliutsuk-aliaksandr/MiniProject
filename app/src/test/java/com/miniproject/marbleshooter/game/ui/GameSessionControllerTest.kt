@@ -1,6 +1,7 @@
 package com.miniproject.marbleshooter.game.ui
 
 import android.content.Context
+import com.miniproject.marbleshooter.game.data.OfflineProgressRepository
 import com.miniproject.marbleshooter.game.domain.model.BoosterType
 import com.miniproject.marbleshooter.game.render.GameScreen
 import org.junit.Assert.assertEquals
@@ -49,12 +50,48 @@ class GameSessionControllerTest {
         }
     }
 
+
+    @Test
+    fun lifetimeStatisticsRecordCampaignActivityButIgnoreTutorialPractice() {
+        val context = freshContext(vibrationEnabled = false)
+        val session = GameSessionController(context) { }
+
+        try {
+            session.engine.fireShot()
+            session.handlePendingEvents(isGameScreen = true)
+            assertEquals(1, OfflineProgressRepository(context).statistics.totalShots)
+
+            session.engine.startTutorial()
+            session.engine.drainEvents()
+            session.engine.fireShot()
+            session.handlePendingEvents(isGameScreen = true)
+            assertTrue(session.engine.activateBooster(BoosterType.SLOW_TIME))
+            session.handlePendingEvents(isGameScreen = true)
+
+            val stats = OfflineProgressRepository(context).statistics
+            assertEquals(1, stats.totalShots)
+            assertEquals(0, stats.usedBoosterMask)
+            assertTrue(OfflineProgressRepository(context).unlockedAchievements.isEmpty())
+        } finally {
+            session.disposeGame(GameScreen.MENU)
+            clearPreferences(context)
+            context.getSharedPreferences("offline_progress", Context.MODE_PRIVATE)
+                .edit()
+                .clear()
+                .apply()
+        }
+    }
+
     private fun freshContext(vibrationEnabled: Boolean): Context =
         RuntimeEnvironment.getApplication().also { context ->
             context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
                 .edit()
                 .clear()
                 .putBoolean("vibration_enabled", vibrationEnabled)
+                .apply()
+            context.getSharedPreferences("offline_progress", Context.MODE_PRIVATE)
+                .edit()
+                .clear()
                 .apply()
         }
 
