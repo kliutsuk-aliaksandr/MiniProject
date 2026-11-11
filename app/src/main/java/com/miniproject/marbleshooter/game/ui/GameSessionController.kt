@@ -235,7 +235,7 @@ internal class GameSessionController(
                 }
                 is GameEvent.BoosterActivated -> {
                     audio.playClick(soundEnabled)
-                    onHapticFeedback()
+                    if (vibrationEnabled) onHapticFeedback()
                     saveGameState(isGameScreen)
                 }
                 GameEvent.GameLost -> {
