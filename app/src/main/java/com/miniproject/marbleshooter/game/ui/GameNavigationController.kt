@@ -3,6 +3,7 @@ package com.miniproject.marbleshooter.game.ui
 import android.graphics.Rect
 import com.miniproject.marbleshooter.R
 import com.miniproject.marbleshooter.game.render.GameTextResources
+import com.miniproject.marbleshooter.game.domain.ChallengeCatalog
 import com.miniproject.marbleshooter.game.domain.model.BoosterType
 import com.miniproject.marbleshooter.game.domain.model.GameStatus
 import com.miniproject.marbleshooter.game.domain.model.Vec2
@@ -26,7 +27,7 @@ internal class GameNavigationController(
 
     fun handleSystemBack(): Boolean {
         when (screen) {
-            GameScreen.SETTINGS, GameScreen.PRIVACY, GameScreen.LEVEL_MAP, GameScreen.TUTORIAL -> {
+            GameScreen.SETTINGS, GameScreen.PRIVACY, GameScreen.LEVEL_MAP, GameScreen.CHALLENGES, GameScreen.TUTORIAL, GameScreen.ACHIEVEMENTS -> {
                 screen = if (screen == GameScreen.PRIVACY) GameScreen.SETTINGS else GameScreen.MENU
             }
             GameScreen.MENU -> return false
@@ -46,12 +47,14 @@ internal class GameNavigationController(
         when (screen) {
             GameScreen.MENU -> handleMenuTap(target)
             GameScreen.LEVEL_MAP -> handleLevelMapTap(target)
+            GameScreen.CHALLENGES -> handleChallengesTap(target)
             GameScreen.TUTORIAL -> handleTutorialTap(target)
             GameScreen.SETTINGS -> handleSettingsTap(target)
             GameScreen.PRIVACY -> if (inButton(target, 790f, 845f)) {
                 screen = GameScreen.SETTINGS
                 session.playClick()
             }
+            GameScreen.ACHIEVEMENTS -> handleAchievementsTap(target)
             GameScreen.GAME -> handleGameTap(target)
         }
     }
@@ -100,15 +103,20 @@ internal class GameNavigationController(
                     add(3, localized(R.string.a11y_level_map), 78f, 538f, 342f, 592f) { handleMenuTap(Vec2(210f, 565f)) }
                     add(4, localized(R.string.a11y_tutorial), 78f, 602f, 342f, 656f) { handleMenuTap(Vec2(210f, 629f)) }
                     add(5, localized(R.string.a11y_settings), 78f, 666f, 342f, 720f) { handleMenuTap(Vec2(210f, 693f)) }
+                    add(6, localized(R.string.a11y_achievements), 78f, 730f, 342f, 784f) { handleMenuTap(Vec2(210f, 757f)) }
                 } else {
                     add(1, localized(R.string.a11y_play), 78f, 438f, 342f, 496f) { handleMenuTap(Vec2(210f, 467f)) }
                     add(3, localized(R.string.a11y_level_map), 78f, 506f, 342f, 564f) { handleMenuTap(Vec2(210f, 535f)) }
                     add(4, localized(R.string.a11y_tutorial), 78f, 574f, 342f, 632f) { handleMenuTap(Vec2(210f, 603f)) }
                     add(5, localized(R.string.a11y_settings), 78f, 642f, 342f, 700f) { handleMenuTap(Vec2(210f, 671f)) }
+                    add(6, localized(R.string.a11y_achievements), 78f, 710f, 342f, 768f) { handleMenuTap(Vec2(210f, 739f)) }
                 }
             }
             GameScreen.LEVEL_MAP -> {
                 add(10, localized(R.string.a11y_main_menu), 78f, 750f, 342f, 810f) { handleLevelMapTap(Vec2(210f, 780f)) }
+                add(11, localized(R.string.a11y_challenges), 78f, 620f, 342f, 670f) {
+                    handleLevelMapTap(Vec2(210f, 645f))
+                }
                 for (level in 1..session.unlockedLevel) {
                     val index = level - 1
                     val left = 22f + (index % 5) * 76f
@@ -116,6 +124,22 @@ internal class GameNavigationController(
                     add(100 + level, localized(R.string.a11y_level, level), left, top, left + 68f, top + 58f) {
                         handleLevelMapTap(Vec2(left + 34f, top + 29f))
                     }
+                }
+            }
+            GameScreen.CHALLENGES -> {
+                ChallengeCatalog.all.forEachIndexed { index, challenge ->
+                    val top = 205f + index * 145f
+                    add(
+                        130 + challenge.id,
+                        localized(R.string.a11y_challenge, localized(challengeTitleResource(challenge.id))),
+                        24f, top, 396f, top + 130f
+                    ) {
+                        handleChallengesTap(Vec2(210f, top + 65f))
+                    }
+                }
+                add(140, localized(R.string.a11y_main_menu), 78f, 750f, 342f, 810f) {
+                    screen = GameScreen.MENU
+                    session.playClick()
                 }
             }
             GameScreen.TUTORIAL -> {
@@ -135,6 +159,10 @@ internal class GameNavigationController(
                 screen = GameScreen.SETTINGS
                 session.playClick()
             }
+            GameScreen.ACHIEVEMENTS -> add(120, localized(R.string.a11y_main_menu), 78f, 785f, 342f, 845f) {
+                screen = GameScreen.MENU
+                session.playClick()
+            }
             GameScreen.GAME -> when (engine.status) {
                 GameStatus.RUNNING -> {
                     add(50, localized(R.string.a11y_toggle_sound), 302f, 20f, 342f, 75f) { handleGameTap(Vec2(322f, 50f)) }
@@ -152,17 +180,49 @@ internal class GameNavigationController(
                 GameStatus.PAUSED -> {
                     add(70, localized(R.string.a11y_resume), 80f, 445f, 340f, 505f) { handleGameTap(Vec2(210f, 475f)) }
                     add(71, localized(R.string.a11y_restart), 80f, 515f, 340f, 575f) { handleGameTap(Vec2(210f, 545f)) }
-                    add(72, localized(R.string.a11y_level_map), 80f, 585f, 340f, 645f) { handleGameTap(Vec2(210f, 615f)) }
+                    add(
+                        72,
+                        localized(if (engine.isChallenge) R.string.challenge_list else R.string.a11y_level_map),
+                        80f, 585f, 340f, 645f
+                    ) { handleGameTap(Vec2(210f, 615f)) }
                     add(73, localized(R.string.a11y_main_menu), 80f, 655f, 340f, 715f) { handleGameTap(Vec2(210f, 685f)) }
                 }
                 GameStatus.WON -> {
-                    add(80, if (engine.isTutorial) localized(R.string.retry_practice) else localized(R.string.a11y_next_level), 65f, 455f, 355f, 515f) { handleGameTap(Vec2(210f, 485f)) }
-                    add(81, if (engine.isTutorial) localized(R.string.a11y_back_lessons) else localized(R.string.a11y_level_map), 80f, 525f, 340f, 585f) { handleGameTap(Vec2(210f, 555f)) }
+                    add(
+                        80,
+                        when {
+                            engine.isChallenge -> localized(R.string.a11y_retry_challenge)
+                            engine.isTutorial -> localized(R.string.retry_practice)
+                            else -> localized(R.string.a11y_next_level)
+                        },
+                        65f, 455f, 355f, 515f
+                    ) { handleGameTap(Vec2(210f, 485f)) }
+                    add(
+                        81,
+                        when {
+                            engine.isChallenge -> localized(R.string.challenge_list)
+                            engine.isTutorial -> localized(R.string.a11y_back_lessons)
+                            else -> localized(R.string.a11y_level_map)
+                        },
+                        80f, 525f, 340f, 585f
+                    ) { handleGameTap(Vec2(210f, 555f)) }
                     add(82, localized(R.string.a11y_main_menu), 80f, 595f, 340f, 655f) { handleGameTap(Vec2(210f, 625f)) }
                 }
                 GameStatus.LOST -> {
-                    add(90, if (engine.isTutorial) localized(R.string.retry_practice) else localized(R.string.a11y_play_again), 80f, 500f, 340f, 560f) { handleGameTap(Vec2(210f, 530f)) }
-                    add(91, localized(R.string.a11y_level_map), 80f, 575f, 340f, 635f) { handleGameTap(Vec2(210f, 605f)) }
+                    add(
+                        90,
+                        when {
+                            engine.isChallenge -> localized(R.string.a11y_retry_challenge)
+                            engine.isTutorial -> localized(R.string.retry_practice)
+                            else -> localized(R.string.a11y_play_again)
+                        },
+                        80f, 500f, 340f, 560f
+                    ) { handleGameTap(Vec2(210f, 530f)) }
+                    add(
+                        91,
+                        localized(if (engine.isChallenge) R.string.challenge_list else R.string.a11y_level_map),
+                        80f, 575f, 340f, 635f
+                    ) { handleGameTap(Vec2(210f, 605f)) }
                     add(92, localized(R.string.a11y_main_menu), 80f, 650f, 340f, 710f) { handleGameTap(Vec2(210f, 680f)) }
                 }
             }
@@ -187,6 +247,7 @@ internal class GameNavigationController(
                 }
                 inButton(target, 602f, 656f) -> openTutorial()
                 inButton(target, 666f, 720f) -> openSettings()
+                inButton(target, 730f, 784f) -> openAchievements()
             }
         } else {
             when {
@@ -200,7 +261,20 @@ internal class GameNavigationController(
                 }
                 inButton(target, 574f, 632f) -> openTutorial()
                 inButton(target, 642f, 700f) -> openSettings()
+                inButton(target, 710f, 768f) -> openAchievements()
             }
+        }
+    }
+
+    private fun openAchievements() {
+        screen = GameScreen.ACHIEVEMENTS
+        session.playClick()
+    }
+
+    private fun handleAchievementsTap(target: Vec2) {
+        if (inButton(target, 785f, 845f)) {
+            screen = GameScreen.MENU
+            session.playClick()
         }
     }
 
@@ -216,6 +290,11 @@ internal class GameNavigationController(
     }
 
     private fun handleLevelMapTap(target: Vec2) {
+        if (target.x in 60f..360f && target.y in 620f..670f) {
+            screen = GameScreen.CHALLENGES
+            session.playClick()
+            return
+        }
         if (inButton(target, 750f, 810f)) {
             screen = GameScreen.MENU
             session.playClick()
@@ -235,6 +314,27 @@ internal class GameNavigationController(
         if (target.x !in x..(x + cellWidth) || target.y !in y..(y + cellHeight)) return
         val level = row * 5 + column + 1
         if (session.startLevel(level)) screen = GameScreen.GAME
+    }
+
+    private fun handleChallengesTap(target: Vec2) {
+        if (target.y in 750f..810f && target.x in 60f..360f) {
+            screen = GameScreen.MENU
+            session.playClick()
+            return
+        }
+        for (challenge in ChallengeCatalog.all) {
+            val top = 205f + (challenge.id - 1) * 145f
+            if (target.x in 24f..396f && target.y in top..(top + 130f)) {
+                if (session.startChallenge(challenge.id)) screen = GameScreen.GAME
+                return
+            }
+        }
+    }
+
+    private fun challengeTitleResource(id: Int): Int = when (id) {
+        1 -> R.string.challenge_precision_title
+        2 -> R.string.challenge_speed_title
+        else -> R.string.challenge_expert_title
     }
 
     private fun handleTutorialTap(target: Vec2) {
@@ -305,11 +405,15 @@ internal class GameNavigationController(
                     session.playClick()
                 }
                 inButton(target, 515f, 575f) -> {
-                    session.startNewGame()
+                    if (engine.isChallenge) {
+                        session.startChallenge(requireNotNull(engine.challengeDefinition).id)
+                    } else {
+                        session.startNewGame()
+                    }
                     screen = GameScreen.GAME
                 }
                 inButton(target, 585f, 645f) -> {
-                    screen = GameScreen.LEVEL_MAP
+                    screen = if (engine.isChallenge) GameScreen.CHALLENGES else GameScreen.LEVEL_MAP
                     session.playClick()
                 }
                 inButton(target, 655f, 715f) -> {
@@ -319,23 +423,30 @@ internal class GameNavigationController(
             }
             GameStatus.WON -> when {
                 inButton(target, 455f, 515f) -> {
-                    if (engine.isTutorial) {
-                        session.startTutorialPractice()
-                        screen = GameScreen.GAME
-                    } else {
-                        if (!engine.startNextLevel()) screen = GameScreen.LEVEL_MAP
-                        session.clearEffects()
-                        session.saveGameState(screen == GameScreen.GAME)
-                        session.playClick()
+                    when {
+                        engine.isChallenge -> {
+                            session.startChallenge(requireNotNull(engine.challengeDefinition).id)
+                            screen = GameScreen.GAME
+                        }
+                        engine.isTutorial -> {
+                            session.startTutorialPractice()
+                            screen = GameScreen.GAME
+                        }
+                        else -> {
+                            if (!engine.startNextLevel()) screen = GameScreen.LEVEL_MAP
+                            session.clearEffects()
+                            session.saveGameState(screen == GameScreen.GAME)
+                            session.playClick()
+                        }
                     }
                 }
                 inButton(target, 525f, 585f) -> {
-                    if (engine.isTutorial) {
-                        openTutorial()
-                    } else {
-                        screen = GameScreen.LEVEL_MAP
-                        session.playClick()
+                    when {
+                        engine.isChallenge -> screen = GameScreen.CHALLENGES
+                        engine.isTutorial -> openTutorial()
+                        else -> screen = GameScreen.LEVEL_MAP
                     }
+                    session.playClick()
                 }
                 inButton(target, 595f, 655f) -> {
                     screen = GameScreen.MENU
@@ -344,15 +455,15 @@ internal class GameNavigationController(
             }
             GameStatus.LOST -> when {
                 inButton(target, 500f, 560f) -> {
-                    if (engine.isTutorial) {
-                        session.startTutorialPractice()
-                    } else {
-                        session.startNewGame()
+                    when {
+                        engine.isChallenge -> session.startChallenge(requireNotNull(engine.challengeDefinition).id)
+                        engine.isTutorial -> session.startTutorialPractice()
+                        else -> session.startNewGame()
                     }
                     screen = GameScreen.GAME
                 }
                 inButton(target, 575f, 635f) -> {
-                    screen = GameScreen.LEVEL_MAP
+                    screen = if (engine.isChallenge) GameScreen.CHALLENGES else GameScreen.LEVEL_MAP
                     session.playClick()
                 }
                 inButton(target, 650f, 710f) -> {

@@ -131,12 +131,32 @@ class GameAccessibilityInstrumentedTest {
             tapAccessibilityTarget(device, scenario, 31)
             assertTargetText(scenario, 35, "Back")
             tapAccessibilityTarget(device, scenario, 35)
+            assertTargetText(scenario, 6, "Achievements and statistics")
+            tapAccessibilityTarget(device, scenario, 6)
+            assertTargetText(scenario, 120, "Main menu")
+            tapAccessibilityTarget(device, scenario, 120)
             assertTargetText(scenario, 3, "Level map")
 
             // Open the map and verify its first unlocked level with a real screen tap.
             tapAccessibilityTarget(device, scenario, 3)
             assertTargetText(scenario, 101, "Level 1")
-            tapAccessibilityTarget(device, scenario, 10)
+
+            // Open the offline challenge list, start a challenge, pause and return to its list.
+            tapAccessibilityTarget(device, scenario, 11)
+            assertTargetText(scenario, 131, "Challenge: PRECISION")
+            scenario.onActivity { activity ->
+                click(accessibilityProvider(gameView(activity)), 131)
+            }
+            assertTargetText(scenario, 51, "Pause")
+            scenario.onActivity { activity ->
+                click(accessibilityProvider(gameView(activity)), 51)
+            }
+            assertTargetText(scenario, 72, "CHALLENGES")
+            scenario.onActivity { activity ->
+                click(accessibilityProvider(gameView(activity)), 72)
+            }
+            assertTargetText(scenario, 140, "Main menu")
+            tapAccessibilityTarget(device, scenario, 140)
             assertTargetText(scenario, 4, "Tutorial")
 
             // Exercise all tutorial pages through real touch injection, then return to the menu.
@@ -204,6 +224,10 @@ class GameAccessibilityInstrumentedTest {
     private fun clearGamePreferences() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .commit()
+        context.getSharedPreferences("offline_challenge_progress", Context.MODE_PRIVATE)
             .edit()
             .clear()
             .commit()

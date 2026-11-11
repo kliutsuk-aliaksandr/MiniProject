@@ -4,7 +4,10 @@ import android.content.Context
 import android.view.HapticFeedbackConstants
 import com.miniproject.marbleshooter.game.audio.GameAudio
 import com.miniproject.marbleshooter.game.data.GameSaveRepository
+import com.miniproject.marbleshooter.game.data.ChallengeProgressRepository
+import com.miniproject.marbleshooter.game.data.OfflineProgressRepository
 import com.miniproject.marbleshooter.game.domain.GameEngine
+import com.miniproject.marbleshooter.game.domain.ChallengeCatalog
 import com.miniproject.marbleshooter.game.domain.model.BoosterType
 import com.miniproject.marbleshooter.game.domain.model.GameEvent
 import com.miniproject.marbleshooter.game.domain.model.GameStatus
@@ -40,6 +43,8 @@ internal class GameSessionController(
     private val audio = GameAudio()
     private val saveRepository = GameSaveRepository(context)
     private val progressPresentation = ProgressPresentationCache(context)
+    private val offlineProgress = OfflineProgressRepository(context)
+    private val challengeProgress = ChallengeProgressRepository(context)
     private val preferences = context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
     private val particles = mutableListOf<MutableParticle>()
     private val clearingBalls = mutableListOf<ClearingBallVisual>()
@@ -75,6 +80,9 @@ internal class GameSessionController(
             tutorialPage = tutorialPage,
             unlockedLevel = unlockedLevel,
             starsByLevel = starsByLevel,
+            challengeStarsById = challengeProgress.bestStarsByChallenge,
+            offlineStatistics = offlineProgress.statistics,
+            unlockedAchievements = offlineProgress.unlockedAchievements,
             particles = particles.map {
                 ParticleVisual(it.x, it.y, it.life, it.maxLife, it.color, it.radius)
             },
@@ -153,6 +161,15 @@ internal class GameSessionController(
         return true
     }
 
+    fun startChallenge(challengeId: Int): Boolean {
+        if (ChallengeCatalog.find(challengeId) == null) return false
+        gameLoopController.resetAccumulator()
+        if (!engine.startChallenge(challengeId)) return false
+        clearEffects()
+        playClick()
+        return true
+    }
+
     fun startTutorialPractice() {
         gameLoopController.resetAccumulator()
         engine.startTutorial()
@@ -176,15 +193,16 @@ internal class GameSessionController(
     }
 
     fun saveGameState(isGameScreen: Boolean) {
-        if (isGameScreen && !engine.isTutorial) {
+        if (isGameScreen && !engine.isTutorial && !engine.isChallenge) {
             saveRepository.save(engine)
         }
     }
 
     fun saveBestScoreIfNeeded() {
         // Practice scores are session-only and must not overwrite campaign records.
-        if (engine.isTutorial) return
+        if (engine.isTutorial || engine.isChallenge) return
         progressPresentation.updateBestScore(engine.score)
+        offlineProgress.recordScore(engine.score)
     }
 
     fun playClick() {
@@ -216,8 +234,12 @@ internal class GameSessionController(
     private fun handleGameEvents(events: List<GameEvent>, isGameScreen: Boolean) {
         for (event in events) {
             when (event) {
-                GameEvent.ShotFired -> audio.playShot(soundEnabled)
+                GameEvent.ShotFired -> {
+                    if (!engine.isTutorial && !engine.isChallenge) offlineProgress.recordShot()
+                    audio.playShot(soundEnabled)
+                }
                 is GameEvent.MatchCleared -> {
+                    if (!engine.isTutorial && !engine.isChallenge) offlineProgress.recordMatch(event.count)
                     audio.playMatch(soundEnabled)
                     for (position in event.removedPositions) {
                         clearingBalls += ClearingBallVisual(position, event.colorIndex, 0.24f)
@@ -226,21 +248,32 @@ internal class GameSessionController(
                     saveGameState(isGameScreen)
                 }
                 is GameEvent.LevelStarted -> Unit
+                is GameEvent.ChallengeCompleted -> {
+                    challengeProgress.recordCompletion(
+                        event.challengeId,
+                        event.stars,
+                        event.shotsFired,
+                        event.remainingSeconds
+                    )
+                    audio.playWin(soundEnabled)
+                }
                 is GameEvent.LevelCompleted -> {
                     audio.playWin(soundEnabled)
                     if (!engine.isTutorial) {
                         progressPresentation.recordCompletion(event.level, event.stars, event.score)
+                        offlineProgress.recordLevelCompleted(event.level, event.stars, event.score)
                         saveRepository.clear()
                     }
                 }
                 is GameEvent.BoosterActivated -> {
+                    if (!engine.isTutorial && !engine.isChallenge) offlineProgress.recordBooster(event.type)
                     audio.playClick(soundEnabled)
                     if (vibrationEnabled) onHapticFeedback()
                     saveGameState(isGameScreen)
                 }
                 GameEvent.GameLost -> {
                     audio.playLose(soundEnabled)
-                    if (!engine.isTutorial) saveRepository.clear()
+                    if (!engine.isTutorial && !engine.isChallenge) saveRepository.clear()
                 }
             }
         }

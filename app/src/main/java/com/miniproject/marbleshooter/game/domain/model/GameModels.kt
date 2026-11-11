@@ -93,6 +93,38 @@ sealed interface GameEvent {
     ) : GameEvent
     data class LevelStarted(val level: Int) : GameEvent
     data class LevelCompleted(val level: Int, val stars: Int, val score: Int) : GameEvent
+    data class ChallengeCompleted(
+        val challengeId: Int,
+        val stars: Int,
+        val shotsFired: Int,
+        val remainingSeconds: Float
+    ) : GameEvent
     data class BoosterActivated(val type: BoosterType) : GameEvent
     data object GameLost : GameEvent
 }
+
+
+/** Milestones earned from local, non-tutorial campaign activity. */
+enum class OfflineAchievement {
+    FIRST_SHOT,
+    FIRST_MATCH,
+    BIG_COMBO,
+    FIRST_LEVEL,
+    THREE_STARS,
+    BOOSTER_COLLECTOR,
+    LEVEL_TEN,
+    CAMPAIGN_COMPLETE
+}
+
+/** Lifetime counters persisted separately from the current campaign save. */
+data class OfflineStatistics(
+    val totalShots: Int = 0,
+    val matchesCleared: Int = 0,
+    val marblesCleared: Int = 0,
+    val largestMatch: Int = 0,
+    val levelsCompleted: Int = 0,
+    val threeStarLevels: Int = 0,
+    val highestLevel: Int = 0,
+    val bestScore: Int = 0,
+    val usedBoosterMask: Int = 0
+)

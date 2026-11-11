@@ -1,18 +1,18 @@
 # Технический аудит — текущее состояние Marble Frog
 
 **Снимок:** 11 ноября 2026 года
-**Рабочая ветка:** dev (ответвлена от fix)
-**Кодовый snapshot (проверен CI):** 4cc2042975ae9d443b685a8a74e58b221b5177c3
+**Рабочая feature-ветка:** feature/gameplay-polish-offline-content → dev → main
+**Кодовый snapshot feature:** 305d0d4adf8bfa6e234d4995800492eb10c267f4
 **База:** main = 20ce0d75928c3988628de93a784683a411307ff2
-**PR №2:** открыт, Draft, fix → main
+**PR №3:** открыт, Draft, feature/gameplay-polish-offline-content → dev; PR №2 закрыт как устаревший, без merge
 
-Ветка dev унаследовала текущий результат fix и содержит стандартный Gradle Wrapper 8.13 с проверенными checksum, CI через ./gradlew, локализацию RU/EN через Android string resources и Android instrumentation/UIAutomator coverage. CI для source snapshot 4cc2042975ae9d443b685a8a74e58b221b5177c3 успешно прошёл на API 23/29/36 и Windows. main и fix не изменялись; PR №2 остаётся Draft.
+Рабочий поток организован как feature/* → dev → main. Текущая feature-ветка ответвлена от dev (30 коммитов сверх dev на момент проверки). Ветка dev остаётся на 93dc1c6, main — на 20ce0d7, fix — на a2a48d6. PR №3 открыт Draft feature → dev; старый PR №2 fix → main закрыт как устаревший и не сливался. Ветки main/dev/fix не обновлялись этой feature-работой.
 
 ## 1. Что выполнено
 
 - GameView сокращён с 712 до 145 строк и оставлен Android View adapter.
-- GameSessionController владеет session lifecycle, simulation loop, repositories, audio, GameEvent side effects и transient effects.
-- GameNavigationController владеет экранами, переходами, hit areas и accessibility targets.
+- GameSessionController владеет session lifecycle, simulation loop, campaign/offline/challenge repositories, audio, GameEvent side effects и transient effects.
+- GameNavigationController владеет экранами, переходами, hit areas и accessibility targets, включая список испытаний и challenge-result actions.
 - GameInputRouter маршрутизирует DOWN/MOVE/UP/CANCEL и остаётся независимым от Android API.
 - GameRenderer является небольшим façade; MenuScreenRenderer отвечает за menu/map/tutorial/settings/privacy. GameTextResources кэширует RU/EN Resources и передаёт выбранный язык renderer/navigation.
 - GameplayRenderer координирует TrackRenderer, GameEntitiesRenderer, GameEffectsRenderer, HudRenderer и GameOverlayRenderer.
@@ -28,29 +28,32 @@
 | Файл | Строк | Роль |
 |---|---:|---|
 | GameView.kt | 145 | Android View / Canvas adapter |
-| GameSessionController.kt | 306 | Session lifecycle, persistence, events, audio/effects |
-| GameNavigationController.kt | 372 | Screen state, transitions, hit areas, accessibility targets |
+| GameSessionController.kt | 339 | Session lifecycle, persistence, campaign/offline/challenge progress, events, audio/effects |
+| GameNavigationController.kt | 487 | Screen state, transitions, hit areas, accessibility targets incl. achievements/challenges |
 | GameInputRouter.kt | 68 | Pointer gesture router |
-| GameEngine.kt | 629 | Pure Kotlin domain aggregate |
-| GameRenderer.kt | 59 | Renderer façade |
-| MenuScreenRenderer.kt | 267 | Menu/map/tutorial/settings/privacy |
+| GameEngine.kt | 770 | Pure Kotlin domain aggregate; route entrance, animated insertion, live shot palette and isolated challenges |
+| GameRenderer.kt | 68 | Renderer façade incl. achievements and challenges |
+| MenuScreenRenderer.kt | 345 | Menu/map/challenges/tutorial/settings/privacy/achievements |
 | GameplayRenderer.kt | 54 | Gameplay draw coordinator |
 | TrackRenderer.kt | 79 | Route and obstacle rendering |
 | GameEntitiesRenderer.kt | 28 | Chain/projectiles/frog |
 | GameEffectsRenderer.kt | 38 | Clearing and particles |
-| HudRenderer.kt | 81 | Score/status/boosters |
-| GameOverlayRenderer.kt | 69 | Pause/win/loss overlays |
-| GameRenderResources.kt | 200 | Shared Paint/Path/Canvas resources |
+| HudRenderer.kt | 98 | Score/status/boosters and challenge limits |
+| GameOverlayRenderer.kt | 103 | Pause/win/loss overlays and challenge-specific results |
+| GameRenderResources.kt | 235 | Shared Paint/Path/Canvas resources and polished UI primitives |
+| OfflineProgressRepository.kt | 127 | Local lifetime statistics and achievement unlocks, isolated from campaign save |
+| ChallengeCatalog.kt | 28 | Three immutable offline challenge definitions with shot/time constraints |
+| ChallengeProgressRepository.kt | 69 | Local best stars, shots and remaining time for challenges |
 
 Render layers share one resource instance. They do not own input, persistence or domain rules. Domain source remains free of Android imports.
 
 ## 3. Автоматические тесты
 
-Текущий test source содержит **60 JVM-тестов в 11 файлах**:
+Текущий test source содержит **79 JVM-тестов в 13 файлах**:
 
 | Test class | Тестов |
 |---|---:|
-| GameEngineTest | 28 |
+| GameEngineTest | 36 |
 | GameSaveCodecTest | 4 |
 | GameSaveRepositoryTest | 7 |
 | LevelProgressRepositoryTest | 6 |
@@ -58,37 +61,30 @@ Render layers share one resource instance. They do not own input, persistence or
 | ProgressPresentationCacheTest | 3 |
 | MainActivityTest | 1 |
 | GameInputRouterTest | 3 |
-| GameSessionControllerTest | 2 |
+| GameSessionControllerTest | 4 |
 | GameRendererTest | 1 |
 | GameTextResourcesTest | 2 |
-| **Итого** | **60** |
+| OfflineProgressRepositoryTest | 5 |
+| ChallengeProgressRepositoryTest | 4 |
+| **Итого** | **79** |
 
 Robolectric tests используют API 35. App minSdk 23 / targetSdk 36 не менялись.
 
 ### Android instrumentation
 
-Файл: `app/src/androidTest/java/com/miniproject/marbleshooter/GameAccessibilityInstrumentedTest.kt` — 3 сценария:
-
-1. Запуск настоящего MainActivity, GameView и проверка virtual accessibility nodes, labels и bounds.
-2. Навигация через AccessibilityNodeProvider: settings/privacy/back, выбор языка, 5 страниц tutorial, practice, 4 booster controls, Slow Time и Pause/Resume.
-3. UIAutomator инжектирует реальные screen taps по bounds virtual controls: menu → settings → privacy → language → level map → tutorial pages → menu.
-
-Третий сценарий намеренно проверяет стабильные экранные touch-переходы; game-state/actions отдельно проверяются provider instrumentation. Это не полноценный TalkBack gesture test.
+`GameAccessibilityInstrumentedTest.kt` содержит 3 сценария: MainActivity/accessibility tree, действия AccessibilityNodeProvider для settings/tutorial/boosters/Pause/Resume и UIAutomator taps по реальным bounds меню/settings/privacy/language/map/tutorial/achievements; challenge card, pause и challenge-list проверяются через virtual-node ACTION_CLICK. Все три прошли на API 23, 29 и 36 (9 успешных emulator executions).
 
 ## 4. CI
 
-Текущий source snapshot `4cc2042975ae9d443b685a8a74e58b221b5177c3` прошёл полный [Android CI run 43020812369](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43020812369) — все 5 jobs завершились `success`.
+Feature snapshot `305d0d4adf8bfa6e234d4995800492eb10c267f4` прошёл полный [Android CI run 43047764093](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43047764093) — 5/5 jobs success:
 
-- Linux: `./gradlew assembleDebug`, `testDebugUnitTest` (60 JVM tests), `lintDebug`, `bundleRelease`, upload debug APK и unsigned release AAB — success.
+- Linux: `./gradlew assembleDebug`, `testDebugUnitTest` (79 JVM tests), `lintDebug`, `bundleRelease`, upload debug APK и unsigned release AAB — success.
 - Windows: `gradlew.bat --version` — success.
-- Android instrumentation: `./gradlew connectedDebugAndroidTest` успешно выполнен на API 23, 29 и 36; каждый emulator job завершил 3/3 теста без пропусков и ошибок (9 успешных executions суммарно).
-- Gradle `setup-gradle@v6` подтвердил wrapper JAR; distribution checksum закреплён в Wrapper properties.
-
-Предыдущий baseline run [42990098880](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42990098880) на API 35 также проходил с 2 instrumentation tests. Новая матрица расширяет покрытие до minSdk/API 23 и target/API 36.
+- Android instrumentation: 3 теста на каждом из API 23, 29 и 36; все jobs прошли (9 успешных executions).
+- Gradle `setup-gradle@v6` подтвердил валидность wrapper JAR и официальный checksum.
+- Два теста локализации проверяют одинаковые RU/EN resource keys и explicit language selection независимо от системной locale.
 
 ## 5. Что не подтверждено на реальном устройстве
-
-Успешная emulator matrix не является ручным QA. Следующие проверки не проводились на физическом Android-устройстве:
 
 - Первый запуск и immersive system bars на Xiaomi/MIUI.
 - Touch mapping и hit areas при разных densities/aspect ratios.
@@ -101,9 +97,14 @@ Robolectric tests используют API 35. App minSdk 23 / targetSdk 36 не
 
 ## 6. Git safety
 
+- Feature PR #3: `feature/gameplay-polish-offline-content → dev`, Draft.
+- Старый PR #2 `fix → main` закрыт без merge.
+- Rulesets: **не настроены**. Список repository rulesets через GitHub API вернул пустой массив; текущий GitHub connector поддерживает для Rulesets только GET и не предоставляет create/update action. Legacy branch-protection endpoint вернул 403. Точная конфигурация для ручного применения записана в [GITHUB_RULESET_SETUP.md](GITHUB_RULESET_SETUP.md).
+- `.github/workflows/android-ci.yml` запускает CI на push только в `main/dev`, а feature-ветки — через `pull_request` в `main/dev`; это исключает двойной запуск одинаковой matrix для PR-ветки.
+
 - main остаётся на 20ce0d75928c3988628de93a784683a411307ff2.
-- Текущие исправления выполняются fast-forward в dev; fix оставлена неизменной как база Draft PR.
-- PR №2 остаётся Draft; merge не выполнялся.
+- Новые изменения идут через feature/* → dev → main; feature → dev review выполняется PR #3 (Draft).
+- PR #2 fix → main закрыт как устаревший; merge не выполнялся. `fix` оставлена нетронутой для истории.
 - main и fix остаются нетронутыми; dev содержит полный текущий результат и дополнительные исправления.
 
 Дальнейший порядок работ — по приоритетам из REFACTOR_AUDIT.md. Не следует снимать Draft до закрытия P1 и release/device gates.

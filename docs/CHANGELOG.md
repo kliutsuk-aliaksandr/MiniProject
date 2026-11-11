@@ -2,9 +2,20 @@
 
 ## Unreleased — dev branch
 
-- Добавлены 3 Android instrumentation-сценария для MainActivity/accessibility tree, действий AccessibilityNodeProvider и UIAutomator screen taps по bounds virtual controls. UIAutomator проверяет menu/settings/privacy/language/level map/tutorial navigation.
-- Добавлена зависимость AndroidX UIAutomator 2.3.0; CI instrumentation job расширен до API 23/29/36 с отдельными отчётами для каждого API. Все 9 emulator test executions прошли в [CI run 43020812369](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43020812369).
-- Virtual accessibility nodes помечаются как visible-to-user. Физический QA, TalkBack/switch access и Xiaomi/MIUI остаются отдельными незакрытыми проверками.
+- Цепочка на новом уровне теперь входит по одной сфере из начала дорожки; отрицательный progress корректно отображается и сохраняется до входа на экран.
+- Вставка шара получила отдельную impact-анимацию: обе стороны змейки плавно расходятся, входящий шар занимает промежуток; матч и каскады разрешаются после посадки.
+- Ammo и next ammo выбираются только из цветов активной цепочки и пересчитываются после изменения цепочки, swap и restore.
+- Canvas presentation обновлена: мягкие фоновые glow-слои, объёмные кнопки/панели, световые акценты шаров и сгруппированный HUD.
+- Начат Этап 7: OfflineProgressRepository, 8 локальных достижений и экран статистики/достижений RU/EN; tutorial/practice не засчитывается в lifetime progress.
+- Добавлены три отдельные офлайн-испытания (shot limit и time+shot limits) со звёздами за точность/время; рекорды хранятся в ChallengeProgressRepository отдельно от кампанийного сейва и статистики.
+- Добавлен экран выбора испытаний, challenge HUD, pause/result actions и локализация RU/EN; challenge не открывает следующий campaign level и не перезаписывает campaign save.
+- Добавлены 10 JVM-тестов и UIAutomator/accessibility coverage для isolated challenge flow; полный CI `305d0d4` прошёл 5/5 jobs (79 JVM tests, API 23/29/36).
+- Добавлены регрессионные проверки появления цепочки, impact insertion, live shot palette, offline counters/achievements и изоляции tutorial.
+- Bitmask достижений по бустерам зафиксирован явными стабильными битами; он не зависит от порядка значений BoosterType.
+- CI feature snapshot `305d0d4adf8bfa6e234d4995800492eb10c267f4` успешно прошёл в [PR run 43047764093](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43047764093): APK, 79 JVM tests, lint, unsigned AAB, Windows Wrapper и instrumentation API 23/29/36.
+- Git workflow упорядочен как feature/* → dev → main; открыт Draft PR #3 feature → dev, устаревший PR #2 fix → main закрыт без merge.
+- Подготовлена инструкция для repository Branch Ruleset `Protect main and dev` с пятью реальными required checks; применение ожидает ручного действия в GitHub Settings, поскольку подключённый коннектор имеет только read-only доступ к Rulesets.
+- CI настроен на push в `main/dev` и pull_request в `main/dev`; feature PR получает один набор проверок без повторной push matrix.
 
 
 - Перенесено 97 RU/EN UI-текстов в Android string resources; GameTextResources кэширует locale-specific Resources и разделяется renderer/navigation. Добавлены два теста language selection и resource-key parity.

@@ -12,8 +12,7 @@ import com.miniproject.marbleshooter.game.domain.model.GameStatus
 /** Draws the score/status HUD and booster inventory. */
 internal class HudRenderer(resources: GameRenderResources) : GameCanvasRendererBase(resources) {
     internal fun drawHud(canvas: Canvas, engine: GameEngine, state: GameRenderState) {
-            fillPaint.color = Color.argb(165, 7, 13, 29)
-            canvas.drawRoundRect(RectF(18f, 20f, 402f, 132f), 23f, 23f, fillPaint)
+            drawPanel(canvas, RectF(18f, 20f, 402f, 132f), 23f, Color.argb(205, 7, 13, 29))
             textPaint.textAlign = Paint.Align.LEFT
             textPaint.textSize = 13f
             textPaint.color = MUTED
@@ -24,9 +23,25 @@ internal class HudRenderer(resources: GameRenderResources) : GameCanvasRendererB
             textPaint.textSize = 27f
             textPaint.color = Color.WHITE
             canvas.drawText(engine.score.toString(), 32f, 98f, textPaint)
-            textPaint.textSize = 10f
+            textPaint.textSize = if (engine.isChallenge) 9f else 10f
             textPaint.color = MUTED
-            canvas.drawText(tr(state, R.string.best_score_hud, state.bestScore), 32f, 118f, textPaint)
+            if (engine.isChallenge) {
+                val challenge = requireNotNull(engine.challengeDefinition)
+                val hud = if (challenge.timeLimitSeconds == null) {
+                    tr(state, R.string.challenge_hud_shots, engine.shotsFired, challenge.maxShots)
+                } else {
+                    tr(
+                        state,
+                        R.string.challenge_hud_timed,
+                        engine.shotsFired,
+                        challenge.maxShots,
+                        engine.challengeTimeRemaining.toInt()
+                    )
+                }
+                canvas.drawText(hud, 32f, 118f, textPaint)
+            } else {
+                canvas.drawText(tr(state, R.string.best_score_hud, state.bestScore), 32f, 118f, textPaint)
+            }
     
             drawSmallIconButton(canvas, 320f, 48f, state.soundEnabled, true)
             drawSmallIconButton(canvas, 374f, 48f, engine.status == GameStatus.PAUSED, false)
@@ -53,6 +68,7 @@ internal class HudRenderer(resources: GameRenderResources) : GameCanvasRendererB
         }
 
     internal fun drawBoosters(canvas: Canvas, engine: GameEngine, state: GameRenderState) {
+            drawPanel(canvas, RectF(18f, 686f, 402f, 779f), 22f, Color.argb(175, 8, 17, 34))
             val items = listOf(
                 Triple(BoosterType.SLOW_TIME, tr(state, R.string.booster_slow), engine.boosters.slowTime),
                 Triple(BoosterType.BOMB, tr(state, R.string.booster_bomb), engine.boosters.bomb),

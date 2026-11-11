@@ -8,6 +8,7 @@ import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.miniproject.marbleshooter.game.domain.LevelCatalog
+import com.miniproject.marbleshooter.game.domain.ChallengeCatalog
 import com.miniproject.marbleshooter.game.domain.TrackId
 import com.miniproject.marbleshooter.game.domain.model.ObstacleType
 import com.miniproject.marbleshooter.game.domain.model.GameEvent as DomainGameEvent
@@ -26,14 +27,33 @@ class GameEngineTest {
     }
 
     @Test
+    fun newLevelFeedsMarblesOntoTheTrackOneByOneFromItsEntrance() {
+        val engine = GameEngine(Random(8))
+
+        assertEquals(0f, engine.balls.first().progress, 0.001f)
+        assertTrue(engine.balls.last().progress < 0f)
+        assertEquals(1, engine.balls.count { it.progress >= 0f })
+
+        repeat(21) { engine.update(0.05f) }
+
+        assertEquals(2, engine.balls.count { it.progress >= 0f })
+        engine.balls.zipWithNext().forEach { (front, rear) ->
+            assertEquals(GameEngine.BALL_SPACING, front.progress - rear.progress, 0.001f)
+        }
+    }
+
+    @Test
     fun routePositionStaysInsideWorldBounds() {
         val engine = GameEngine(Random(3))
 
         val start = engine.positionOnRoute(0f)
         val end = engine.positionOnRoute(engine.routeLength + 100f)
+        val entrance = engine.positionOnRoute(-GameEngine.BALL_SPACING)
 
         assertEquals(42f, start.x, 0.01f)
         assertEquals(160f, start.y, 0.01f)
+        assertEquals(10f, entrance.x, 0.01f)
+        assertEquals(160f, entrance.y, 0.01f)
         assertEquals(210f, end.x, 0.01f)
         assertEquals(735f, end.y, 0.01f)
         assertTrue(engine.routeLength > 1_000f)
@@ -48,6 +68,8 @@ class GameEngineTest {
 
         assertEquals(1, engine.projectileCount)
         assertNotEquals(previousAmmo, engine.ammoColor)
+        assertTrue(engine.availableShotColors.contains(engine.ammoColor))
+        assertTrue(engine.availableShotColors.contains(engine.nextColor))
         assertTrue(engine.drainEvents().contains(DomainGameEvent.ShotFired))
     }
 
@@ -100,15 +122,14 @@ class GameEngineTest {
         val engine = GameEngine(Random(21))
         setChain(engine, listOf(0, 0, 1, 1, 2))
         engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
-        val frontBefore = engine.balls.take(2).map { it.progress }
-        val rearBefore = engine.balls.last().progress
+        assertTrue(engine.isAnimatingRetraction)
+        repeat(5) { engine.update(0.05f) }
 
         assertEquals(3, engine.ballCount)
         assertEquals(30, engine.score)
         assertEquals(listOf(0, 0, 2), engine.balls.map { it.colorIndex })
         assertEquals(3, engine.drainEvents().filterIsInstance<DomainGameEvent.MatchCleared>().single().count)
-        assertEquals(frontBefore, engine.balls.take(2).map { it.progress })
-        assertEquals(rearBefore, engine.balls.last().progress)
+        assertEquals(listOf(720f, 688f, 656f), engine.saveState().balls.map { it.progress })
     }
 
     @Test
@@ -116,6 +137,7 @@ class GameEngineTest {
         val engine = GameEngine(Random(211))
         setChain(engine, listOf(0, 0, 1, 1, 2))
         engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
+        repeat(5) { engine.update(0.05f) }
 
         val frontStart = engine.balls.take(2).map { it.progress }
         val rearStart = engine.balls.last().progress
@@ -132,11 +154,15 @@ class GameEngineTest {
     }
 
     @Test
-    fun saveSnapshotDuringRetractionStoresSettledPositions() {
+    fun saveSnapshotDuringInsertionStoresSettledImpactPositions() {
         val engine = GameEngine(Random(212))
         setChain(engine, listOf(0, 0, 1, 1, 2))
         engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
-        assertEquals(listOf(704f, 672f, 640f), engine.saveState().balls.map { it.progress })
+
+        assertEquals(
+            listOf(816f, 784f, 752f, 720f, 688f, 656f),
+            engine.saveState().balls.map { it.progress }
+        )
     }
 
     @Test
@@ -145,6 +171,7 @@ class GameEngineTest {
         setChain(engine, listOf(0, 1, 1, 2))
 
         engine.insertBallAt(hitIndex = 1, colorIndex = 1, insertInFront = true)
+        repeat(5) { engine.update(0.05f) }
 
         assertEquals(listOf(0, 2), engine.balls.map { it.colorIndex })
         assertEquals(30, engine.score)
@@ -157,6 +184,7 @@ class GameEngineTest {
         setChain(engine, listOf(0, 0, 1, 1, 0, 0))
 
         engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
+        repeat(5) { engine.update(0.05f) }
         assertEquals(4, engine.ballCount)
         assertEquals(30, engine.score)
         assertEquals(GameStatus.RUNNING, engine.status)
@@ -383,7 +411,86 @@ class GameEngineTest {
     }
 
     @Test
-    fun legacyFourVersionChainWithNegativeTailIsMigratedWithoutBreakingSpacing() {
+    fun challengeCatalogProvidesThreeOfflineChallengesWithValidLimits() {
+        assertEquals(3, ChallengeCatalog.all.size)
+        ChallengeCatalog.all.forEach { challenge ->
+            assertTrue(challenge.levelId in 1..LevelCatalog.MAX_LEVELS)
+            assertTrue(challenge.maxShots > 0)
+            assertTrue(challenge.timeLimitSeconds == null || challenge.timeLimitSeconds > 0f)
+        }
+        assertEquals(18, ChallengeCatalog.find(1)?.maxShots)
+        assertEquals(25f, ChallengeCatalog.find(2)?.timeLimitSeconds ?: 0f, 0.001f)
+        assertEquals(45f, ChallengeCatalog.find(3)?.timeLimitSeconds ?: 0f, 0.001f)
+        assertEquals(null, ChallengeCatalog.find(99))
+    }
+
+    @Test
+    fun challengeTimerFailsRoundWithoutCompletingCampaignProgress() {
+        val engine = GameEngine(Random(45))
+        assertTrue(engine.startChallenge(2))
+        engine.drainEvents()
+
+        // One extra fixed step avoids float-rounding just below the exact 25 second boundary.
+        repeat(501) { engine.update(0.05f) }
+
+        assertEquals(GameStatus.LOST, engine.status)
+        assertTrue(engine.isChallenge)
+        assertEquals(0f, engine.challengeTimeRemaining, 0.001f)
+        assertTrue(engine.drainEvents().any { it == DomainGameEvent.GameLost })
+    }
+
+    @Test
+    fun challengeFailsAfterTheLastAllowedProjectileHasFinished() {
+        val engine = GameEngine(Random(46))
+        assertTrue(engine.startChallenge(1))
+        val challenge = requireNotNull(engine.challengeDefinition)
+
+        repeat(challenge.maxShots) { engine.fireShot() }
+        assertEquals(challenge.maxShots, engine.shotsFired)
+        assertEquals(GameStatus.RUNNING, engine.status)
+
+        // Once all last-shot projectiles have left the field, an uncleared chain fails.
+        engine.mutableProjectiles.clear()
+        engine.update(0.01f)
+
+        assertEquals(GameStatus.LOST, engine.status)
+    }
+
+    @Test
+    fun clearingChallengeEmitsChallengeResultButNeverCampaignCompletion() {
+        val engine = GameEngine(Random(47))
+        assertTrue(engine.startChallenge(1))
+        engine.drainEvents()
+        engine.mutableBalls.clear()
+
+        engine.update(0.01f)
+
+        assertEquals(GameStatus.WON, engine.status)
+        assertTrue(engine.isChallenge)
+        val events = engine.drainEvents()
+        val result = events.filterIsInstance<DomainGameEvent.ChallengeCompleted>().single()
+        assertEquals(1, result.challengeId)
+        assertEquals(3, result.stars)
+        assertTrue(events.none { it is DomainGameEvent.LevelCompleted })
+        assertFalse(engine.startNextLevel())
+    }
+
+    @Test
+    fun startingCampaignOrTutorialClearsChallengeRulesAndTimer() {
+        val engine = GameEngine(Random(48))
+        assertTrue(engine.startChallenge(2))
+        engine.startNewGame()
+        assertFalse(engine.isChallenge)
+        assertEquals(0f, engine.challengeTimeRemaining, 0.001f)
+
+        assertTrue(engine.startChallenge(3))
+        engine.startTutorial()
+        assertFalse(engine.isChallenge)
+        assertEquals(0f, engine.challengeTimeRemaining, 0.001f)
+    }
+
+    @Test
+    fun legacyFourVersionChainKeepsItsTailBeforeTheTrackEntrance() {
         val oldBalls = (0 until 22).map { index ->
             Ball(index % 5, 620f - index * GameEngine.BALL_SPACING)
         }
@@ -400,7 +507,7 @@ class GameEngineTest {
 
         assertTrue(engine.restoreState(snapshot))
         assertEquals(GameStatus.PAUSED, engine.status)
-        assertEquals(GameEngine.BALL_RADIUS * 2f, engine.balls.last().progress, 0.001f)
+        assertEquals(-52f, engine.balls.last().progress, 0.001f)
         engine.balls.zipWithNext().forEach { (front, rear) ->
             assertEquals(GameEngine.BALL_SPACING, front.progress - rear.progress, 0.001f)
         }
@@ -446,6 +553,58 @@ class GameEngineTest {
         }
         assertTrue(projectileMutationRejected)
         assertEquals(1, engine.projectileCount)
+    }
+
+    @Test
+    fun insertionImpactMovesBothChainSidesBeforeTheIncomingMarbleSettles() {
+        val engine = GameEngine(Random(40))
+        setChain(engine, listOf(0, 1, 2, 0))
+
+        engine.insertBallAt(hitIndex = 1, colorIndex = 3, insertInFront = false)
+
+        assertTrue(engine.isAnimatingRetraction)
+        assertEquals(5, engine.ballCount)
+        val initial = engine.balls.map { it.progress }
+        engine.update(0.05f)
+
+        assertTrue(engine.balls[1].progress > initial[1])
+        assertTrue(engine.balls[3].progress < initial[3])
+        assertTrue(engine.balls[2].progress in engine.balls[3].progress..engine.balls[1].progress)
+
+        repeat(4) { engine.update(0.05f) }
+        assertFalse(engine.isAnimatingRetraction)
+        engine.balls.zipWithNext().forEach { (front, rear) ->
+            assertEquals(GameEngine.BALL_SPACING, front.progress - rear.progress, 0.001f)
+        }
+    }
+
+    @Test
+    fun loadedAndUpcomingColorsAlwaysBelongToTheCurrentChain() {
+        val engine = GameEngine(Random(41))
+        assertTrue(engine.availableShotColors.contains(engine.ammoColor))
+        assertTrue(engine.availableShotColors.contains(engine.nextColor))
+
+        engine.swapAmmo()
+        assertTrue(engine.availableShotColors.contains(engine.ammoColor))
+        assertTrue(engine.availableShotColors.contains(engine.nextColor))
+
+        engine.fireShot()
+        assertTrue(engine.availableShotColors.contains(engine.ammoColor))
+        assertTrue(engine.availableShotColors.contains(engine.nextColor))
+
+        setChain(engine, listOf(0, 0, 1, 1, 2))
+        engine.fireShot()
+        assertTrue(engine.availableShotColors.contains(engine.ammoColor))
+        assertTrue(engine.availableShotColors.contains(engine.nextColor))
+
+        engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
+        repeat(5) { engine.update(0.05f) }
+        assertFalse(engine.availableShotColors.contains(1))
+        assertTrue(engine.availableShotColors.contains(engine.ammoColor))
+        assertTrue(engine.availableShotColors.contains(engine.nextColor))
+        engine.swapAmmo()
+        assertTrue(engine.availableShotColors.contains(engine.ammoColor))
+        assertTrue(engine.availableShotColors.contains(engine.nextColor))
     }
 
     private fun setChain(engine: GameEngine, colors: List<Int>) {
