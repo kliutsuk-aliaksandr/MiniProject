@@ -14,7 +14,7 @@
 | game/data/GameSaveCodec.kt | Строгая сериализация цепочки | encodeBalls, decodeBalls |
 | game/data/LevelProgressRepository.kt | Открытые уровни, звёзды и рекорд кампании | recordCompletion, updateBestScore |
 | game/data/OfflineProgressRepository.kt | Пожизненная локальная статистика и 8 достижений; отдельно от campaign save | recordShot, recordMatch, recordBooster, recordLevelCompleted, unlockedAchievements |
-| game/render/GameRenderer.kt | Небольшой Canvas façade: выбор слоя по GameScreen | draw |
+| game/render/GameRenderer.kt | Небольшой Canvas façade: выбор слоя по GameScreen (включая ACHIEVEMENTS) | draw |
 | game/render/MenuScreenRenderer.kt | Меню, карта, обучение, настройки, privacy и Achievements/Statistics | drawMenu, drawLevelMap, drawTutorial, drawSettings, drawPrivacy, drawAchievements |
 | game/render/GameplayRenderer.kt | Координатор игрового кадра, делегирует специализированным слоям | drawGame |
 | game/render/TrackRenderer.kt | Геометрия дорожки и препятствия | drawTrack, drawObstacles |

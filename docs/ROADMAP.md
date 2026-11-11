@@ -69,8 +69,7 @@
 - [x] Перенести весь UI copy из RU/EN пар в Android string resources; добавить RU/EN key parity и language-selection tests.
 - [x] Добавить Robolectric tests для SharedPreferences repositories: save/restore, schema migration, corrupted payload/typed values и progression unlock rules.
 - [x] Добавить Android instrumentation/UIAutomator: accessibility tree/actions и внешние touch-сценарии для меню, настроек, privacy, карты, tutorial и достижений; CI API 23/29/36.
-- [ ] Ручная проверка TalkBack/switch access, gameplay hit areas и lifecycle на физических устройствах.
-- [ ] Проверить FPS, TalkBack, масштабирование и touch на физических устройствах.
+- [ ] Ручная проверка FPS, TalkBack/switch access, gameplay hit areas, масштабирования, lifecycle, аудио/вибрации на физических устройствах.
 
 ## Этап 7 — дополнительный офлайн-контент (начат; первый срез готов)
 

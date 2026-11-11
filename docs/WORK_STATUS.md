@@ -28,25 +28,26 @@
 | Файл | Строк | Роль |
 |---|---:|---|
 | GameView.kt | 145 | Android View / Canvas adapter |
-| GameSessionController.kt | 306 | Session lifecycle, persistence, events, audio/effects |
-| GameNavigationController.kt | 372 | Screen state, transitions, hit areas, accessibility targets |
+| GameSessionController.kt | 317 | Session lifecycle, persistence, campaign/offline progress, events, audio/effects |
+| GameNavigationController.kt | 397 | Screen state, transitions, hit areas, accessibility targets incl. achievements |
 | GameInputRouter.kt | 68 | Pointer gesture router |
-| GameEngine.kt | 629 | Pure Kotlin domain aggregate |
-| GameRenderer.kt | 59 | Renderer façade |
-| MenuScreenRenderer.kt | 267 | Menu/map/tutorial/settings/privacy |
+| GameEngine.kt | 692 | Pure Kotlin domain aggregate; route entrance, animated insertion, live shot palette |
+| GameRenderer.kt | 66 | Renderer façade incl. achievements screen |
+| MenuScreenRenderer.kt | 291 | Menu/map/tutorial/settings/privacy/achievements |
 | GameplayRenderer.kt | 54 | Gameplay draw coordinator |
 | TrackRenderer.kt | 79 | Route and obstacle rendering |
 | GameEntitiesRenderer.kt | 28 | Chain/projectiles/frog |
 | GameEffectsRenderer.kt | 38 | Clearing and particles |
 | HudRenderer.kt | 81 | Score/status/boosters |
 | GameOverlayRenderer.kt | 69 | Pause/win/loss overlays |
-| GameRenderResources.kt | 200 | Shared Paint/Path/Canvas resources |
+| GameRenderResources.kt | 235 | Shared Paint/Path/Canvas resources and polished UI primitives |
+| OfflineProgressRepository.kt | 116 | Local lifetime statistics and achievement unlocks, isolated from campaign save |
 
 Render layers share one resource instance. They do not own input, persistence or domain rules. Domain source remains free of Android imports.
 
 ## 3. Автоматические тесты
 
-Текущий test source содержит **60 JVM-тестов в 11 файлах**:
+Текущий test source содержит **69 JVM-тестов в 12 файлах**:
 
 | Test class | Тестов |
 |---|---:|
