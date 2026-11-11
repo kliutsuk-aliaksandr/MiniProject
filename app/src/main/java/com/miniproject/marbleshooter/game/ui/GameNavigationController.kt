@@ -4,6 +4,7 @@ import android.graphics.Rect
 import com.miniproject.marbleshooter.R
 import com.miniproject.marbleshooter.game.render.GameTextResources
 import com.miniproject.marbleshooter.game.domain.ChallengeCatalog
+import com.miniproject.marbleshooter.game.render.GameplayHudLayout
 import com.miniproject.marbleshooter.game.domain.model.BoosterType
 import com.miniproject.marbleshooter.game.domain.model.GameStatus
 import com.miniproject.marbleshooter.game.domain.model.Vec2
@@ -60,10 +61,9 @@ internal class GameNavigationController(
     }
 
     fun handleBoosterTap(target: Vec2) {
-        val centers = BOOSTER_CENTERS
-        if (target.y !in 710f..770f) return
+        if (session.isStartInputLocked || !GameplayHudLayout.isBoosterHit(target.x, target.y)) return
+        val centers = GameplayHudLayout.BOOSTER_CENTERS
         val nearest = centers.indices.minByOrNull { index -> abs(centers[index] - target.x) } ?: return
-        if (abs(centers[nearest] - target.x) > 27f) return
         val type = when (nearest) {
             0 -> BoosterType.SLOW_TIME
             1 -> BoosterType.BOMB
@@ -75,10 +75,13 @@ internal class GameNavigationController(
     }
 
     fun isBoosterHitTarget(target: Vec2): Boolean =
-        target.y in 710f..770f && BOOSTER_CENTERS.any { abs(it - target.x) <= 27f }
+        !session.isStartInputLocked && GameplayHudLayout.isBoosterHit(target.x, target.y)
 
     fun canStartAiming(target: Vec2): Boolean =
-        target.y > 145f && target.y !in 700f..780f && !engine.isAnimatingRetraction
+        !session.isStartInputLocked &&
+            target.y > 145f &&
+            target.y < GameEngine.SHOOTER_Y - 75f &&
+            !engine.isAnimatingRetraction
 
     /** Supplies current Canvas controls to the virtual accessibility-node provider. */
     fun accessibilityTargets(scale: Float, offsetX: Float, offsetY: Float): List<GameAccessibilityTarget> {
@@ -167,13 +170,21 @@ internal class GameNavigationController(
                 GameStatus.RUNNING -> {
                     add(50, localized(R.string.a11y_toggle_sound), 302f, 20f, 342f, 75f) { handleGameTap(Vec2(322f, 50f)) }
                     add(51, localized(R.string.a11y_pause), 354f, 20f, 400f, 75f) { handleGameTap(Vec2(377f, 50f)) }
-                    add(52, localized(R.string.a11y_swap_marbles), 340f, 80f, 405f, 140f) { handleGameTap(Vec2(370f, 110f)) }
-                    val types = listOf(BoosterType.SLOW_TIME, BoosterType.BOMB, BoosterType.COLOR_CHANGE, BoosterType.REVERSE_CHAIN)
-                    val centers = listOf(40f, 150f, 270f, 380f)
-                    val labels = listOf(localized(R.string.a11y_slow_time), localized(R.string.a11y_bomb), localized(R.string.a11y_color_change), localized(R.string.a11y_reverse_chain))
-                    centers.forEachIndexed { index, center ->
-                        add(60 + index, localized(R.string.a11y_booster_count, labels[index], session.boosterCount(types[index])), center - 28f, 708f, center + 28f, 766f) {
-                            handleBoosterTap(Vec2(center, 737f))
+                    if (!session.isStartInputLocked) {
+                        add(52, localized(R.string.a11y_swap_marbles), 340f, 80f, 405f, 140f) { handleGameTap(Vec2(370f, 110f)) }
+                        val types = listOf(BoosterType.SLOW_TIME, BoosterType.BOMB, BoosterType.COLOR_CHANGE, BoosterType.REVERSE_CHAIN)
+                        val labels = listOf(localized(R.string.a11y_slow_time), localized(R.string.a11y_bomb), localized(R.string.a11y_color_change), localized(R.string.a11y_reverse_chain))
+                        GameplayHudLayout.BOOSTER_CENTERS.forEachIndexed { index, center ->
+                            add(
+                                60 + index,
+                                localized(R.string.a11y_booster_count, labels[index], session.boosterCount(types[index])),
+                                center - GameplayHudLayout.BOOSTER_HIT_RADIUS,
+                                GameplayHudLayout.BOOSTER_HIT_TOP,
+                                center + GameplayHudLayout.BOOSTER_HIT_RADIUS,
+                                GameplayHudLayout.BOOSTER_HIT_BOTTOM
+                            ) {
+                                handleBoosterTap(Vec2(center, GameplayHudLayout.BOOSTER_CENTER_Y))
+                            }
                         }
                     }
                 }
@@ -433,10 +444,7 @@ internal class GameNavigationController(
                             screen = GameScreen.GAME
                         }
                         else -> {
-                            if (!engine.startNextLevel()) screen = GameScreen.LEVEL_MAP
-                            session.clearEffects()
-                            session.saveGameState(screen == GameScreen.GAME)
-                            session.playClick()
+                            if (!session.startNextLevel()) screen = GameScreen.LEVEL_MAP
                         }
                     }
                 }

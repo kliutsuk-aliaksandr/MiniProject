@@ -34,12 +34,15 @@ class GameView(context: Context) : View(context) {
     }
     private val inputRouter = GameInputRouter(
         isGameRunning = {
-            navigation.screen == GameScreen.GAME && session.engine.status == GameStatus.RUNNING
+            navigation.screen == GameScreen.GAME &&
+                session.engine.status == GameStatus.RUNNING &&
+                !session.isStartInputLocked
         },
         isBoosterTouch = navigation::isBoosterHitTarget,
         canStartAiming = { target ->
             navigation.screen == GameScreen.GAME &&
                 session.engine.status == GameStatus.RUNNING &&
+                !session.isStartInputLocked &&
                 navigation.canStartAiming(target)
         },
         onAim = { target ->
