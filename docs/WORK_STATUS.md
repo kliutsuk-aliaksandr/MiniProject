@@ -1,12 +1,12 @@
 # Технический аудит — текущее состояние Marble Frog
 
 **Снимок:** 11 ноября 2026 года
-**Рабочая ветка:** fix
-**Кодовый snapshot:** 199ce14a646f6752ca4d6f6a47a612947c900540
+**Рабочая ветка:** dev (ответвлена от fix)
+**Кодовый snapshot:** 43341985a2bd5c4cc6f46e3e10e91399b86f9d68
 **База:** main = 20ce0d75928c3988628de93a784683a411307ff2
 **PR №2:** открыт, Draft, fix → main
 
-Последний production refactor commit включает renderer decomposition по track/entities/effects/HUD/overlay. Последующее обновление документации не меняет production source. main не изменялся.
+Ветка dev унаследовала текущий результат fix и теперь содержит стандартный Gradle Wrapper 8.13 с проверенными checksum и CI через ./gradlew. Production source не менялся. main и fix не изменялись; PR №2 остаётся Draft.
 
 ## 1. Что выполнено
 
@@ -66,17 +66,13 @@ Robolectric tests используют API 35. App minSdk 23 / targetSdk 36 не
 
 ## 4. CI
 
-На предыдущем кодовом snapshot 47321eb4c15f6d7ac5fa09ff307ec706e6021dd9 оба workflow завершились success:
+Текущий dev snapshot `43341985a2bd5c4cc6f46e3e10e91399b86f9d68` прошёл полный [Android CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42985668241):
 
-- [Push CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42979240130)
-- [PR CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42979245640)
+- Linux: `./gradlew assembleDebug`, `testDebugUnitTest` (58 tests), `lintDebug`, `bundleRelease`, upload debug APK и unsigned release AAB — success.
+- Windows: `gradlew.bat --version` — success.
+- Gradle `setup-gradle@v6` подтвердил, что wrapper JAR совпадает с известным официальным checksum.
 
-Новый renderer decomposition commit 199ce14a646f6752ca4d6f6a47a612947c900540 проходит повторный CI:
-
-- [Push CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42980254214) — assembleDebug и testDebugUnitTest прошли, lint/release ещё выполнялись на момент снимка.
-- [PR CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42980261943) — assembleDebug, testDebugUnitTest, lintDebug прошли; release AAB выполнялся на момент снимка.
-
-Оба завершённых workflow на предыдущем snapshot прошли полный pipeline, включая release AAB и artifact uploads. Итог нового snapshot нужно подтвердить после окончания обоих workflow.
+Ранее настраиваемый wrapper URL имел ошибку экранирования; она исправлена в `a5230be`. Финальный запуск выше относится к последующей конфигурации и завершился success.
 
 ## 5. Что не подтверждено на реальном устройстве
 
@@ -92,8 +88,8 @@ Robolectric tests используют API 35. App minSdk 23 / targetSdk 36 не
 ## 6. Git safety
 
 - main остаётся на 20ce0d75928c3988628de93a784683a411307ff2.
-- Все изменения выполнялись fast-forward в fix.
+- Текущие исправления выполняются fast-forward в dev; fix оставлена неизменной как база Draft PR.
 - PR №2 остаётся Draft; merge не выполнялся.
-- Сравнение snapshot 199ce... с main: 29 commits ahead, 0 behind.
+- Сравнение dev с main: 33 commits ahead, 0 behind; dev опережает fix на 3 commits.
 
 Дальнейший порядок работ — по приоритетам из REFACTOR_AUDIT.md. Не следует снимать Draft до закрытия P1 и release/device gates.

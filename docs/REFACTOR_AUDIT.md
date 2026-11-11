@@ -1,8 +1,8 @@
 # Полный аудит рефакторинга — Marble Frog
 
 **Дата аудита:** 11 ноября 2026 года
-**Проверенная ветка:** fix
-**Кодовый snapshot:** 199ce14a646f6752ca4d6f6a47a612947c900540
+**Проверенная ветка:** dev (создана от fix)
+**Кодовый snapshot:** 43341985a2bd5c4cc6f46e3e10e91399b86f9d68
 **База сравнения:** main = 20ce0d75928c3988628de93a784683a411307ff2
 **PR:** #2, fix → main, открыт Draft
 
@@ -44,7 +44,7 @@
 
 | ID | Наблюдение и доказательство | Рекомендованное действие |
 |---|---|---|
-| P1-1 | **Сборка не использует стандартный Gradle Wrapper.** В gradle/wrapper находится только gradle-wrapper.properties, wrapper JAR отсутствует. Скрипты gradlew и gradlew.bat самостоятельно скачивают Gradle 8.13, жёстко задают версию и не проверяют SHA-256. Версия в скриптах и properties дублируется. CI вызывает установленную команду gradle, а не project bootstrap. | Перейти на стандартный Gradle Wrapper с wrapper JAR, одной точкой фиксации версии и distributionSha256Sum. В CI выполнять все задачи через ./gradlew; проверить Windows wrapper теми же задачами. |
+| P1-1 | **ИСПРАВЛЕНО в dev.** В коммите `34ad19e` добавлены официальные Gradle 8.13 `gradle-wrapper.jar`, `gradlew` и `gradlew.bat`; JAR сверён с опубликованным SHA-256 `81a82aa...ae45f`. В `gradle-wrapper.properties` закреплён SHA-256 дистрибутива `20f1b117...0aed78` (корректировка URL — `a5230be`). CI использует `./gradlew`; `setup-gradle@v6` автоматически проверяет wrapper JAR. Подтверждено [зелёным Linux + Windows CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42985668241): assembleDebug, 58 tests, lintDebug, bundleRelease, upload APK/AAB и `gradlew.bat --version` прошли. | Закрыто. При обновлении Gradle повторять проверку JAR и distribution checksum. |
 | P1-2 | **Локализация хранится в коде.** res/values/strings.xml содержит только app_name; values-en отсутствует. RU/EN пары, tutorial copy, privacy text и accessibility labels находятся в renderer/navigation Kotlin. Это усложняет обновление текста, проверку полноты переводов и поддержку Android locale/configuration changes. | Перенести весь UI copy в values/strings.xml и values-en/strings.xml. Включить tutorial, HUD, boosters, overlays, settings, privacy и content descriptions. Добавить тест, сравнивающий набор resource keys для обоих языков. |
 | P1-3 | **Нет end-to-end Android UI tests и подтверждённого device QA.** Сейчас тесты JVM/Robolectric. Нет src/androidTest, Espresso/UIAutomator сценариев или device matrix. Наличие renderer smoke test не доказывает правильность расположения controls, touch hit areas, TalkBack, системных панелей и lifecycle на реальном устройстве. | Добавить instrumentation tests для меню → карта → уровень, tutorial, booster, pause/resume, win/loss, settings, save/restore и accessibility click. Затем пройти device matrix: минимум API 23, промежуточный Android и API 36; отдельно проверить Xiaomi/MIUI, TalkBack, touch и звук/вибрацию. |
 
@@ -83,7 +83,7 @@
 
 ## 5. Рекомендуемый порядок следующего этапа
 
-1. P1-1: стандартный и проверяемый Gradle Wrapper + CI через wrapper.
+1. [x] P1-1: стандартный и проверяемый Gradle Wrapper + CI через wrapper (полный Linux/Windows CI: 42985668241).
 2. P1-2: полный перенос copy в RU/EN Android string resources и автоматическая проверка resource parity.
 3. P1-3: instrumentation/UI tests и device QA.
 4. P2-1/P2-2/P2-6: выделение settings, event/effects и accessibility layout boundaries.

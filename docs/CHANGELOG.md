@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased — fix branch
+## Unreleased — dev branch
 
+- Добавлен стандартный Gradle Wrapper 8.13: официальный JAR с проверенным SHA-256, checksum дистрибутива в properties, CI использует ./gradlew. Добавлена Windows smoke-проверка gradlew.bat.
 - Разделён GameRenderer: façade, MenuScreenRenderer, GameplayRenderer и GameRenderResources с общими Paint/Path; gameplay coordinator делегирует track/entities/effects/HUD/overlay пяти отдельным renderers. Добавлен Robolectric smoke test для всех экранов.
 - Исправлен haptic feedback бустера: теперь он учитывает настройку вибрации; добавлены два controller regression tests.
 - Добавлен системный аудит docs/REFACTOR_AUDIT.md с приоритетным списком дальнейших улучшений.
