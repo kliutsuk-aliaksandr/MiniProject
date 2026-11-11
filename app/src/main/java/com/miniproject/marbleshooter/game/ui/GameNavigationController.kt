@@ -3,6 +3,7 @@ package com.miniproject.marbleshooter.game.ui
 import android.graphics.Rect
 import com.miniproject.marbleshooter.R
 import com.miniproject.marbleshooter.game.render.GameTextResources
+import com.miniproject.marbleshooter.game.domain.ChallengeCatalog
 import com.miniproject.marbleshooter.game.domain.model.BoosterType
 import com.miniproject.marbleshooter.game.domain.model.GameStatus
 import com.miniproject.marbleshooter.game.domain.model.Vec2
@@ -26,7 +27,7 @@ internal class GameNavigationController(
 
     fun handleSystemBack(): Boolean {
         when (screen) {
-            GameScreen.SETTINGS, GameScreen.PRIVACY, GameScreen.LEVEL_MAP, GameScreen.TUTORIAL, GameScreen.ACHIEVEMENTS -> {
+            GameScreen.SETTINGS, GameScreen.PRIVACY, GameScreen.LEVEL_MAP, GameScreen.CHALLENGES, GameScreen.TUTORIAL, GameScreen.ACHIEVEMENTS -> {
                 screen = if (screen == GameScreen.PRIVACY) GameScreen.SETTINGS else GameScreen.MENU
             }
             GameScreen.MENU -> return false
@@ -46,6 +47,7 @@ internal class GameNavigationController(
         when (screen) {
             GameScreen.MENU -> handleMenuTap(target)
             GameScreen.LEVEL_MAP -> handleLevelMapTap(target)
+            GameScreen.CHALLENGES -> handleChallengesTap(target)
             GameScreen.TUTORIAL -> handleTutorialTap(target)
             GameScreen.SETTINGS -> handleSettingsTap(target)
             GameScreen.PRIVACY -> if (inButton(target, 790f, 845f)) {
@@ -112,6 +114,9 @@ internal class GameNavigationController(
             }
             GameScreen.LEVEL_MAP -> {
                 add(10, localized(R.string.a11y_main_menu), 78f, 750f, 342f, 810f) { handleLevelMapTap(Vec2(210f, 780f)) }
+                add(11, localized(R.string.a11y_challenges), 78f, 620f, 342f, 670f) {
+                    handleLevelMapTap(Vec2(210f, 645f))
+                }
                 for (level in 1..session.unlockedLevel) {
                     val index = level - 1
                     val left = 22f + (index % 5) * 76f
@@ -119,6 +124,22 @@ internal class GameNavigationController(
                     add(100 + level, localized(R.string.a11y_level, level), left, top, left + 68f, top + 58f) {
                         handleLevelMapTap(Vec2(left + 34f, top + 29f))
                     }
+                }
+            }
+            GameScreen.CHALLENGES -> {
+                ChallengeCatalog.all.forEachIndexed { index, challenge ->
+                    val top = 205f + index * 145f
+                    add(
+                        130 + challenge.id,
+                        localized(R.string.a11y_challenge, localized(challengeTitleResource(challenge.id))),
+                        24f, top, 396f, top + 130f
+                    ) {
+                        handleChallengesTap(Vec2(210f, top + 65f))
+                    }
+                }
+                add(133, localized(R.string.a11y_main_menu), 78f, 750f, 342f, 810f) {
+                    screen = GameScreen.MENU
+                    session.playClick()
                 }
             }
             GameScreen.TUTORIAL -> {
@@ -159,17 +180,49 @@ internal class GameNavigationController(
                 GameStatus.PAUSED -> {
                     add(70, localized(R.string.a11y_resume), 80f, 445f, 340f, 505f) { handleGameTap(Vec2(210f, 475f)) }
                     add(71, localized(R.string.a11y_restart), 80f, 515f, 340f, 575f) { handleGameTap(Vec2(210f, 545f)) }
-                    add(72, localized(R.string.a11y_level_map), 80f, 585f, 340f, 645f) { handleGameTap(Vec2(210f, 615f)) }
+                    add(
+                        72,
+                        localized(if (engine.isChallenge) R.string.challenge_list else R.string.a11y_level_map),
+                        80f, 585f, 340f, 645f
+                    ) { handleGameTap(Vec2(210f, 615f)) }
                     add(73, localized(R.string.a11y_main_menu), 80f, 655f, 340f, 715f) { handleGameTap(Vec2(210f, 685f)) }
                 }
                 GameStatus.WON -> {
-                    add(80, if (engine.isTutorial) localized(R.string.retry_practice) else localized(R.string.a11y_next_level), 65f, 455f, 355f, 515f) { handleGameTap(Vec2(210f, 485f)) }
-                    add(81, if (engine.isTutorial) localized(R.string.a11y_back_lessons) else localized(R.string.a11y_level_map), 80f, 525f, 340f, 585f) { handleGameTap(Vec2(210f, 555f)) }
+                    add(
+                        80,
+                        when {
+                            engine.isChallenge -> localized(R.string.a11y_retry_challenge)
+                            engine.isTutorial -> localized(R.string.retry_practice)
+                            else -> localized(R.string.a11y_next_level)
+                        },
+                        65f, 455f, 355f, 515f
+                    ) { handleGameTap(Vec2(210f, 485f)) }
+                    add(
+                        81,
+                        when {
+                            engine.isChallenge -> localized(R.string.challenge_list)
+                            engine.isTutorial -> localized(R.string.a11y_back_lessons)
+                            else -> localized(R.string.a11y_level_map)
+                        },
+                        80f, 525f, 340f, 585f
+                    ) { handleGameTap(Vec2(210f, 555f)) }
                     add(82, localized(R.string.a11y_main_menu), 80f, 595f, 340f, 655f) { handleGameTap(Vec2(210f, 625f)) }
                 }
                 GameStatus.LOST -> {
-                    add(90, if (engine.isTutorial) localized(R.string.retry_practice) else localized(R.string.a11y_play_again), 80f, 500f, 340f, 560f) { handleGameTap(Vec2(210f, 530f)) }
-                    add(91, localized(R.string.a11y_level_map), 80f, 575f, 340f, 635f) { handleGameTap(Vec2(210f, 605f)) }
+                    add(
+                        90,
+                        when {
+                            engine.isChallenge -> localized(R.string.a11y_retry_challenge)
+                            engine.isTutorial -> localized(R.string.retry_practice)
+                            else -> localized(R.string.a11y_play_again)
+                        },
+                        80f, 500f, 340f, 560f
+                    ) { handleGameTap(Vec2(210f, 530f)) }
+                    add(
+                        91,
+                        localized(if (engine.isChallenge) R.string.challenge_list else R.string.a11y_level_map),
+                        80f, 575f, 340f, 635f
+                    ) { handleGameTap(Vec2(210f, 605f)) }
                     add(92, localized(R.string.a11y_main_menu), 80f, 650f, 340f, 710f) { handleGameTap(Vec2(210f, 680f)) }
                 }
             }
@@ -237,6 +290,11 @@ internal class GameNavigationController(
     }
 
     private fun handleLevelMapTap(target: Vec2) {
+        if (target.x in 60f..360f && target.y in 620f..670f) {
+            screen = GameScreen.CHALLENGES
+            session.playClick()
+            return
+        }
         if (inButton(target, 750f, 810f)) {
             screen = GameScreen.MENU
             session.playClick()
@@ -256,6 +314,27 @@ internal class GameNavigationController(
         if (target.x !in x..(x + cellWidth) || target.y !in y..(y + cellHeight)) return
         val level = row * 5 + column + 1
         if (session.startLevel(level)) screen = GameScreen.GAME
+    }
+
+    private fun handleChallengesTap(target: Vec2) {
+        if (target.y in 750f..810f && target.x in 60f..360f) {
+            screen = GameScreen.MENU
+            session.playClick()
+            return
+        }
+        for (challenge in ChallengeCatalog.all) {
+            val top = 205f + (challenge.id - 1) * 145f
+            if (target.x in 24f..396f && target.y in top..(top + 130f)) {
+                if (session.startChallenge(challenge.id)) screen = GameScreen.GAME
+                return
+            }
+        }
+    }
+
+    private fun challengeTitleResource(id: Int): Int = when (id) {
+        1 -> R.string.challenge_precision_title
+        2 -> R.string.challenge_speed_title
+        else -> R.string.challenge_expert_title
     }
 
     private fun handleTutorialTap(target: Vec2) {
