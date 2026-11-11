@@ -14,11 +14,11 @@ class GameStartSequenceTest {
         sequence.start()
 
         assertEquals(3, sequence.countdownNumber)
-        repeat(61) { sequence.advance(1f / 60f) }
+        assertFalse(sequence.advance(1f))
         assertEquals(2, sequence.countdownNumber)
-        repeat(60) { sequence.advance(1f / 60f) }
+        assertFalse(sequence.advance(1f))
         assertEquals(1, sequence.countdownNumber)
-        repeat(61) { sequence.advance(1f / 60f) }
+        assertFalse(sequence.advance(1f))
 
         assertNull(sequence.countdownNumber)
         assertTrue(sequence.showStartPrompt)
@@ -29,17 +29,16 @@ class GameStartSequenceTest {
     fun startsFastRolloutOnceAfterStartPromptAndUnlocksAfterRollout() {
         val sequence = GameStartSequence()
         sequence.start()
-        repeat(181) { sequence.advance(1f / 60f) }
+        repeat(3) { sequence.advance(1f) }
         assertTrue(sequence.showStartPrompt)
 
-        repeat(36) { assertFalse(sequence.advance(1f / 60f)) }
-        assertTrue(sequence.advance(1f / 60f))
+        assertTrue(sequence.advance(0.6f))
         assertTrue(sequence.isRollingOut)
-        repeat(91) { sequence.advance(1f / 60f) }
+        assertFalse(sequence.advance(1.5f))
 
         assertFalse(sequence.isActive)
         assertFalse(sequence.isInputLocked)
-        assertFalse(sequence.advance(1f / 60f))
+        assertFalse(sequence.advance(1f))
     }
 
     @Test

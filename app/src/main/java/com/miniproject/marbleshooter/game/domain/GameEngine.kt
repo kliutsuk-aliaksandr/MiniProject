@@ -53,7 +53,7 @@ class GameEngine(private val random: Random = Random.Default) {
     }
 
     private var definition: LevelDefinition = LevelCatalog.definition(1)
-    private var routePointsCache: List<Vec2> = LevelCatalog.route(definition.trackId)
+    private var routePointsCache: List<Vec2> = LevelCatalog.routeForLevel(definition.id)
     private var routeLengthCache: Float = calculateRouteLength(routePointsCache)
     private var obstaclesCache: List<TrackObstacle> = buildObstacles(definition, routeLengthCache)
     private var retraction: Retraction? = null
