@@ -6,6 +6,7 @@ import com.miniproject.marbleshooter.game.domain.GameEngine
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -17,7 +18,7 @@ class GameRendererTest {
         val bitmap = Bitmap.createBitmap(420, 900, Bitmap.Config.ARGB_8888)
         try {
             val canvas = Canvas(bitmap)
-            val renderer = GameRenderer()
+            val renderer = GameRenderer(RuntimeEnvironment.getApplication())
             val engine = GameEngine()
 
             GameScreen.values().forEach { screen ->

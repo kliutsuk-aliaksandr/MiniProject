@@ -1,6 +1,8 @@
 package com.miniproject.marbleshooter.game.ui
 
 import android.graphics.Rect
+import com.miniproject.marbleshooter.R
+import com.miniproject.marbleshooter.game.render.GameTextResources
 import com.miniproject.marbleshooter.game.domain.model.BoosterType
 import com.miniproject.marbleshooter.game.domain.model.GameStatus
 import com.miniproject.marbleshooter.game.domain.model.Vec2
@@ -12,7 +14,8 @@ import kotlin.math.abs
  * It delegates campaign and gameplay mutations to GameSessionController.
  */
 internal class GameNavigationController(
-    private val session: GameSessionController
+    private val session: GameSessionController,
+    private val textResources: GameTextResources
 ) {
     var screen: GameScreen = GameScreen.MENU
         private set
@@ -77,7 +80,8 @@ internal class GameNavigationController(
     /** Supplies current Canvas controls to the virtual accessibility-node provider. */
     fun accessibilityTargets(scale: Float, offsetX: Float, offsetY: Float): List<GameAccessibilityTarget> {
         val result = mutableListOf<GameAccessibilityTarget>()
-        fun localized(ru: String, en: String) = if (session.language == "ru") ru else en
+        fun localized(resourceId: Int, vararg formatArgs: Any) =
+            textResources.getString(session.language, resourceId, *formatArgs)
         fun add(id: Int, label: String, l: Float, t: Float, r: Float, b: Float, action: () -> Unit) {
             result += GameAccessibilityTarget(
                 id, label,
@@ -91,75 +95,75 @@ internal class GameNavigationController(
         when (screen) {
             GameScreen.MENU -> {
                 if (session.hasSavedGame) {
-                    add(1, localized("Продолжить игру", "Continue game"), 78f, 410f, 342f, 464f) { handleMenuTap(Vec2(210f, 437f)) }
-                    add(2, localized("Новая игра", "New game"), 78f, 474f, 342f, 528f) { handleMenuTap(Vec2(210f, 501f)) }
-                    add(3, localized("Карта уровней", "Level map"), 78f, 538f, 342f, 592f) { handleMenuTap(Vec2(210f, 565f)) }
-                    add(4, localized("Обучение", "Tutorial"), 78f, 602f, 342f, 656f) { handleMenuTap(Vec2(210f, 629f)) }
-                    add(5, localized("Настройки", "Settings"), 78f, 666f, 342f, 720f) { handleMenuTap(Vec2(210f, 693f)) }
+                    add(1, localized(R.string.a11y_continue_game), 78f, 410f, 342f, 464f) { handleMenuTap(Vec2(210f, 437f)) }
+                    add(2, localized(R.string.a11y_new_game), 78f, 474f, 342f, 528f) { handleMenuTap(Vec2(210f, 501f)) }
+                    add(3, localized(R.string.a11y_level_map), 78f, 538f, 342f, 592f) { handleMenuTap(Vec2(210f, 565f)) }
+                    add(4, localized(R.string.a11y_tutorial), 78f, 602f, 342f, 656f) { handleMenuTap(Vec2(210f, 629f)) }
+                    add(5, localized(R.string.a11y_settings), 78f, 666f, 342f, 720f) { handleMenuTap(Vec2(210f, 693f)) }
                 } else {
-                    add(1, localized("Играть", "Play"), 78f, 438f, 342f, 496f) { handleMenuTap(Vec2(210f, 467f)) }
-                    add(3, localized("Карта уровней", "Level map"), 78f, 506f, 342f, 564f) { handleMenuTap(Vec2(210f, 535f)) }
-                    add(4, localized("Обучение", "Tutorial"), 78f, 574f, 342f, 632f) { handleMenuTap(Vec2(210f, 603f)) }
-                    add(5, localized("Настройки", "Settings"), 78f, 642f, 342f, 700f) { handleMenuTap(Vec2(210f, 671f)) }
+                    add(1, localized(R.string.a11y_play), 78f, 438f, 342f, 496f) { handleMenuTap(Vec2(210f, 467f)) }
+                    add(3, localized(R.string.a11y_level_map), 78f, 506f, 342f, 564f) { handleMenuTap(Vec2(210f, 535f)) }
+                    add(4, localized(R.string.a11y_tutorial), 78f, 574f, 342f, 632f) { handleMenuTap(Vec2(210f, 603f)) }
+                    add(5, localized(R.string.a11y_settings), 78f, 642f, 342f, 700f) { handleMenuTap(Vec2(210f, 671f)) }
                 }
             }
             GameScreen.LEVEL_MAP -> {
-                add(10, localized("В главное меню", "Main menu"), 78f, 750f, 342f, 810f) { handleLevelMapTap(Vec2(210f, 780f)) }
+                add(10, localized(R.string.a11y_main_menu), 78f, 750f, 342f, 810f) { handleLevelMapTap(Vec2(210f, 780f)) }
                 for (level in 1..session.unlockedLevel) {
                     val index = level - 1
                     val left = 22f + (index % 5) * 76f
                     val top = 220f + (index / 5) * 66f
-                    add(100 + level, localized("Уровень $level", "Level $level"), left, top, left + 68f, top + 58f) {
+                    add(100 + level, localized(R.string.a11y_level, level), left, top, left + 68f, top + 58f) {
                         handleLevelMapTap(Vec2(left + 34f, top + 29f))
                     }
                 }
             }
             GameScreen.TUTORIAL -> {
-                add(20, localized("Закрыть обучение", "Close tutorial"), 290f, 775f, 380f, 835f) { handleTutorialTap(Vec2(330f, 805f)) }
-                if (tutorialPage > 0) add(21, localized("Предыдущий урок", "Previous lesson"), 60f, 712f, 190f, 760f) { handleTutorialTap(Vec2(120f, 736f)) }
-                add(22, if (tutorialPage == 4) localized("Начать тренировку", "Start practice") else localized("Следующий урок", "Next lesson"), 230f, 640f, 370f, 695f) { handleTutorialTap(Vec2(300f, 667f)) }
+                add(20, localized(R.string.a11y_close_tutorial), 290f, 775f, 380f, 835f) { handleTutorialTap(Vec2(330f, 805f)) }
+                if (tutorialPage > 0) add(21, localized(R.string.a11y_previous_lesson), 60f, 712f, 190f, 760f) { handleTutorialTap(Vec2(120f, 736f)) }
+                add(22, if (tutorialPage == 4) localized(R.string.a11y_start_practice) else localized(R.string.a11y_next_lesson), 230f, 640f, 370f, 695f) { handleTutorialTap(Vec2(300f, 667f)) }
             }
             GameScreen.SETTINGS -> {
-                add(30, "Русский", 35f, 350f, 200f, 410f) { handleSettingsTap(Vec2(100f, 380f)) }
-                add(31, "English", 220f, 350f, 385f, 410f) { handleSettingsTap(Vec2(300f, 380f)) }
-                add(32, localized("Звук", "Sound"), 60f, 465f, 360f, 525f) { handleSettingsTap(Vec2(210f, 495f)) }
-                add(33, localized("Вибрация", "Vibration"), 60f, 540f, 360f, 600f) { handleSettingsTap(Vec2(210f, 570f)) }
-                add(34, localized("Политика конфиденциальности", "Privacy policy"), 60f, 635f, 360f, 690f) { handleSettingsTap(Vec2(210f, 662f)) }
-                add(35, localized("Назад", "Back"), 60f, 735f, 360f, 795f) { handleSettingsTap(Vec2(210f, 765f)) }
+                add(30, localized(R.string.language_russian), 35f, 350f, 200f, 410f) { handleSettingsTap(Vec2(100f, 380f)) }
+                add(31, localized(R.string.language_english), 220f, 350f, 385f, 410f) { handleSettingsTap(Vec2(300f, 380f)) }
+                add(32, localized(R.string.a11y_sound), 60f, 465f, 360f, 525f) { handleSettingsTap(Vec2(210f, 495f)) }
+                add(33, localized(R.string.a11y_vibration), 60f, 540f, 360f, 600f) { handleSettingsTap(Vec2(210f, 570f)) }
+                add(34, localized(R.string.a11y_privacy), 60f, 635f, 360f, 690f) { handleSettingsTap(Vec2(210f, 662f)) }
+                add(35, localized(R.string.a11y_back), 60f, 735f, 360f, 795f) { handleSettingsTap(Vec2(210f, 765f)) }
             }
-            GameScreen.PRIVACY -> add(40, localized("Назад", "Back"), 80f, 790f, 340f, 845f) {
+            GameScreen.PRIVACY -> add(40, localized(R.string.a11y_back), 80f, 790f, 340f, 845f) {
                 screen = GameScreen.SETTINGS
                 session.playClick()
             }
             GameScreen.GAME -> when (engine.status) {
                 GameStatus.RUNNING -> {
-                    add(50, localized("Переключить звук", "Toggle sound"), 302f, 20f, 342f, 75f) { handleGameTap(Vec2(322f, 50f)) }
-                    add(51, localized("Пауза", "Pause"), 354f, 20f, 400f, 75f) { handleGameTap(Vec2(377f, 50f)) }
-                    add(52, localized("Поменять шар", "Swap marbles"), 340f, 80f, 405f, 140f) { handleGameTap(Vec2(370f, 110f)) }
+                    add(50, localized(R.string.a11y_toggle_sound), 302f, 20f, 342f, 75f) { handleGameTap(Vec2(322f, 50f)) }
+                    add(51, localized(R.string.a11y_pause), 354f, 20f, 400f, 75f) { handleGameTap(Vec2(377f, 50f)) }
+                    add(52, localized(R.string.a11y_swap_marbles), 340f, 80f, 405f, 140f) { handleGameTap(Vec2(370f, 110f)) }
                     val types = listOf(BoosterType.SLOW_TIME, BoosterType.BOMB, BoosterType.COLOR_CHANGE, BoosterType.REVERSE_CHAIN)
                     val centers = listOf(40f, 150f, 270f, 380f)
-                    val labels = listOf(localized("Замедление", "Slow time"), localized("Бомба", "Bomb"), localized("Смена цвета", "Change color"), localized("Реверс цепочки", "Reverse chain"))
+                    val labels = listOf(localized(R.string.a11y_slow_time), localized(R.string.a11y_bomb), localized(R.string.a11y_color_change), localized(R.string.a11y_reverse_chain))
                     centers.forEachIndexed { index, center ->
-                        add(60 + index, "${labels[index]}, ${session.boosterCount(types[index])}", center - 28f, 708f, center + 28f, 766f) {
+                        add(60 + index, localized(R.string.a11y_booster_count, labels[index], session.boosterCount(types[index])), center - 28f, 708f, center + 28f, 766f) {
                             handleBoosterTap(Vec2(center, 737f))
                         }
                     }
                 }
                 GameStatus.PAUSED -> {
-                    add(70, localized("Продолжить", "Resume"), 80f, 445f, 340f, 505f) { handleGameTap(Vec2(210f, 475f)) }
-                    add(71, localized("Начать заново", "Restart"), 80f, 515f, 340f, 575f) { handleGameTap(Vec2(210f, 545f)) }
-                    add(72, localized("К карте уровней", "Level map"), 80f, 585f, 340f, 645f) { handleGameTap(Vec2(210f, 615f)) }
-                    add(73, localized("В главное меню", "Main menu"), 80f, 655f, 340f, 715f) { handleGameTap(Vec2(210f, 685f)) }
+                    add(70, localized(R.string.a11y_resume), 80f, 445f, 340f, 505f) { handleGameTap(Vec2(210f, 475f)) }
+                    add(71, localized(R.string.a11y_restart), 80f, 515f, 340f, 575f) { handleGameTap(Vec2(210f, 545f)) }
+                    add(72, localized(R.string.a11y_level_map), 80f, 585f, 340f, 645f) { handleGameTap(Vec2(210f, 615f)) }
+                    add(73, localized(R.string.a11y_main_menu), 80f, 655f, 340f, 715f) { handleGameTap(Vec2(210f, 685f)) }
                 }
                 GameStatus.WON -> {
-                    add(80, if (engine.isTutorial) localized("Повторить тренировку", "Retry practice") else localized("Следующий уровень", "Next level"), 65f, 455f, 355f, 515f) { handleGameTap(Vec2(210f, 485f)) }
-                    add(81, if (engine.isTutorial) localized("К урокам", "Back to lessons") else localized("К карте уровней", "Level map"), 80f, 525f, 340f, 585f) { handleGameTap(Vec2(210f, 555f)) }
-                    add(82, localized("В главное меню", "Main menu"), 80f, 595f, 340f, 655f) { handleGameTap(Vec2(210f, 625f)) }
+                    add(80, if (engine.isTutorial) localized(R.string.retry_practice) else localized(R.string.a11y_next_level), 65f, 455f, 355f, 515f) { handleGameTap(Vec2(210f, 485f)) }
+                    add(81, if (engine.isTutorial) localized(R.string.a11y_back_lessons) else localized(R.string.a11y_level_map), 80f, 525f, 340f, 585f) { handleGameTap(Vec2(210f, 555f)) }
+                    add(82, localized(R.string.a11y_main_menu), 80f, 595f, 340f, 655f) { handleGameTap(Vec2(210f, 625f)) }
                 }
                 GameStatus.LOST -> {
-                    add(90, if (engine.isTutorial) localized("Повторить тренировку", "Retry practice") else localized("Играть снова", "Play again"), 80f, 500f, 340f, 560f) { handleGameTap(Vec2(210f, 530f)) }
-                    add(91, localized("К карте уровней", "Level map"), 80f, 575f, 340f, 635f) { handleGameTap(Vec2(210f, 605f)) }
-                    add(92, localized("В главное меню", "Main menu"), 80f, 650f, 340f, 710f) { handleGameTap(Vec2(210f, 680f)) }
+                    add(90, if (engine.isTutorial) localized(R.string.retry_practice) else localized(R.string.a11y_play_again), 80f, 500f, 340f, 560f) { handleGameTap(Vec2(210f, 530f)) }
+                    add(91, localized(R.string.a11y_level_map), 80f, 575f, 340f, 635f) { handleGameTap(Vec2(210f, 605f)) }
+                    add(92, localized(R.string.a11y_main_menu), 80f, 650f, 340f, 710f) { handleGameTap(Vec2(210f, 680f)) }
                 }
             }
         }

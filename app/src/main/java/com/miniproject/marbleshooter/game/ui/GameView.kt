@@ -11,6 +11,7 @@ import com.miniproject.marbleshooter.game.domain.GameEngine
 import com.miniproject.marbleshooter.game.domain.model.GameStatus
 import com.miniproject.marbleshooter.game.domain.model.Vec2
 import com.miniproject.marbleshooter.game.render.GameRenderer
+import com.miniproject.marbleshooter.game.render.GameTextResources
 import com.miniproject.marbleshooter.game.render.GameScreen
 import kotlin.math.min
 
@@ -24,8 +25,8 @@ class GameView(context: Context) : View(context) {
     private val session = GameSessionController(context) {
         performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
     }
-    private val navigation = GameNavigationController(session)
-    private val renderer = GameRenderer()
+    private val navigation = GameNavigationController(session, GameTextResources(context))
+    private val renderer = GameRenderer(context)
     private val accessibilityProvider by lazy(LazyThreadSafetyMode.NONE) {
         GameAccessibilityNodeProvider(this) {
             navigation.accessibilityTargets(scaleFactor, offsetX, offsetY)
