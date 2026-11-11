@@ -44,7 +44,7 @@ class GameAccessibilityInstrumentedTest {
                 assertTrue("Menu controls must be exposed as virtual children", root!!.childCount >= 4)
 
                 val settings = node(provider, 5)
-                assertEquals(activity.getString(R.string.a11y_settings), settings.text.toString())
+                assertEquals("Настройки", settings.text.toString())
 
                 val bounds = Rect()
                 settings.getBoundsInParent(bounds)
@@ -67,11 +67,11 @@ class GameAccessibilityInstrumentedTest {
                 // Menu -> Settings -> Privacy -> Settings.
                 click(provider, 5)
                 assertEquals(
-                    activity.getString(R.string.a11y_privacy),
+                    "Политика конфиденциальности",
                     node(provider, 34).text.toString()
                 )
                 click(provider, 34)
-                assertEquals(activity.getString(R.string.a11y_back), node(provider, 40).text.toString())
+                assertEquals("Назад", node(provider, 40).text.toString())
                 click(provider, 40)
 
                 // Choose English explicitly, then return to the menu.
