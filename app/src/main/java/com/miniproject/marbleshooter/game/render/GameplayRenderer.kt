@@ -43,7 +43,7 @@ internal class GameplayRenderer(resources: GameRenderResources) : GameCanvasRend
         }
 
         when (engine.status) {
-            GameStatus.PAUSED -> overlayRenderer.drawPauseOverlay(canvas, state)
+            GameStatus.PAUSED -> overlayRenderer.drawPauseOverlay(canvas, engine, state)
             GameStatus.WON -> overlayRenderer.drawEndOverlay(canvas, engine, state, true)
             GameStatus.LOST -> overlayRenderer.drawEndOverlay(canvas, engine, state, false)
             GameStatus.RUNNING -> Unit
