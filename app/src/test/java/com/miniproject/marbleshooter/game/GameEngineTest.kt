@@ -430,7 +430,8 @@ class GameEngineTest {
         assertTrue(engine.startChallenge(2))
         engine.drainEvents()
 
-        repeat(500) { engine.update(0.05f) }
+        // One extra fixed step avoids float-rounding just below the exact 25 second boundary.
+        repeat(501) { engine.update(0.05f) }
 
         assertEquals(GameStatus.LOST, engine.status)
         assertTrue(engine.isChallenge)
