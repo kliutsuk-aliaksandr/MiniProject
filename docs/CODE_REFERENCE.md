@@ -107,12 +107,22 @@ UI не должен дублировать игровые правила: он 
 - LevelProgressRepositoryTest.kt: monotonic unlock/stars/score, валидация входа, legacy fallback и повреждённые SharedPreferences values.
 - Repository tests используют Robolectric 4.17 на API 35; запуск: ./gradlew testDebugUnitTest и ./gradlew lintDebug.
 
+## Android instrumentation и accessibility QA
+
+Файл: `app/src/androidTest/java/com/miniproject/marbleshooter/GameAccessibilityInstrumentedTest.kt`.
+
+- `mainActivityExposesCanvasMenuAsAccessibleVirtualControls`: настоящий MainActivity/GameView, корневой accessibility node, virtual children, label и bounds.
+- `accessibilityActionsNavigateSettingsTutorialBoostersAndPauseFlow`: действия AccessibilityNodeProvider для settings/privacy, смены языка, 5 страниц tutorial, practice, booster inventory/Slow Time и Pause/Resume.
+- `uiAutomatorInjectsTapsAtAccessibleBoundsThroughSettingsMapAndGameplay`: UIAutomator `UiDevice.click` инжектирует экранные касания в вычисленные из virtual-node bounds координаты; маршрут проходит menu/settings/privacy/language/level map/tutorial pages и возвращается в menu.
+
+Команда: `./gradlew connectedDebugAndroidTest`. GitHub Actions запускает её на API 23, 29 и 36; все 3 теста на каждом API прошли в [CI run 43020812369](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43020812369). Provider checks и UIAutomator touch journey дополняют друг друга: автоматический прогон не является ручной проверкой TalkBack/switch access или OEM-specific поведения.
+
 ## Известные точки дальнейшего рефакторинга
 
 GameView оставлен тонким Android-адаптером. GameSessionController отвечает за сессию, сохранения, прогресс и события; GameNavigationController — за экраны, переходы, hit areas и accessibility targets; GameInputRouter — за pointer gestures.
 
 GameRenderer разделён на façade, MenuScreenRenderer и GameplayRenderer. GameplayRenderer координирует TrackRenderer, GameEntitiesRenderer, GameEffectsRenderer, HudRenderer и GameOverlayRenderer. Все слои используют общий GameRenderResources instance; renderer layers не владеют вводом или сохранениями. Следующая архитектурная задача — снизить связанность session/navigation controllers и вынести доступность/компоновку controls в единое описание.
 
-Тексты RU/EN пока находятся в Kotlin renderer/navigation. Их перенос в Android string resources остаётся отдельной задачей с проверкой полноты значений для обоих языков. Полный приоритетный список найденных улучшений находится в docs/REFACTOR_AUDIT.md.
+Тексты RU/EN хранятся в Android string resources: `res/values/strings.xml` и `res/values-en/strings.xml`. `GameTextResources` кэширует locale-specific Resources и применяет язык из session независимо от системной locale. `GameTextResourcesTest` проверяет паритет ключей и выбор языка. Полный приоритетный список найденных улучшений находится в docs/REFACTOR_AUDIT.md.
 
 SharedPreferences repositories покрыты Robolectric integration tests. Физическое устройство всё ещё требуется для проверки FPS, TalkBack, touch scaling, звука/вибрации и поведения при background/foreground.

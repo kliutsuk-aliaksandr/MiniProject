@@ -68,8 +68,8 @@
 - [x] Учитывать настройку вибрации при haptic feedback бустера; добавить regression tests для on/off.
 - [x] Перенести весь UI copy из RU/EN пар в Android string resources; добавить RU/EN key parity и language-selection tests.
 - [x] Добавить Robolectric tests для SharedPreferences repositories: save/restore, schema migration, corrupted payload/typed values и progression unlock rules.
-- [ ] Добавить instrumented UI tests и automated accessibility checks.
-- [ ] Проверить FPS, TalkBack, масштабирование и touch на физических устройствах.
+- [x] Добавить Android instrumentation: MainActivity/accessibility tree, AccessibilityNodeProvider navigation/actions и UIAutomator touch journey по menu/settings/privacy/language/map/tutorial; 3 теста проходят на API 23/29/36 (CI 43020812369).
+- [ ] Провести ручной QA на физических устройствах: FPS, TalkBack, switch access, touch/scaling, Xiaomi/MIUI, background/foreground, звук и вибрация. Emulator CI не заменяет эту проверку.
 
 ## Этап 7 — дополнительный офлайн-контент
 

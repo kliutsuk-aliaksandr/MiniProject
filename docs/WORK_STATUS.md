@@ -2,11 +2,11 @@
 
 **Снимок:** 11 ноября 2026 года
 **Рабочая ветка:** dev (ответвлена от fix)
-**Кодовый snapshot:** 026fc8d0227d31c545dcda26171d3e842e724d44
+**Кодовый snapshot (проверен CI):** 4cc2042975ae9d443b685a8a74e58b221b5177c3
 **База:** main = 20ce0d75928c3988628de93a784683a411307ff2
 **PR №2:** открыт, Draft, fix → main
 
-Ветка dev унаследовала текущий результат fix и теперь содержит стандартный Gradle Wrapper 8.13 с проверенными checksum, CI через ./gradlew и локализацию RU/EN через Android string resources. main и fix не изменялись; PR №2 остаётся Draft.
+Ветка dev унаследовала текущий результат fix и содержит стандартный Gradle Wrapper 8.13 с проверенными checksum, CI через ./gradlew, локализацию RU/EN через Android string resources и Android instrumentation/UIAutomator coverage. CI для source snapshot 4cc2042975ae9d443b685a8a74e58b221b5177c3 успешно прошёл на API 23/29/36 и Windows. main и fix не изменялись; PR №2 остаётся Draft.
 
 ## 1. Что выполнено
 
@@ -65,16 +65,30 @@ Render layers share one resource instance. They do not own input, persistence or
 
 Robolectric tests используют API 35. App minSdk 23 / targetSdk 36 не менялись.
 
+### Android instrumentation
+
+Файл: `app/src/androidTest/java/com/miniproject/marbleshooter/GameAccessibilityInstrumentedTest.kt` — 3 сценария:
+
+1. Запуск настоящего MainActivity, GameView и проверка virtual accessibility nodes, labels и bounds.
+2. Навигация через AccessibilityNodeProvider: settings/privacy/back, выбор языка, 5 страниц tutorial, practice, 4 booster controls, Slow Time и Pause/Resume.
+3. UIAutomator инжектирует реальные screen taps по bounds virtual controls: menu → settings → privacy → language → level map → tutorial pages → menu.
+
+Третий сценарий намеренно проверяет стабильные экранные touch-переходы; game-state/actions отдельно проверяются provider instrumentation. Это не полноценный TalkBack gesture test.
+
 ## 4. CI
 
-Текущий dev snapshot `026fc8d0227d31c545dcda26171d3e842e724d44` прошёл полный [Android CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42988455144):
+Текущий source snapshot `4cc2042975ae9d443b685a8a74e58b221b5177c3` прошёл полный [Android CI run 43020812369](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43020812369) — все 5 jobs завершились `success`.
 
-- Linux: `./gradlew assembleDebug`, `testDebugUnitTest` (60 tests), `lintDebug`, `bundleRelease`, upload debug APK и unsigned release AAB — success.
+- Linux: `./gradlew assembleDebug`, `testDebugUnitTest` (60 JVM tests), `lintDebug`, `bundleRelease`, upload debug APK и unsigned release AAB — success.
 - Windows: `gradlew.bat --version` — success.
-- Gradle `setup-gradle@v6` подтвердил валидность wrapper JAR и официальный checksum.
-- Два теста локализации проверяют одинаковые RU/EN resource keys и explicit language selection независимо от системной locale.
+- Android instrumentation: `./gradlew connectedDebugAndroidTest` успешно выполнен на API 23, 29 и 36; каждый emulator job завершил 3/3 теста без пропусков и ошибок (9 успешных executions суммарно).
+- Gradle `setup-gradle@v6` подтвердил wrapper JAR; distribution checksum закреплён в Wrapper properties.
+
+Предыдущий baseline run [42990098880](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42990098880) на API 35 также проходил с 2 instrumentation tests. Новая матрица расширяет покрытие до minSdk/API 23 и target/API 36.
 
 ## 5. Что не подтверждено на реальном устройстве
+
+Успешная emulator matrix не является ручным QA. Следующие проверки не проводились на физическом Android-устройстве:
 
 - Первый запуск и immersive system bars на Xiaomi/MIUI.
 - Touch mapping и hit areas при разных densities/aspect ratios.
