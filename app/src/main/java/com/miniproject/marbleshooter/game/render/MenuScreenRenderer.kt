@@ -1,6 +1,7 @@
 package com.miniproject.marbleshooter.game.render
 
 import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Color
 import android.graphics.RectF
 import com.miniproject.marbleshooter.game.domain.GameEngine
