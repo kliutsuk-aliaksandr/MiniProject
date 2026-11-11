@@ -38,12 +38,14 @@ data class GameRenderState(
 )
 
 /** Canvas renderer façade. Each visual concern is delegated to a focused layer. */
-class GameRenderer : GameCanvasRendererBase(GameRenderResources()) {
-    private val menuRenderer = MenuScreenRenderer(drawing)
-    private val gameplayRenderer = GameplayRenderer(drawing)
+class GameRenderer {
+    private val resources = GameRenderResources()
+    private val backgroundRenderer = GameBackgroundRenderer(resources)
+    private val menuRenderer = MenuScreenRenderer(resources)
+    private val gameplayRenderer = GameplayRenderer(resources)
 
     fun draw(canvas: Canvas, engine: GameEngine, state: GameRenderState) {
-        drawBackground(canvas)
+        backgroundRenderer.draw(canvas)
         when (state.screen) {
             GameScreen.MENU -> menuRenderer.drawMenu(canvas, engine, state)
             GameScreen.LEVEL_MAP -> menuRenderer.drawLevelMap(canvas, state)

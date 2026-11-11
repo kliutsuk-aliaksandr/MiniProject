@@ -52,8 +52,8 @@ internal class GameRenderResources {
 }
 
 /** Common Canvas primitives shared by focused screen renderers. */
-abstract class GameCanvasRendererBase internal constructor(
-    internal val drawing: GameRenderResources
+internal abstract class GameCanvasRendererBase(
+    private val drawing: GameRenderResources
 ) {
     protected val palette get() = drawing.palette
     protected val backgroundPaint get() = drawing.backgroundPaint
@@ -191,4 +191,9 @@ abstract class GameCanvasRendererBase internal constructor(
 
     protected fun tr(state: GameRenderState, russian: String, english: String): String =
         if (state.language == "en") english else russian
+}
+
+/** Gives the façade access to shared background painting without exposing the base class. */
+internal class GameBackgroundRenderer(resources: GameRenderResources) : GameCanvasRendererBase(resources) {
+    fun draw(canvas: Canvas) = drawBackground(canvas)
 }
