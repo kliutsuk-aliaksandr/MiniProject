@@ -405,11 +405,15 @@ internal class GameNavigationController(
                     session.playClick()
                 }
                 inButton(target, 515f, 575f) -> {
-                    session.startNewGame()
+                    if (engine.isChallenge) {
+                        session.startChallenge(requireNotNull(engine.challengeDefinition).id)
+                    } else {
+                        session.startNewGame()
+                    }
                     screen = GameScreen.GAME
                 }
                 inButton(target, 585f, 645f) -> {
-                    screen = GameScreen.LEVEL_MAP
+                    screen = if (engine.isChallenge) GameScreen.CHALLENGES else GameScreen.LEVEL_MAP
                     session.playClick()
                 }
                 inButton(target, 655f, 715f) -> {
@@ -419,23 +423,30 @@ internal class GameNavigationController(
             }
             GameStatus.WON -> when {
                 inButton(target, 455f, 515f) -> {
-                    if (engine.isTutorial) {
-                        session.startTutorialPractice()
-                        screen = GameScreen.GAME
-                    } else {
-                        if (!engine.startNextLevel()) screen = GameScreen.LEVEL_MAP
-                        session.clearEffects()
-                        session.saveGameState(screen == GameScreen.GAME)
-                        session.playClick()
+                    when {
+                        engine.isChallenge -> {
+                            session.startChallenge(requireNotNull(engine.challengeDefinition).id)
+                            screen = GameScreen.GAME
+                        }
+                        engine.isTutorial -> {
+                            session.startTutorialPractice()
+                            screen = GameScreen.GAME
+                        }
+                        else -> {
+                            if (!engine.startNextLevel()) screen = GameScreen.LEVEL_MAP
+                            session.clearEffects()
+                            session.saveGameState(screen == GameScreen.GAME)
+                            session.playClick()
+                        }
                     }
                 }
                 inButton(target, 525f, 585f) -> {
-                    if (engine.isTutorial) {
-                        openTutorial()
-                    } else {
-                        screen = GameScreen.LEVEL_MAP
-                        session.playClick()
+                    when {
+                        engine.isChallenge -> screen = GameScreen.CHALLENGES
+                        engine.isTutorial -> openTutorial()
+                        else -> screen = GameScreen.LEVEL_MAP
                     }
+                    session.playClick()
                 }
                 inButton(target, 595f, 655f) -> {
                     screen = GameScreen.MENU
@@ -444,15 +455,15 @@ internal class GameNavigationController(
             }
             GameStatus.LOST -> when {
                 inButton(target, 500f, 560f) -> {
-                    if (engine.isTutorial) {
-                        session.startTutorialPractice()
-                    } else {
-                        session.startNewGame()
+                    when {
+                        engine.isChallenge -> session.startChallenge(requireNotNull(engine.challengeDefinition).id)
+                        engine.isTutorial -> session.startTutorialPractice()
+                        else -> session.startNewGame()
                     }
                     screen = GameScreen.GAME
                 }
                 inButton(target, 575f, 635f) -> {
-                    screen = GameScreen.LEVEL_MAP
+                    screen = if (engine.isChallenge) GameScreen.CHALLENGES else GameScreen.LEVEL_MAP
                     session.playClick()
                 }
                 inButton(target, 650f, 710f) -> {
