@@ -9,8 +9,10 @@
 - Начат Этап 7: OfflineProgressRepository, 8 локальных достижений и экран статистики/достижений RU/EN; tutorial/practice не засчитывается в lifetime progress.
 - Добавлены регрессионные проверки появления цепочки, impact insertion, live shot palette, offline counters/achievements и изоляции tutorial.
 - Bitmask достижений по бустерам зафиксирован явными стабильными битами; он не зависит от порядка значений BoosterType.
-- CI feature snapshot `f693df43eecb71ca268d80782968b988d49a81fa` успешно прошёл в [run 43028846127](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43028846127): APK, 69 JVM tests, lint, unsigned AAB, Windows Wrapper и instrumentation API 23/29/36.
+- CI feature snapshot `14cccb21aa9a280c52d52f7f393bb6993f7ccf68` успешно прошёл в [PR run 43031140238](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43031140238): APK, 69 JVM tests, lint, unsigned AAB, Windows Wrapper и instrumentation API 23/29/36.
 - Git workflow упорядочен как feature/* → dev → main; открыт Draft PR #3 feature → dev, устаревший PR #2 fix → main закрыт без merge.
+- Подготовлена инструкция для repository Branch Ruleset `Protect main and dev` с пятью реальными required checks; применение ожидает ручного действия в GitHub Settings, поскольку подключённый коннектор имеет только read-only доступ к Rulesets.
+- CI настроен на push в `main/dev` и pull_request в `main/dev`; feature PR получает один набор проверок без повторной push matrix.
 
 
 - Перенесено 97 RU/EN UI-текстов в Android string resources; GameTextResources кэширует locale-specific Resources и разделяется renderer/navigation. Добавлены два теста language selection и resource-key parity.

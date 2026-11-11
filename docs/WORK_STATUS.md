@@ -2,11 +2,11 @@
 
 **Снимок:** 11 ноября 2026 года
 **Рабочая feature-ветка:** feature/gameplay-polish-offline-content → dev → main
-**Кодовый snapshot feature:** f693df43eecb71ca268d80782968b988d49a81fa
+**Кодовый snapshot feature:** 14cccb21aa9a280c52d52f7f393bb6993f7ccf68
 **База:** main = 20ce0d75928c3988628de93a784683a411307ff2
 **PR №3:** открыт, Draft, feature/gameplay-polish-offline-content → dev; PR №2 закрыт как устаревший, без merge
 
-Рабочий поток организован как feature/* → dev → main. Текущая feature-ветка ответвлена от dev (10 коммитов сверх dev на момент открытия PR №3). Ветка dev остаётся на 93dc1c6, main — на 20ce0d7, fix — на a2a48d6. PR №3 открыт Draft feature → dev; старый PR №2 fix → main закрыт как устаревший и не сливался. Ветки main/dev/fix не обновлялись этой feature-работой.
+Рабочий поток организован как feature/* → dev → main. Текущая feature-ветка ответвлена от dev (14 коммитов сверх dev на момент проверки). Ветка dev остаётся на 93dc1c6, main — на 20ce0d7, fix — на a2a48d6. PR №3 открыт Draft feature → dev; старый PR №2 fix → main закрыт как устаревший и не сливался. Ветки main/dev/fix не обновлялись этой feature-работой.
 
 ## 1. Что выполнено
 
@@ -93,6 +93,11 @@ Feature snapshot `f693df43eecb71ca268d80782968b988d49a81fa` прошёл пол�
 Статический audit backlog и рекомендуемый порядок исправлений находятся в [REFACTOR_AUDIT.md](REFACTOR_AUDIT.md).
 
 ## 6. Git safety
+
+- Feature PR #3: `feature/gameplay-polish-offline-content → dev`, Draft.
+- Старый PR #2 `fix → main` закрыт без merge.
+- Rulesets: **не настроены**. Список repository rulesets через GitHub API вернул пустой массив; текущий GitHub connector поддерживает для Rulesets только GET и не предоставляет create/update action. Legacy branch-protection endpoint вернул 403. Точная конфигурация для ручного применения записана в [GITHUB_RULESET_SETUP.md](GITHUB_RULESET_SETUP.md).
+- `.github/workflows/android-ci.yml` запускает CI на push только в `main/dev`, а feature-ветки — через `pull_request` в `main/dev`; это исключает двойной запуск одинаковой matrix для PR-ветки.
 
 - main остаётся на 20ce0d75928c3988628de93a784683a411307ff2.
 - Новые изменения идут через feature/* → dev → main; feature → dev review выполняется PR #3 (Draft).
