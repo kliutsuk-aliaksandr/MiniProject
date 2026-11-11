@@ -8,7 +8,7 @@ import com.miniproject.marbleshooter.game.domain.model.OfflineAchievement
 import com.miniproject.marbleshooter.game.domain.model.OfflineStatistics
 
 enum class GameScreen {
-    MENU, LEVEL_MAP, TUTORIAL, SETTINGS, PRIVACY, ACHIEVEMENTS, GAME
+    MENU, LEVEL_MAP, CHALLENGES, TUTORIAL, SETTINGS, PRIVACY, ACHIEVEMENTS, GAME
 }
 
 data class ParticleVisual(
@@ -36,6 +36,7 @@ data class GameRenderState(
     val tutorialPage: Int,
     val unlockedLevel: Int,
     val starsByLevel: Map<Int, Int>,
+    val challengeStarsById: Map<Int, Int> = emptyMap(),
     val offlineStatistics: OfflineStatistics = OfflineStatistics(),
     val unlockedAchievements: Set<OfflineAchievement> = emptySet(),
     val particles: List<ParticleVisual> = emptyList(),
@@ -55,6 +56,7 @@ class GameRenderer(context: Context) {
         when (state.screen) {
             GameScreen.MENU -> menuRenderer.drawMenu(canvas, engine, state)
             GameScreen.LEVEL_MAP -> menuRenderer.drawLevelMap(canvas, state)
+            GameScreen.CHALLENGES -> menuRenderer.drawChallenges(canvas, state)
             GameScreen.TUTORIAL -> menuRenderer.drawTutorial(canvas, state)
             GameScreen.SETTINGS -> menuRenderer.drawSettings(canvas, state)
             GameScreen.PRIVACY -> menuRenderer.drawPrivacy(canvas, state)
