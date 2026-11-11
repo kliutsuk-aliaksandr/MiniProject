@@ -8,6 +8,19 @@ import com.miniproject.marbleshooter.game.domain.GameEngine
 
 /** Draws pause, win and loss overlays over the active game field. */
 internal class GameOverlayRenderer(resources: GameRenderResources) : GameCanvasRendererBase(resources) {
+    internal fun drawStartSequenceOverlay(canvas: Canvas, state: GameRenderState) {
+        val label = state.startCountdownNumber?.toString() ?: tr(state, R.string.start_prompt)
+        drawPanel(canvas, RectF(120f, 365f, 300f, 535f), 28f, Color.argb(220, 21, 38, 67))
+        centeredText(
+            canvas,
+            label,
+            if (state.showStartPrompt) 34f else 88f,
+            if (state.showStartPrompt) Color.rgb(111, 228, 164) else Color.WHITE,
+            210f,
+            470f
+        )
+    }
+
     internal fun drawPauseOverlay(canvas: Canvas, engine: GameEngine, state: GameRenderState) {
             overlayBackdrop(canvas)
             overlayPanel(

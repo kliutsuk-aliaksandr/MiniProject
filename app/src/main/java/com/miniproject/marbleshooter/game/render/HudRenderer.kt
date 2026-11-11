@@ -68,28 +68,37 @@ internal class HudRenderer(resources: GameRenderResources) : GameCanvasRendererB
         }
 
     internal fun drawBoosters(canvas: Canvas, engine: GameEngine, state: GameRenderState) {
-            drawPanel(canvas, RectF(18f, 686f, 402f, 779f), 22f, Color.argb(175, 8, 17, 34))
+            drawPanel(
+                canvas,
+                RectF(
+                    GameplayHudLayout.BOOSTER_PANEL_LEFT,
+                    GameplayHudLayout.BOOSTER_PANEL_TOP,
+                    GameplayHudLayout.BOOSTER_PANEL_RIGHT,
+                    GameplayHudLayout.BOOSTER_PANEL_BOTTOM
+                ),
+                22f,
+                Color.argb(190, 8, 17, 34)
+            )
             val items = listOf(
                 Triple(BoosterType.SLOW_TIME, tr(state, R.string.booster_slow), engine.boosters.slowTime),
                 Triple(BoosterType.BOMB, tr(state, R.string.booster_bomb), engine.boosters.bomb),
                 Triple(BoosterType.COLOR_CHANGE, tr(state, R.string.booster_color), engine.boosters.colorChange),
                 Triple(BoosterType.REVERSE_CHAIN, tr(state, R.string.booster_reverse), engine.boosters.reverseChain)
             )
-            val centers = listOf(40f, 150f, 270f, 380f)
-            items.forEachIndexed { index, item ->
-                val x = centers[index]
+            GameplayHudLayout.BOOSTER_CENTERS.forEachIndexed { index, x ->
+                val item = items[index]
                 textPaint.textAlign = Paint.Align.CENTER
                 textPaint.textSize = 10f
                 textPaint.color = MUTED
-                canvas.drawText(item.second, x, 701f, textPaint)
+                canvas.drawText(item.second, x, GameplayHudLayout.BOOSTER_LABEL_Y, textPaint)
                 fillPaint.color = if (item.third > 0) Color.rgb(54, 77, 111) else Color.rgb(39, 45, 59)
-                canvas.drawCircle(x, 737f, 23f, fillPaint)
+                canvas.drawCircle(x, GameplayHudLayout.BOOSTER_CENTER_Y, GameplayHudLayout.BOOSTER_BUTTON_RADIUS, fillPaint)
                 strokePaint.color = if (item.third > 0) Color.rgb(123, 214, 170) else Color.rgb(90, 97, 112)
                 strokePaint.strokeWidth = 2f
-                canvas.drawCircle(x, 737f, 23f, strokePaint)
+                canvas.drawCircle(x, GameplayHudLayout.BOOSTER_CENTER_Y, GameplayHudLayout.BOOSTER_BUTTON_RADIUS, strokePaint)
                 centeredText(
                     canvas, item.third.toString(), 15f,
-                    if (item.third > 0) Color.WHITE else MUTED, x, 742f
+                    if (item.third > 0) Color.WHITE else MUTED, x, GameplayHudLayout.BOOSTER_COUNT_Y
                 )
             }
             textPaint.textAlign = Paint.Align.LEFT
