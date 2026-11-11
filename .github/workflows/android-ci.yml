@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [main, fix]
+    branches: [main, fix, dev]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -34,27 +34,25 @@ jobs:
         run: |
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Set up Gradle 8.13
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: "8.13"
 
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: Run unit tests
-        run: gradle testDebugUnitTest --no-daemon
+        run: ./gradlew testDebugUnitTest --no-daemon
 
       - name: Run Android lint
         run: |
           set +e
-          gradle lintDebug --no-daemon
+          ./gradlew lintDebug --no-daemon
           lint_status=$?
           cat app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt || true
           exit $lint_status
 
       - name: Build unsigned release AAB
-        run: gradle bundleRelease --no-daemon
+        run: ./gradlew bundleRelease --no-daemon
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
