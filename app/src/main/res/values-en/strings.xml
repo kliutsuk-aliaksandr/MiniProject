@@ -97,4 +97,30 @@
     <string name="a11y_next_level">Next level</string>
     <string name="a11y_back_lessons">Back to lessons</string>
     <string name="a11y_play_again">Play again</string>
+
+    <string name="achievements">Achievements</string>
+    <string name="a11y_achievements">Achievements and statistics</string>
+    <string name="achievements_title">Achievements</string>
+    <string name="statistics_title">Lifetime statistics</string>
+    <string name="achievements_section">Achievement collection</string>
+    <string name="achievements_unlocked_count">%1$d of %2$d unlocked</string>
+    <string name="stat_shots">Shots fired</string>
+    <string name="stat_matches">Matches</string>
+    <string name="stat_marbles">Marbles cleared</string>
+    <string name="stat_largest_combo">Largest combo</string>
+    <string name="stat_completed_levels">Levels cleared</string>
+    <string name="stat_three_star_levels">Three-star clears</string>
+    <string name="stat_highest_level">Highest level</string>
+    <string name="stat_best_score">Best score</string>
+    <string name="achievement_unlocked">UNLOCKED</string>
+    <string name="achievement_locked">LOCKED</string>
+    <string name="achievement_first_shot">First shot</string>
+    <string name="achievement_first_match">First match</string>
+    <string name="achievement_big_combo">Combo master</string>
+    <string name="achievement_first_level">First clear</string>
+    <string name="achievement_three_stars">Three stars</string>
+    <string name="achievement_booster_collector">Full toolkit</string>
+    <string name="achievement_level_ten">Level ten</string>
+    <string name="achievement_campaign_complete">Campaign complete</string>
+
 </resources>

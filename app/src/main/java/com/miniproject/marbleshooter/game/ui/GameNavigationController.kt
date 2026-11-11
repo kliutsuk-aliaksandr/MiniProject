@@ -26,7 +26,7 @@ internal class GameNavigationController(
 
     fun handleSystemBack(): Boolean {
         when (screen) {
-            GameScreen.SETTINGS, GameScreen.PRIVACY, GameScreen.LEVEL_MAP, GameScreen.TUTORIAL -> {
+            GameScreen.SETTINGS, GameScreen.PRIVACY, GameScreen.LEVEL_MAP, GameScreen.TUTORIAL, GameScreen.ACHIEVEMENTS -> {
                 screen = if (screen == GameScreen.PRIVACY) GameScreen.SETTINGS else GameScreen.MENU
             }
             GameScreen.MENU -> return false
@@ -52,6 +52,7 @@ internal class GameNavigationController(
                 screen = GameScreen.SETTINGS
                 session.playClick()
             }
+            GameScreen.ACHIEVEMENTS -> handleAchievementsTap(target)
             GameScreen.GAME -> handleGameTap(target)
         }
     }
@@ -100,11 +101,13 @@ internal class GameNavigationController(
                     add(3, localized(R.string.a11y_level_map), 78f, 538f, 342f, 592f) { handleMenuTap(Vec2(210f, 565f)) }
                     add(4, localized(R.string.a11y_tutorial), 78f, 602f, 342f, 656f) { handleMenuTap(Vec2(210f, 629f)) }
                     add(5, localized(R.string.a11y_settings), 78f, 666f, 342f, 720f) { handleMenuTap(Vec2(210f, 693f)) }
+                    add(6, localized(R.string.a11y_achievements), 78f, 730f, 342f, 784f) { handleMenuTap(Vec2(210f, 757f)) }
                 } else {
                     add(1, localized(R.string.a11y_play), 78f, 438f, 342f, 496f) { handleMenuTap(Vec2(210f, 467f)) }
                     add(3, localized(R.string.a11y_level_map), 78f, 506f, 342f, 564f) { handleMenuTap(Vec2(210f, 535f)) }
                     add(4, localized(R.string.a11y_tutorial), 78f, 574f, 342f, 632f) { handleMenuTap(Vec2(210f, 603f)) }
                     add(5, localized(R.string.a11y_settings), 78f, 642f, 342f, 700f) { handleMenuTap(Vec2(210f, 671f)) }
+                    add(6, localized(R.string.a11y_achievements), 78f, 710f, 342f, 768f) { handleMenuTap(Vec2(210f, 739f)) }
                 }
             }
             GameScreen.LEVEL_MAP -> {
@@ -133,6 +136,10 @@ internal class GameNavigationController(
             }
             GameScreen.PRIVACY -> add(40, localized(R.string.a11y_back), 80f, 790f, 340f, 845f) {
                 screen = GameScreen.SETTINGS
+                session.playClick()
+            }
+            GameScreen.ACHIEVEMENTS -> add(120, localized(R.string.a11y_main_menu), 78f, 785f, 342f, 845f) {
+                screen = GameScreen.MENU
                 session.playClick()
             }
             GameScreen.GAME -> when (engine.status) {
@@ -187,6 +194,7 @@ internal class GameNavigationController(
                 }
                 inButton(target, 602f, 656f) -> openTutorial()
                 inButton(target, 666f, 720f) -> openSettings()
+                inButton(target, 730f, 784f) -> openAchievements()
             }
         } else {
             when {
@@ -200,7 +208,20 @@ internal class GameNavigationController(
                 }
                 inButton(target, 574f, 632f) -> openTutorial()
                 inButton(target, 642f, 700f) -> openSettings()
+                inButton(target, 710f, 768f) -> openAchievements()
             }
+        }
+    }
+
+    private fun openAchievements() {
+        screen = GameScreen.ACHIEVEMENTS
+        session.playClick()
+    }
+
+    private fun handleAchievementsTap(target: Vec2) {
+        if (inButton(target, 785f, 845f)) {
+            screen = GameScreen.MENU
+            session.playClick()
         }
     }
 

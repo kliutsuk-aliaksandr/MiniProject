@@ -97,4 +97,30 @@
     <string name="a11y_next_level">Следующий уровень</string>
     <string name="a11y_back_lessons">К урокам</string>
     <string name="a11y_play_again">Играть снова</string>
+
+    <string name="achievements">Достижения</string>
+    <string name="a11y_achievements">Достижения и статистика</string>
+    <string name="achievements_title">Достижения</string>
+    <string name="statistics_title">Статистика</string>
+    <string name="achievements_section">Коллекция достижений</string>
+    <string name="achievements_unlocked_count">%1$d из %2$d открыто</string>
+    <string name="stat_shots">Выстрелы</string>
+    <string name="stat_matches">Комбинации</string>
+    <string name="stat_marbles">Убрано шаров</string>
+    <string name="stat_largest_combo">Лучшее комбо</string>
+    <string name="stat_completed_levels">Уровни пройдены</string>
+    <string name="stat_three_star_levels">Три звезды</string>
+    <string name="stat_highest_level">Дальний уровень</string>
+    <string name="stat_best_score">Лучший счёт</string>
+    <string name="achievement_unlocked">ОТКРЫТО</string>
+    <string name="achievement_locked">ЗАКРЫТО</string>
+    <string name="achievement_first_shot">Первый выстрел</string>
+    <string name="achievement_first_match">Первая комбинация</string>
+    <string name="achievement_big_combo">Мастер комбо</string>
+    <string name="achievement_first_level">Первый уровень</string>
+    <string name="achievement_three_stars">Три звезды</string>
+    <string name="achievement_booster_collector">Полный арсенал</string>
+    <string name="achievement_level_ten">Десятый уровень</string>
+    <string name="achievement_campaign_complete">Вся кампания</string>
+
 </resources>
