@@ -93,8 +93,13 @@ app/src/main/java/com/miniproject/marbleshooter/
     ├── render/
     │   ├── GameRenderer.kt                  # small Canvas renderer façade
     │   ├── MenuScreenRenderer.kt             # menu, map, tutorial, settings and privacy
-    │   ├── GameplayRenderer.kt                # field, HUD, boosters, effects and overlays
-    │   └── GameRenderResources.kt             # shared Paint/Path cache and Canvas primitives
+    │   ├── GameplayRenderer.kt                # gameplay draw coordinator
+    │   ├── TrackRenderer.kt                    # route and obstacles
+    │   ├── GameEntitiesRenderer.kt              # chain, projectiles and frog
+    │   ├── GameEffectsRenderer.kt               # clearing and particle effects
+    │   ├── HudRenderer.kt                       # score, status and boosters
+    │   ├── GameOverlayRenderer.kt                # pause, win and loss overlays
+    │   └── GameRenderResources.kt                # shared Paint/Path cache and primitives
     └── ui/
         ├── GameView.kt                     # Android View, Canvas and coordinate adapter
         ├── GameSessionController.kt        # gameplay lifecycle, events, saves, audio and effects

@@ -34,7 +34,12 @@ MainActivity
        ├── GameInputRouter (pointer gesture state and callback routing)
        ├── GameRenderer (small Canvas façade)
        │    ├── MenuScreenRenderer
-       │    ├── GameplayRenderer
+       │    ├── GameplayRenderer (frame coordinator)
+       │    │    ├── TrackRenderer
+       │    │    ├── GameEntitiesRenderer
+       │    │    ├── GameEffectsRenderer
+       │    │    ├── HudRenderer
+       │    │    └── GameOverlayRenderer
        │    └── GameRenderResources (shared Paint/Path cache + primitives)
        └── GameAccessibilityNodeProvider (Android virtual-node adapter)
 ```
@@ -59,7 +64,12 @@ Render слой разделён на четыре роли:
 
 - GameRenderer — небольшой façade, который рисует общий фон и выбирает слой по GameScreen.
 - MenuScreenRenderer рисует меню, карту уровней, обучение, настройки и privacy screen.
-- GameplayRenderer рисует дорожку, препятствия, цепочку, снаряды, лягушку, HUD, бустеры, clearing/particle effects и pause/end overlays.
+- GameplayRenderer координирует порядок отрисовки игрового кадра.
+- TrackRenderer рисует cached route geometry и препятствия.
+- GameEntitiesRenderer рисует цепочку, снаряды и лягушку-пушку.
+- GameEffectsRenderer рисует clearing-ball animation и particle feedback.
+- HudRenderer рисует score/status panel и четыре бустера.
+- GameOverlayRenderer рисует pause, win и loss overlays.
 - GameRenderResources хранит общий Paint/Shader/Path cache и переиспользуемые Canvas primitives. Внутренний базовый renderer имеет internal visibility и не входит в публичный API.
 
 Renderer не обрабатывает касания, не читает SharedPreferences и не меняет GameEngine. Он получает domain state и GameRenderState.

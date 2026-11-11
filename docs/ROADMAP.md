@@ -63,6 +63,7 @@
 - [x] Извлечь ProgressPresentationCache из GameView и покрыть snapshot/update logic unit tests.
 - [x] Разделить GameView на GameSessionController (сессия, события, сохранения/прогресс, эффекты), GameNavigationController (экраны, переходы, hit areas и accessibility targets) и GameInputRouter (pointer gestures). GameView оставлен тонким Android View adapter; добавлены JVM-тесты роутинга ввода.
 - [x] Разделить GameRenderer на façade, MenuScreenRenderer и GameplayRenderer; общие Paint/Path и Canvas primitives вынести в GameRenderResources.
+- [x] Разделить gameplay rendering на TrackRenderer, GameEntitiesRenderer, GameEffectsRenderer, HudRenderer и GameOverlayRenderer.
 - [x] Добавить Robolectric smoke test для отрисовки всех верхнеуровневых экранов.
 - [x] Учитывать настройку вибрации при haptic feedback бустера; добавить regression tests для on/off.
 - [ ] Перенести весь UI copy из RU/EN пар в Android string resources.

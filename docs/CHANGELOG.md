@@ -2,7 +2,7 @@
 
 ## Unreleased — fix branch
 
-- Разделён GameRenderer: façade, MenuScreenRenderer, GameplayRenderer и GameRenderResources с общими Paint/Path; добавлен Robolectric smoke test для всех экранов.
+- Разделён GameRenderer: façade, MenuScreenRenderer, GameplayRenderer и GameRenderResources с общими Paint/Path; gameplay coordinator делегирует track/entities/effects/HUD/overlay пяти отдельным renderers. Добавлен Robolectric smoke test для всех экранов.
 - Исправлен haptic feedback бустера: теперь он учитывает настройку вибрации; добавлены два controller regression tests.
 - Добавлен системный аудит docs/REFACTOR_AUDIT.md с приоритетным списком дальнейших улучшений.
 - Завершён рефакторинг GameView: session/event/save/progress/audio/effects перенесены в GameSessionController, экраны/hit areas/accessibility targets — в GameNavigationController, жесты — в platform-independent GameInputRouter. GameView сокращён с 712 до 145 строк и оставлен Android View/Canvas adapter.

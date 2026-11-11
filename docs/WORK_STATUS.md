@@ -2,11 +2,11 @@
 
 **Снимок:** 11 ноября 2026 года
 **Рабочая ветка:** fix
-**Кодовый snapshot:** 47321eb4c15f6d7ac5fa09ff307ec706e6021dd9
+**Кодовый snapshot:** 199ce14a646f6752ca4d6f6a47a612947c900540
 **База:** main = 20ce0d75928c3988628de93a784683a411307ff2
 **PR №2:** открыт, Draft, fix → main
 
-Этот статус описывает кодовый snapshot перед синхронизацией документации. Последующий документационный commit не меняет production source. main не изменялся.
+Последний production refactor commit включает renderer decomposition по track/entities/effects/HUD/overlay. Последующее обновление документации не меняет production source. main не изменялся.
 
 ## 1. Что выполнено
 
@@ -14,13 +14,14 @@
 - GameSessionController владеет session lifecycle, simulation loop, repositories, audio, GameEvent side effects и transient effects.
 - GameNavigationController владеет экранами, переходами, hit areas и accessibility targets.
 - GameInputRouter маршрутизирует DOWN/MOVE/UP/CANCEL и остаётся независимым от Android API.
-- GameRenderer стал небольшим façade; MenuScreenRenderer отвечает за меню/карту/обучение/настройки/privacy, GameplayRenderer — за игровое поле/HUD/бустеры/overlays, GameRenderResources — за shared Paint/Path и Canvas primitives.
-- Общий базовый renderer и ресурсы не входят в публичный API; GameRenderer использует composition.
+- GameRenderer является небольшим façade; MenuScreenRenderer отвечает за menu/map/tutorial/settings/privacy.
+- GameplayRenderer координирует TrackRenderer, GameEntitiesRenderer, GameEffectsRenderer, HudRenderer и GameOverlayRenderer.
+- GameRenderResources владеет общим Paint/Path/Shader cache и переиспользуемыми Canvas primitives. Внутренний базовый renderer не входит в public API.
 - Fixed-step simulation loop и progression presentation выделены в GameLoopController и ProgressPresentationCache.
-- Save codec использует schema 1, legacy schema 0, strict all-or-nothing parser; репозитории валидируют повреждённые данные и typed preferences.
+- Save codec использует schema 1, legacy schema 0, strict all-or-nothing parser; repositories валидируют повреждённые данные и typed preferences.
 - Исправлены Bomb aim target, tutorial isolation, booster applicability, monotonic progression и haptic preference handling.
 - Исправлен startup crash при настройке immersive mode до создания DecorView.
-- Обновлены README, CODE_REFERENCE, TECHNICAL_DESIGN, ROADMAP и CHANGELOG; полный список remaining improvements находится в REFACTOR_AUDIT.md.
+- Полный список remaining improvements находится в REFACTOR_AUDIT.md.
 
 ## 2. Архитектура и размеры ключевых файлов
 
@@ -33,10 +34,15 @@
 | GameEngine.kt | 629 | Pure Kotlin domain aggregate |
 | GameRenderer.kt | 59 | Renderer façade |
 | MenuScreenRenderer.kt | 267 | Menu/map/tutorial/settings/privacy |
-| GameplayRenderer.kt | 288 | Track/entities/HUD/boosters/effects/overlays |
-| GameRenderResources.kt | 200 | Shared Paint/Path and Canvas primitives |
+| GameplayRenderer.kt | 54 | Gameplay draw coordinator |
+| TrackRenderer.kt | 79 | Route and obstacle rendering |
+| GameEntitiesRenderer.kt | 28 | Chain/projectiles/frog |
+| GameEffectsRenderer.kt | 38 | Clearing and particles |
+| HudRenderer.kt | 81 | Score/status/boosters |
+| GameOverlayRenderer.kt | 69 | Pause/win/loss overlays |
+| GameRenderResources.kt | 200 | Shared Paint/Path/Canvas resources |
 
-Domain source не импортирует Android API. Renderers не обрабатывают ввод и не читают SharedPreferences. Shared Paint/Path cache переиспользуется через один resource instance на GameRenderer.
+Render layers share one resource instance. They do not own input, persistence or domain rules. Domain source remains free of Android imports.
 
 ## 3. Автоматические тесты
 
@@ -60,12 +66,17 @@ Robolectric tests используют API 35. App minSdk 23 / targetSdk 36 не
 
 ## 4. CI
 
-На текущем кодовом snapshot 47321eb4c15f6d7ac5fa09ff307ec706e6021dd9 оба workflow завершились success:
+На предыдущем кодовом snapshot 47321eb4c15f6d7ac5fa09ff307ec706e6021dd9 оба workflow завершились success:
 
 - [Push CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42979240130)
 - [PR CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42979245640)
 
-Оба прошли assembleDebug, testDebugUnitTest, lintDebug, bundleRelease и upload debug APK / unsigned release AAB.
+Новый renderer decomposition commit 199ce14a646f6752ca4d6f6a47a612947c900540 проходит повторный CI:
+
+- [Push CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42980254214) — assembleDebug и testDebugUnitTest прошли, lint/release ещё выполнялись на момент снимка.
+- [PR CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42980261943) — assembleDebug, testDebugUnitTest, lintDebug прошли; release AAB выполнялся на момент снимка.
+
+Оба завершённых workflow на предыдущем snapshot прошли полный pipeline, включая release AAB и artifact uploads. Итог нового snapshot нужно подтвердить после окончания обоих workflow.
 
 ## 5. Что не подтверждено на реальном устройстве
 
@@ -83,6 +94,6 @@ Robolectric tests используют API 35. App minSdk 23 / targetSdk 36 не
 - main остаётся на 20ce0d75928c3988628de93a784683a411307ff2.
 - Все изменения выполнялись fast-forward в fix.
 - PR №2 остаётся Draft; merge не выполнялся.
-- Сравнение snapshot 47321... с main: 27 commits ahead, 0 behind.
+- Сравнение snapshot 199ce... с main: 29 commits ahead, 0 behind.
 
 Дальнейший порядок работ — по приоритетам из REFACTOR_AUDIT.md. Не следует снимать Draft до закрытия P1 и release/device gates.

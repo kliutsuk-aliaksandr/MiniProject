@@ -2,7 +2,7 @@
 
 **Дата аудита:** 11 ноября 2026 года
 **Проверенная ветка:** fix
-**Кодовый snapshot:** 47321eb4c15f6d7ac5fa09ff307ec706e6021dd9
+**Кодовый snapshot:** 199ce14a646f6752ca4d6f6a47a612947c900540
 **База сравнения:** main = 20ce0d75928c3988628de93a784683a411307ff2
 **PR:** #2, fix → main, открыт Draft
 
@@ -15,7 +15,7 @@
 - Domain, data, render, UI и audio разделены по слоям.
 - Доменная симуляция не импортирует Android API.
 - GameView сокращён с 712 до 145 строк и оставлен Android View adapter.
-- GameRenderer разделён на façade, MenuScreenRenderer и GameplayRenderer; shared Paint/Path и Canvas primitives находятся в GameRenderResources.
+- GameRenderer разделён на façade и MenuScreenRenderer; GameplayRenderer координирует TrackRenderer, GameEntitiesRenderer, GameEffectsRenderer, HudRenderer и GameOverlayRenderer. Общие Paint/Path/Canvas primitives находятся в GameRenderResources.
 - Session, navigation и pointer routing вынесены в отдельные контроллеры.
 - Добавлены строгая версия формата сохранения, all-or-nothing decoding, валидация progression и безопасная обработка неправильных типов SharedPreferences.
 - Исправлен haptic отклик бустера: он учитывает настройку вибрации.
@@ -32,7 +32,7 @@
 | Коллекции домена | Внешние consumers получают unmodifiable live views для balls/projectiles |
 | UI | GameView отвечает за Android View, Canvas и преобразование координат; session/navigation/input имеют отдельные owners |
 | Simulation | GameLoopController использует fixed 60 Hz, ограничение frame delta и bounded catch-up |
-| Rendering | Экранные и игровые слои разделены; Paint/Path переиспользуются через общий ресурсный объект |
+| Rendering | MenuScreenRenderer и отдельные track/entities/effects/HUD/overlay renderers; Paint/Path переиспользуются через общий ресурсный объект |
 | Lifecycle/audio | Activity делегирует resume/pause/destroy; ToneGenerator освобождается при teardown |
 | Privacy | Приложение офлайн, INTERNET permission отсутствует, локальные настройки и save хранятся в SharedPreferences |
 | CI | GitHub Actions собирает APK/AAB, запускает JVM tests и Android lint |
@@ -58,7 +58,7 @@
 | P2-4 | **Есть кандидаты на лишние allocations в render/frame path.** В renderer встречаются временные RectF/Path, списки/Triple и строки; tutorial/privacy/booster data создаётся внутри draw calls. GameSessionController.buildRenderState() создаёт ParticleVisual и ClearingBallVisual copies через map/toList для render snapshot. Это статические наблюдения, не доказанное узкое место. | Сначала измерить allocations и frame time через Android Studio Profiler или Macrobenchmark на слабом устройстве. По результатам вынести неизменные таблицы в static vals, кешировать геометрию/RectF где это оправдано, уменьшить copies на кадр. Не добавлять кеши без измерений. |
 | P2-5 | **Simulation и side effects запускаются из View drawing path.** GameView.onDraw вызывает advanceFrame; внутри него обновляется симуляция, обрабатываются GameEvent и могут происходить save/progress side effects. Это затрудняет независимое моделирование frame scheduling и rendering. | Рассмотреть Choreographer/FrameCallback или отдельный frame scheduler: tick → event handling → render snapshot → draw. Сохранить fixed-step/catch-up semantics и добавить lifecycle/pause/resume tests. |
 | P2-6 | **Persistence contract частично завязан на magic keys.** Имена SharedPreferences ключей повторяются по save/restore/clear. Ключ saved_paused записывается и удаляется, но restore задаёт paused напрямую и не читает его. | Централизовать key names/schema constants. Проверить legacy совместимость и удалить либо мигрировать saved_paused, если он действительно не нужен. Добавить тест миграции и полного набора ключей. |
-| P2-7 | **Renderer smoke test не проверяет визуальную корректность.** GameRendererTest прогоняет верхнеуровневые экраны без exception, но не сравнивает screenshot/golden и не покрывает все pause/win/loss overlays, разные размеры viewport и длинные тексты. | Добавить screenshot/golden tests или детерминированные Canvas assertions для ключевых экранов и overlays. Проверить RU/EN, маленький viewport и text clipping. |
+| P2-7 | **Renderer smoke test не проверяет визуальную корректность.** GameRendererTest прогоняет верхнеуровневые экраны без exception, но не сравнивает screenshot/golden и не покрывает все варианты pause/win/loss overlays, разные размеры viewport и длинные тексты. | Добавить screenshot/golden tests или детерминированные Canvas assertions для ключевых экранов и overlays. Проверить RU/EN, маленький viewport и text clipping. |
 
 ### P3 — укрепление качества и сопровождения
 

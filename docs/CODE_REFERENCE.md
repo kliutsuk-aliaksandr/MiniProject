@@ -15,7 +15,12 @@
 | game/data/LevelProgressRepository.kt | Открытые уровни, звёзды и рекорд | recordCompletion, updateBestScore |
 | game/render/GameRenderer.kt | Небольшой Canvas façade: выбор слоя по GameScreen | draw |
 | game/render/MenuScreenRenderer.kt | Меню, карта, обучение, настройки и privacy screen | drawMenu, drawLevelMap, drawTutorial, drawSettings, drawPrivacy |
-| game/render/GameplayRenderer.kt | Дорожка, препятствия, сущности, HUD, бустеры, эффекты и игровые overlays | drawGame, drawTrack, drawHud, drawEndOverlay |
+| game/render/GameplayRenderer.kt | Координатор игрового кадра, делегирует специализированным слоям | drawGame |
+| game/render/TrackRenderer.kt | Геометрия дорожки и препятствия | drawTrack, drawObstacles |
+| game/render/GameEntitiesRenderer.kt | Шары цепочки, снаряды и frog shooter | drawBalls, drawProjectiles, drawShooter |
+| game/render/GameEffectsRenderer.kt | Исчезающие шары и частицы | drawClearingBalls, drawParticles |
+| game/render/HudRenderer.kt | Счёт, панель статуса и бустеры | drawHud, drawBoosters |
+| game/render/GameOverlayRenderer.kt | Pause, win/loss overlays | drawPauseOverlay, drawEndOverlay |
 | game/render/GameRenderResources.kt | Общий Paint/Path cache и primitives; базовый renderer имеет internal visibility | drawBackground, drawMarble, drawFrog, button, centeredText |
 | game/ui/GameView.kt | Android View adapter: lifecycle, Canvas, coordinate mapping and platform events | onDraw, onTouchEvent, handleSystemBack |
 | game/ui/GameSessionController.kt | Gameplay session, engine lifecycle, saves, progress, event side effects, audio and effects | resumeGame, pauseGame, fireShot, handlePendingEvents, saveGameState |
@@ -104,7 +109,7 @@ UI не должен дублировать игровые правила: он 
 
 GameView оставлен тонким Android-адаптером. GameSessionController отвечает за сессию, сохранения, прогресс и события; GameNavigationController — за экраны, переходы, hit areas и accessibility targets; GameInputRouter — за pointer gestures.
 
-GameRenderer разделён на façade, MenuScreenRenderer и GameplayRenderer. Общие Paint/Path и Canvas primitives переиспользуются через GameRenderResources; renderer layers не владеют вводом или сохранениями. Следующая архитектурная задача — снизить связанность session/navigation controllers и вынести доступность/компоновку controls в единое описание.
+GameRenderer разделён на façade, MenuScreenRenderer и GameplayRenderer. GameplayRenderer координирует TrackRenderer, GameEntitiesRenderer, GameEffectsRenderer, HudRenderer и GameOverlayRenderer. Все слои используют общий GameRenderResources instance; renderer layers не владеют вводом или сохранениями. Следующая архитектурная задача — снизить связанность session/navigation controllers и вынести доступность/компоновку controls в единое описание.
 
 Тексты RU/EN пока находятся в Kotlin renderer/navigation. Их перенос в Android string resources остаётся отдельной задачей с проверкой полноты значений для обоих языков. Полный приоритетный список найденных улучшений находится в docs/REFACTOR_AUDIT.md.
 
