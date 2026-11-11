@@ -68,12 +68,13 @@
 - [x] Учитывать настройку вибрации при haptic feedback бустера; добавить regression tests для on/off.
 - [x] Перенести весь UI copy из RU/EN пар в Android string resources; добавить RU/EN key parity и language-selection tests.
 - [x] Добавить Robolectric tests для SharedPreferences repositories: save/restore, schema migration, corrupted payload/typed values и progression unlock rules.
-- [ ] Добавить instrumented UI tests и automated accessibility checks.
+- [x] Добавить Android instrumentation/UIAutomator: accessibility tree/actions и внешние touch-сценарии для меню, настроек, privacy, карты, tutorial и достижений; CI API 23/29/36.
+- [ ] Ручная проверка TalkBack/switch access, gameplay hit areas и lifecycle на физических устройствах.
 - [ ] Проверить FPS, TalkBack, масштабирование и touch на физических устройствах.
 
-## Этап 7 — дополнительный офлайн-контент
+## Этап 7 — дополнительный офлайн-контент (начат; первый срез готов)
 
-- [ ] Локальные достижения и статистика.
+- [x] Локальная lifetime statistics и 8 достижений: выстрелы, комбинации, очищенные шары, best combo, звёзды, рекордные уровни и использование всех бустеров; хранение отдельно от campaign save, tutorial не засчитывается.
 - [ ] Испытания с ограничением времени/выстрелов.
 - [ ] Дополнительные цели и награды.
 - [ ] Балансировка всех 30 уровней по результатам playtesting.

@@ -1,12 +1,12 @@
 # Технический аудит — текущее состояние Marble Frog
 
 **Снимок:** 11 ноября 2026 года
-**Рабочая ветка:** dev (ответвлена от fix)
-**Кодовый snapshot:** 026fc8d0227d31c545dcda26171d3e842e724d44
+**Рабочая feature-ветка:** feature/gameplay-polish-offline-content → dev → main
+**Кодовый snapshot feature:** f693df43eecb71ca268d80782968b988d49a81fa
 **База:** main = 20ce0d75928c3988628de93a784683a411307ff2
-**PR №2:** открыт, Draft, fix → main
+**PR №3:** открыт, Draft, feature/gameplay-polish-offline-content → dev; PR №2 закрыт как устаревший, без merge
 
-Ветка dev унаследовала текущий результат fix и теперь содержит стандартный Gradle Wrapper 8.13 с проверенными checksum, CI через ./gradlew и локализацию RU/EN через Android string resources. main и fix не изменялись; PR №2 остаётся Draft.
+Рабочий поток организован как feature/* → dev → main. Текущая feature-ветка ответвлена от dev (10 коммитов сверх dev на момент открытия PR №3). Ветка dev остаётся на 93dc1c6, main — на 20ce0d7, fix — на a2a48d6. PR №3 открыт Draft feature → dev; старый PR №2 fix → main закрыт как устаревший и не сливался. Ветки main/dev/fix не обновлялись этой feature-работой.
 
 ## 1. Что выполнено
 
@@ -50,7 +50,7 @@ Render layers share one resource instance. They do not own input, persistence or
 
 | Test class | Тестов |
 |---|---:|
-| GameEngineTest | 28 |
+| GameEngineTest | 31 |
 | GameSaveCodecTest | 4 |
 | GameSaveRepositoryTest | 7 |
 | LevelProgressRepositoryTest | 6 |
@@ -58,19 +58,25 @@ Render layers share one resource instance. They do not own input, persistence or
 | ProgressPresentationCacheTest | 3 |
 | MainActivityTest | 1 |
 | GameInputRouterTest | 3 |
-| GameSessionControllerTest | 2 |
+| GameSessionControllerTest | 3 |
 | GameRendererTest | 1 |
 | GameTextResourcesTest | 2 |
-| **Итого** | **60** |
+| OfflineProgressRepositoryTest | 5 |
+| **Итого** | **69** |
 
 Robolectric tests используют API 35. App minSdk 23 / targetSdk 36 не менялись.
 
+### Android instrumentation
+
+`GameAccessibilityInstrumentedTest.kt` содержит 3 сценария: MainActivity/accessibility tree, действия AccessibilityNodeProvider для settings/tutorial/boosters/Pause/Resume и UIAutomator screen taps по реальным bounds меню/settings/privacy/language/map/tutorial/achievements. Все три прошли на API 23, 29 и 36 (9 успешных emulator executions).
+
 ## 4. CI
 
-Текущий dev snapshot `026fc8d0227d31c545dcda26171d3e842e724d44` прошёл полный [Android CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42988455144):
+Feature snapshot `f693df43eecb71ca268d80782968b988d49a81fa` прошёл полный [Android CI run 43028846127](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43028846127) — 5/5 jobs success:
 
-- Linux: `./gradlew assembleDebug`, `testDebugUnitTest` (60 tests), `lintDebug`, `bundleRelease`, upload debug APK и unsigned release AAB — success.
+- Linux: `./gradlew assembleDebug`, `testDebugUnitTest` (69 JVM tests), `lintDebug`, `bundleRelease`, upload debug APK и unsigned release AAB — success.
 - Windows: `gradlew.bat --version` — success.
+- Android instrumentation: 3 теста на каждом из API 23, 29 и 36; все jobs прошли (9 успешных executions).
 - Gradle `setup-gradle@v6` подтвердил валидность wrapper JAR и официальный checksum.
 - Два теста локализации проверяют одинаковые RU/EN resource keys и explicit language selection независимо от системной locale.
 
@@ -88,8 +94,8 @@ Robolectric tests используют API 35. App minSdk 23 / targetSdk 36 не
 ## 6. Git safety
 
 - main остаётся на 20ce0d75928c3988628de93a784683a411307ff2.
-- Текущие исправления выполняются fast-forward в dev; fix оставлена неизменной как база Draft PR.
-- PR №2 остаётся Draft; merge не выполнялся.
+- Новые изменения идут через feature/* → dev → main; feature → dev review выполняется PR #3 (Draft).
+- PR #2 fix → main закрыт как устаревший; merge не выполнялся. `fix` оставлена нетронутой для истории.
 - main и fix остаются нетронутыми; dev содержит полный текущий результат и дополнительные исправления.
 
 Дальнейший порядок работ — по приоритетам из REFACTOR_AUDIT.md. Не следует снимать Draft до закрытия P1 и release/device gates.

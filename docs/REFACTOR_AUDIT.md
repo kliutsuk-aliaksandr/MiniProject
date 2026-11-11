@@ -8,6 +8,19 @@
 
 Документ составлен по всему дереву production source, test source, Android resources, Gradle configuration, manifest и GitHub Actions. Это статический архитектурный/кодовый аудит, а не доказательство отсутствия runtime-дефектов. Результаты device QA отдельно перечислены ниже.
 
+## Дополнение: gameplay polish и первый срез Этапа 7 — 11 ноября 2026
+
+Кодовый snapshot feature-ветки: `f693df43eecb71ca268d80782968b988d49a81fa`. Полный [GitHub Actions run 43028846127](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43028846127) завершился успешно: 5 из 5 jobs.
+
+- Цепочка начинает движение от входа маршрута; отрицательный progress сохраняется как позиция шаров, которые ещё не вышли на экран.
+- Вставка запускает отдельную короткую impact-анимацию: соседние шары разъезжаются, входящий занимает промежуток; каскад проверяется после посадки.
+- Ammo и next ammo нормализуются по множеству цветов в текущей цепочке.
+- Добавлены локальные lifetime statistics и 8 achievements в отдельном `offline_progress`; tutorial/practice не учитывается.
+- Добавлен экран Achievements & Statistics в RU/EN и обновлены Canvas primitives/HUD/menu.
+- JVM-набор расширен с 60 до 69 тестов; Android instrumentation — 3 сценария на API 23/29/36 (9 успешных emulator executions).
+
+Эта проверка подтверждает CI и эмуляторные сценарии, но не ручной QA на физических устройствах. TalkBack/switch access в реальной среде, Xiaomi/MIUI, различные плотности, background/foreground, FPS и звук/вибрация остаются открытыми release checks.
+
 ## 1. Итог
 
 Основные архитектурные этапы выполнены:
@@ -46,7 +59,7 @@
 |---|---|---|
 | P1-1 | **ИСПРАВЛЕНО в dev.** В коммите `34ad19e` добавлены официальные Gradle 8.13 `gradle-wrapper.jar`, `gradlew` и `gradlew.bat`; JAR сверён с опубликованным SHA-256 `81a82aa...ae45f`. В `gradle-wrapper.properties` закреплён SHA-256 дистрибутива `20f1b117...0aed78` (корректировка URL — `a5230be`). CI использует `./gradlew`; `setup-gradle@v6` автоматически проверяет wrapper JAR. Подтверждено [зелёным Linux + Windows CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42985668241): assembleDebug, 58 tests, lintDebug, bundleRelease, upload APK/AAB и `gradlew.bat --version` прошли. | Закрыто. При обновлении Gradle повторять проверку JAR и distribution checksum. |
 | P1-2 | **ИСПРАВЛЕНО в dev.** 97 ключей UI-текста перенесены в `res/values/strings.xml` (RU) и `res/values-en/strings.xml` (EN): меню, карта уровней, tutorial, настройки, privacy, HUD, бустеры, gameplay hints, overlays и accessibility labels. `GameTextResources` создаёт кэшированные locale-specific Resources и использует явный выбор языка из session, независимо от locale устройства. Одна и та же инстанция передаётся renderer и navigation. Добавлены два теста: паритет ключей RU/EN и explicit language selection. Полный [Linux + Windows CI](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/42988455144) прошёл: APK, 60 unit tests, lint, AAB, artifact upload и Windows Wrapper smoke test. | Закрыто. Новые строки добавлять сразу в оба resource-файла; parity test обязателен. |
-| P1-3 | **Нет end-to-end Android UI tests и подтверждённого device QA.** Сейчас тесты JVM/Robolectric. Нет src/androidTest, Espresso/UIAutomator сценариев или device matrix. Наличие renderer smoke test не доказывает правильность расположения controls, touch hit areas, TalkBack, системных панелей и lifecycle на реальном устройстве. | Добавить instrumentation tests для меню → карта → уровень, tutorial, booster, pause/resume, win/loss, settings, save/restore и accessibility click. Затем пройти device matrix: минимум API 23, промежуточный Android и API 36; отдельно проверить Xiaomi/MIUI, TalkBack, touch и звук/вибрацию. |
+| P1-3 | **Эмуляторный instrumentation/UIAutomator слой добавлен и проходит CI; physical-device QA остаётся открытым.** 3 сценария проверяют MainActivity/accessibility tree, actions AccessibilityNodeProvider и внешние координатные касания menu/settings/privacy/language/map/tutorial/achievements. API 23/29/36 прошли в [CI run 43028846127](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43028846127), всего 9 успешных executions. Это не подтверждает реальную работу TalkBack/switch access или OEM-specific поведение. | Оставить emulator matrix как regression gate. Отдельно пройти Xiaomi/MIUI, TalkBack, switch access, density/touch, background/foreground, save/restore, звук/вибрацию и FPS на физических устройствах. Дополнить external-touch gameplay hit-area checks для insertion, booster, win/loss. |
 
 ### P2 — следующий архитектурный и performance проход
 
@@ -65,7 +78,7 @@
 | ID | Наблюдение и доказательство | Рекомендованное действие |
 |---|---|---|
 | P3-1 | **Нет отдельного Kotlin style/static-analysis gate.** В CI есть Android lint, но нет ktlint/detekt или аналогичного Kotlin source quality gate. | Подключить один formatter/linter (например, ktlint) и один статический анализатор (например, detekt) с постепенным baseline; не вводить оба инструмента без согласованных правил. |
-| P3-2 | **API matrix узкая.** Robolectric tests закреплены на API 35; targetSdk 36 и minSdk 23 не покрыты автоматической матрицей. | Добавить emulator/instrumented matrix по поддерживаемым API. Минимальный Android 23 особенно важен для legacy system UI/Back fallback. |
+| P3-2 | **Android emulator matrix добавлена.** Instrumentation запускается на API 23, 29 и 36; все три API прошли в [CI run 43028846127](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43028846127). Robolectric tests используют API 35; matrix не заменяет OEM/physical-device QA. | Пересматривать API matrix при изменении minSdk/targetSdk; отдельно тестировать Xiaomi/MIUI и реальные устройства. |
 | P3-3 | **Privacy copy дублируется в нескольких местах.** Есть Markdown, HTML и текст внутри приложения. При изменении политики эти источники могут разойтись. | Сделать единый источник текста или добавить consistency test/checklist, сверяющий три представления. |
 | P3-4 | **Совместимые package typealiases требуют явного решения.** В старом game package остались thin aliases для GameEngine/GameAudio/GameView. GameView alias используется MainActivity; Engine/Audio aliases не используются внутри приложения, но могут быть внешним API. | Зафиксировать, является ли старый package API поддерживаемым. Если да — документировать; если нет — обновить imports и удалить неиспользуемые aliases в отдельном breaking-change этапе. |
 | P3-5 | **Некоторые конфигурационные решения требуют подтверждения тестом.** В manifest задан configChanges orientation/screenSize/keyboardHidden, но собственного onConfigurationChanged handler нет. Приложение portrait-only, поэтому это может быть избыточно. | Проверить поведение при смене конфигурации/сворачивании и удалить configChanges, если ручная обработка не требуется. |

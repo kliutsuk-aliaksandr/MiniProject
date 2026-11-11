@@ -9,12 +9,13 @@
 | MainActivity.kt | Activity lifecycle, immersive mode, системная Back-навигация | onCreate, configureImmersiveMode, dispatchBack |
 | game/domain/GameEngine.kt | Чистая Kotlin-симуляция и состояние кампании; публичные balls/projectiles — unmodifiable live views | startNewGame, startLevel, startTutorial, update, activateBooster, restoreState |
 | game/domain/LevelCatalog.kt | Параметры уровней и геометрия дорожек | definition, route |
-| game/domain/model/GameModels.kt | Модели, статусы, инвентарь, snapshot и события | Vec2, Ball, Projectile, GameSaveState, GameEvent |
+| game/domain/model/GameModels.kt | Модели, статусы, инвентарь, snapshot, события, OfflineStatistics и OfflineAchievement | Vec2, Ball, Projectile, GameSaveState, GameEvent |
 | game/data/GameSaveRepository.kt | Сохранение текущей кампании | save, restore, clear |
 | game/data/GameSaveCodec.kt | Строгая сериализация цепочки | encodeBalls, decodeBalls |
-| game/data/LevelProgressRepository.kt | Открытые уровни, звёзды и рекорд | recordCompletion, updateBestScore |
+| game/data/LevelProgressRepository.kt | Открытые уровни, звёзды и рекорд кампании | recordCompletion, updateBestScore |
+| game/data/OfflineProgressRepository.kt | Пожизненная локальная статистика и 8 достижений; отдельно от campaign save | recordShot, recordMatch, recordBooster, recordLevelCompleted, unlockedAchievements |
 | game/render/GameRenderer.kt | Небольшой Canvas façade: выбор слоя по GameScreen | draw |
-| game/render/MenuScreenRenderer.kt | Меню, карта, обучение, настройки и privacy screen | drawMenu, drawLevelMap, drawTutorial, drawSettings, drawPrivacy |
+| game/render/MenuScreenRenderer.kt | Меню, карта, обучение, настройки, privacy и Achievements/Statistics | drawMenu, drawLevelMap, drawTutorial, drawSettings, drawPrivacy, drawAchievements |
 | game/render/GameplayRenderer.kt | Координатор игрового кадра, делегирует специализированным слоям | drawGame |
 | game/render/TrackRenderer.kt | Геометрия дорожки и препятствия | drawTrack, drawObstacles |
 | game/render/GameEntitiesRenderer.kt | Шары цепочки, снаряды и frog shooter | drawBalls, drawProjectiles, drawShooter |
@@ -94,14 +95,16 @@ UI не должен дублировать игровые правила: он 
 
 ## Тесты
 
-- GameEngineTest.kt: движение, столкновения/вставка, совпадения/каскады, pause/restore, progression, маршруты, бустеры и запрет структурной мутации публичных collection views.
+- GameEngineTest.kt: движение, последовательный вход цепочки с начала дорожки, плавная impact-вставка с разъездом соседей, актуальная палитра ammo, совпадения/каскады, pause/restore, progression, маршруты и бустеры.
 - GameLoopControllerTest.kt: фиксированный шаг 60 Hz, ограниченный catch-up, reset accumulator и pause/resume без симуляции времени в фоне.
 - GameInputRouterTest.kt: drag-to-aim, fire on release, isolated booster gesture and cancellation.
 - MainActivityTest.kt: Robolectric regression test for Activity startup after DecorView/content initialization.
 - ProgressPresentationCacheTest.kt: начальный snapshot, update после completion и монотонное обновление рекорда.
 - GameRendererTest.kt: smoke test отрисовки всех верхнеуровневых экранов с общим render resource instance.
 - GameTextResourcesTest.kt: одинаковый набор RU/EN string resource keys и выбор языка игры независимо от device locale.
-- GameSessionControllerTest.kt: проверка учёта настройки вибрации при haptic feedback бустера.
+- GameSessionControllerTest.kt: настройка вибрации при haptic feedback и исключение tutorial/practice из lifetime statistics.
+- OfflineProgressRepositoryTest.kt: counters, best stars/score, unlock criteria, corrupt/invalid inputs, persistence and reset.
+- GameAccessibilityInstrumentedTest.kt: Activity/accessibility tree, provider actions, real UiDevice taps through menu/settings/privacy/map/tutorial/achievements.
 - GameSaveCodecTest.kt: legacy round-trip, malformed tokens, blank payload и полнота цепочки.
 - GameSaveRepositoryTest.kt: save/restore, upgrade неверсированной schema 0, повреждённые payload/типы SharedPreferences, будущая schema и защита tutorial save.
 - LevelProgressRepositoryTest.kt: monotonic unlock/stars/score, валидация входа, legacy fallback и повреждённые SharedPreferences values.
@@ -113,6 +116,6 @@ GameView оставлен тонким Android-адаптером. GameSessionCo
 
 GameRenderer разделён на façade, MenuScreenRenderer и GameplayRenderer. GameplayRenderer координирует TrackRenderer, GameEntitiesRenderer, GameEffectsRenderer, HudRenderer и GameOverlayRenderer. Все слои используют общий GameRenderResources instance; renderer layers не владеют вводом или сохранениями. Следующая архитектурная задача — снизить связанность session/navigation controllers и вынести доступность/компоновку controls в единое описание.
 
-Тексты RU/EN пока находятся в Kotlin renderer/navigation. Их перенос в Android string resources остаётся отдельной задачей с проверкой полноты значений для обоих языков. Полный приоритетный список найденных улучшений находится в docs/REFACTOR_AUDIT.md.
+Тексты RU/EN хранятся в Android string resources: `res/values/strings.xml` и `res/values-en/strings.xml`. `GameTextResources` кэширует locale-specific Resources и использует язык из session независимо от locale устройства. Полный приоритетный список улучшений находится в docs/REFACTOR_AUDIT.md.
 
 SharedPreferences repositories покрыты Robolectric integration tests. Физическое устройство всё ещё требуется для проверки FPS, TalkBack, touch scaling, звука/вибрации и поведения при background/foreground.

@@ -2,6 +2,16 @@
 
 ## Unreleased — dev branch
 
+- Цепочка на новом уровне теперь входит по одной сфере из начала дорожки; отрицательный progress корректно отображается и сохраняется до входа на экран.
+- Вставка шара получила отдельную impact-анимацию: обе стороны змейки плавно расходятся, входящий шар занимает промежуток; матч и каскады разрешаются после посадки.
+- Ammo и next ammo выбираются только из цветов активной цепочки и пересчитываются после изменения цепочки, swap и restore.
+- Canvas presentation обновлена: мягкие фоновые glow-слои, объёмные кнопки/панели, световые акценты шаров и сгруппированный HUD.
+- Начат Этап 7: OfflineProgressRepository, 8 локальных достижений и экран статистики/достижений RU/EN; tutorial/practice не засчитывается в lifetime progress.
+- Добавлены регрессионные проверки появления цепочки, impact insertion, live shot palette, offline counters/achievements и изоляции tutorial.
+- CI feature snapshot `f693df43eecb71ca268d80782968b988d49a81fa` успешно прошёл в [run 43028846127](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43028846127): APK, 69 JVM tests, lint, unsigned AAB, Windows Wrapper и instrumentation API 23/29/36.
+- Git workflow упорядочен как feature/* → dev → main; открыт Draft PR #3 feature → dev, устаревший PR #2 fix → main закрыт без merge.
+
+
 - Перенесено 97 RU/EN UI-текстов в Android string resources; GameTextResources кэширует locale-specific Resources и разделяется renderer/navigation. Добавлены два теста language selection и resource-key parity.
 
 - Добавлен стандартный Gradle Wrapper 8.13: официальный JAR с проверенным SHA-256, checksum дистрибутива в properties, CI использует ./gradlew. Добавлена Windows smoke-проверка gradlew.bat.
