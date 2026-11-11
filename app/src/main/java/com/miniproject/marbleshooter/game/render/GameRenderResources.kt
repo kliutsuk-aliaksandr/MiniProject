@@ -68,6 +68,7 @@ internal abstract class GameCanvasRendererBase(
         set(value) { drawing.cachedTrack = value }
     protected val GREEN get() = GameRenderResources.GREEN
     protected val BLUE get() = GameRenderResources.BLUE
+    protected val PURPLE get() = GameRenderResources.PURPLE
     protected val MUTED get() = GameRenderResources.MUTED
 
     protected fun drawBackground(canvas: Canvas) {
