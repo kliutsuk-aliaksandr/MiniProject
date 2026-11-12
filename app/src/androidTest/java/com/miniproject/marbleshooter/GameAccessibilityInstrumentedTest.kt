@@ -177,19 +177,25 @@ class GameAccessibilityInstrumentedTest {
         // global idleness, and keep the wait bounded so the test fails diagnostically.
         val deadline = SystemClock.uptimeMillis() + ACCESSIBILITY_STATE_TIMEOUT_MS
         var actualText: String? = null
+        var visibleTargets = ""
         do {
             scenario.onActivity { activity ->
-                actualText = accessibilityProvider(gameView(activity))
-                    .createAccessibilityNodeInfo(targetId)
-                    ?.text
-                    ?.toString()
+                val provider = accessibilityProvider(gameView(activity))
+                actualText = provider.createAccessibilityNodeInfo(targetId)?.text?.toString()
+                if (actualText == null) {
+                    visibleTargets = listOf(3, 4, 5, 6, 11, 51, 70, 72, 80, 81, 82, 90, 91, 92, 131, 140)
+                        .mapNotNull { id ->
+                            provider.createAccessibilityNodeInfo(id)?.text?.toString()?.let { "$id=$it" }
+                        }
+                        .joinToString()
+                }
             }
             if (actualText == expectedText) return
             SystemClock.sleep(ACCESSIBILITY_STATE_POLL_INTERVAL_MS)
         } while (SystemClock.uptimeMillis() < deadline)
 
         assertEquals(
-            "Accessibility target $targetId did not reach the expected state",
+            "Accessibility target $targetId did not reach the expected state. Visible targets: $visibleTargets",
             expectedText,
             actualText
         )
