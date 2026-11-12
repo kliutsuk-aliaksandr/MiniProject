@@ -9,8 +9,8 @@ sonar {
         property("sonar.projectKey", System.getenv("SONAR_PROJECT_KEY") ?: "kliutsuk-aliaksandr_MiniProject")
         property("sonar.projectName", "MiniProject")
         property("sonar.host.url", System.getenv("SONAR_HOST_URL") ?: "https://sonarcloud.io")
-        property("sonar.sources", "app/src/main/java")
-        property("sonar.tests", "app/src/test/java,app/src/androidTest/java")
+        // Android Gradle Plugin source sets are discovered automatically by SonarScanner.
+        // Do not set sonar.sources/sonar.tests here: doing so duplicates app module roots.
         property("sonar.junit.reportPaths", "app/build/test-results/testDebugUnitTest")
         property("sonar.coverage.jacoco.xmlReportPaths", "app/build/reports/jacoco/debugUnitTest/report.xml")
         property("sonar.androidLint.reportPaths", "app/build/reports/lint-results-debug.xml")
