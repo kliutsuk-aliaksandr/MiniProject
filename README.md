@@ -4,7 +4,7 @@ Marble Frog — офлайн-игра в жанре marble shooter для Androi
 
 ## Текущая версия
 
-**0.5.0** (versionCode 5, targetSdk 36, minSdk 23). Технические исправления выполняются в отдельной ветке fix.
+**0.5.0** (versionCode 5, targetSdk 36, minSdk 23). Дальнейшая разработка и техническое укрепление ведутся в ветке dev; main сохраняет стабильную линию.
 
 ## Возможности
 
@@ -122,11 +122,10 @@ domain не зависит от Android. data владеет SharedPreferences. 
 - docs/CODE_REFERENCE.md — описание классов, методов, событий и рекомендации по расширению.
 - docs/GAME_DESIGN.md — правила, уровни, препятствия, бустеры и очки.
 - docs/ROADMAP.md — завершённые этапы и технический backlog.
-- docs/WORK_STATUS.md — актуальный снимок: что сделано, что остаётся и следующий план работ.
-- docs/REFACTOR_AUDIT.md — системный аудит проекта и список улучшений для следующего этапа.
+- docs/PROJECT_AUDIT.md — актуальный технический и продуктовый аудит, риски, оптимизации и приоритетный план развития.
 - docs/RELEASE_CHECKLIST.md — оставшиеся ручные и Play Console проверки.
 - docs/PRIVACY_POLICY.md — политика конфиденциальности.
 
 ## CI и приватность
 
-GitHub Actions собирает debug APK, запускает unit-тесты и Android lint, а также формирует unsigned release AAB. Приложение не запрашивает доступ к интернету; сохранения остаются локальными. См. docs/PRIVACY_POLICY.md.
+GitHub Actions собирает debug APK, запускает unit-тесты и Android lint, формирует unsigned release AAB, проверяет Gradle Wrapper на Windows и выполняет UI instrumentation на API 23/29/36. Автоматический SonarQube Quality Gate с отчётом покрытия пока не включён — см. docs/PROJECT_AUDIT.md. Приложение не запрашивает доступ к интернету; сохранения остаются локальными. См. docs/PRIVACY_POLICY.md.
