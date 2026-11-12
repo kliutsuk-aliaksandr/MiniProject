@@ -23,20 +23,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Require SonarQube credentials for trusted builds
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          if [ -z "${SONAR_TOKEN:-}" ]; then
-            echo "::error::SONAR_TOKEN is required for pushes and same-repository pull requests."
-            exit 1
-          fi
-
-      - name: Explain SonarQube fork-PR limitation
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
-        run: echo "::notice::SonarQube analysis is skipped for external fork pull requests because repository secrets are not exposed."
-
       - name: Set up JDK 21
         uses: actions/setup-java@v6
         with:
@@ -90,6 +76,20 @@ jobs:
           name: miniproject-unit-test-coverage
           path: app/build/reports/jacoco/debugUnitTest/
           if-no-files-found: error
+
+      - name: Require SonarQube credentials for trusted builds
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "${SONAR_TOKEN:-}" ]; then
+            echo "::error::SONAR_TOKEN is required for pushes and same-repository pull requests."
+            exit 1
+          fi
+
+      - name: Explain SonarQube fork-PR limitation
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        run: echo "::notice::SonarQube analysis is skipped for external fork pull requests because repository secrets are not exposed."
 
       - name: Run SonarQube analysis and enforce Quality Gate
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
