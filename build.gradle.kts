@@ -17,9 +17,10 @@ sonar {
         property("sonar.sourceEncoding", "UTF-8")
         property("sonar.qualitygate.wait", "true")
         property("sonar.qualitygate.timeout", "600")
-        System.getenv("SONAR_ORGANIZATION")
-            ?.takeIf { it.isNotBlank() }
-            ?.let { property("sonar.organization", it) }
+        property(
+            "sonar.organization",
+            System.getenv("SONAR_ORGANIZATION")?.takeIf { it.isNotBlank() } ?: "kliutsuk-aliaksandr"
+        )
     }
 }
 
