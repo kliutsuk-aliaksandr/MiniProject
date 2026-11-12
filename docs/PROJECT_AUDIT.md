@@ -5,7 +5,7 @@
 **Проверенный commit:** 37f26a7666fba434eb9c20f43af7e17297817ea8  
 **База сравнения:** main — 20ce0d75928c3988628de93a784683a411307ff2  
 **Разница веток:** dev опережает main на 84 коммита, отставания нет.  
-**Версия приложения:** 0.5.0 (versionCode 5, minSdk 23, targetSdk 36).
+**Версия приложения:** 0.5.1 (versionCode 6, minSdk 23, targetSdk 36).
 
 > Это статический аудит исходного кода и конфигурации репозитория, дополненный проверкой последнего GitHub Actions run. Он не заменяет ручное тестирование на физических устройствах, измерения FPS/памяти или проверку публикации в Google Play. Gradle локально в этой среде не запускался.
 
@@ -15,15 +15,15 @@ Marble Frog уже вышла за рамки минимального игро�
 
 Архитектура заметно улучшена: игровая модель не зависит от Android SDK, данные отделены от домена, рендеринг разделён на компоненты, а GameView стал тонким Android-адаптером. Набор автоматических проверок уже полезен: **79 JVM/unit-тестов в 13 файлах** и три инструментальных UI-сценария, которые CI запускает на Android API 23, 29 и 36.
 
-Следующий наиболее выгодный этап — не добавление большого количества новых механик, а **release hardening, точечное исправление поведения и снижение работы на каждом кадре**. Текущий CI зелёный, но minified release build выводит повторяющиеся предупреждения R8 о разборе Kotlin metadata. Также остаются замечания Android Lint, в CI не найдено автоматического запуска SonarQube Scanner с отчётом покрытия, а физическое тестирование ещё не подтверждено.
+Следующий наиболее выгодный этап — не добавление большого количества новых механик, а **проверка на реальных устройствах и постепенное выполнение P2/P3 улучшений**. Три исходных P1-задачи реализованы в коде 0.5.1: R8 закреплён на совместимой версии 9.1.29, tutorial restart исправлен и защищён regression test, SonarQube CI формирует coverage и ждёт Quality Gate. Подтверждение release guard и Sonar Quality Gate зависит от нового CI run и наличия GitHub secret `SONAR_TOKEN`; физическое тестирование ещё не подтверждено.
 
 ### Главные выводы
 
 | Приоритет | Тема | Вывод |
 |---|---|---|
-| P1 | Release / R8 | Разобраться с предупреждениями Kotlin metadata при minification до публикации release AAB |
-| P1 | Поведение | Исправить перезапуск приостановленной tutorial-партии: сейчас он запускает новую кампанию |
-| P1 | Качество кода | Довести SonarQube до воспроизводимого CI-анализа с отчётом покрытия и Quality Gate |
+| P1 | Release / R8 | Реализовано: R8 9.1.29 override и CI guard для metadata warnings; требуется успешный minified release run |
+| P1 | Поведение | Реализовано: tutorial restart сохраняет режим и покрыт navigation regression test |
+| P1 | Качество кода | Реализовано: JaCoCo XML + Sonar analysis / Quality Gate для trusted CI событий; нужен secret и зелёный серверный gate |
 | P2 | Производительность | Убрать чтение/пересчёт прогресса и создание лишних snapshot-объектов из горячего render path |
 | P2 | UX / батарея | Не удерживать экран включённым во всех разделах приложения |
 | P2 | Архитектура | Разделить обязанности Session и Navigation controllers, унифицировать геометрию Canvas-кнопок |
@@ -97,7 +97,7 @@ GameSaveCodec отклоняет повреждённую цепочку цел�
 
 Gradle task генерирует JaCoCo XML и HTML из JVM/Robolectric unit tests. SonarScanner импортирует JaCoCo, JUnit и Android Lint reports. В root Sonar configuration включено `sonar.qualitygate.wait=true` с timeout 600 секунд: pipeline ждёт server-side Quality Gate и возвращает ошибку при его нарушении.
 
-Для push и same-repository pull request секрет `SONAR_TOKEN` обязателен: его отсутствие завершает trusted build ошибкой. Для PR из внешнего fork анализ явно пропускается, поскольку GitHub не передаёт repository secrets в такой workflow; остальные build/test/lint/release проверки продолжают выполняться. Для SonarQube Cloud требуется корректная organization variable, а сам Quality Gate должен быть настроен в Sonar project UI.
+Для push и same-repository pull request секрет `SONAR_TOKEN` обязателен: его отсутствие завершает trusted build ошибкой. Для PR из внешнего fork анализ явно пропускается, поскольку GitHub не передаёт repository secrets в такой workflow; остальные build/test/lint/release проверки продолжают выполняться. Для SonarQube Cloud по умолчанию используются organization и project key из существующего `.sonarlint/connectedMode.json`; organization можно переопределить через repository variable. Сам Quality Gate должен быть настроен в Sonar project UI.
 
 **Что ещё требует внешнего подтверждения:** новый CI run должен пройти R8 guard, а SonarQube должен принять analysis и вернуть зелёный Quality Gate с действующим secret/project configuration.
 
