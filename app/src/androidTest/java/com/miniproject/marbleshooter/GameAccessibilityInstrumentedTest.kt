@@ -226,6 +226,10 @@ class GameAccessibilityInstrumentedTest {
         context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
             .edit()
             .clear()
+            // Accessibility tests exercise navigation and touch dispatch, not platform audio.
+            // API 23 emulator images can crash mediaserver while ToneGenerator is active.
+            .putBoolean("sound_enabled", false)
+            .putBoolean("vibration_enabled", false)
             .commit()
         context.getSharedPreferences("offline_challenge_progress", Context.MODE_PRIVATE)
             .edit()
