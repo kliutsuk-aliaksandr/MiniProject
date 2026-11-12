@@ -79,62 +79,29 @@ GameSaveCodec отклоняет повреждённую цепочку цел�
 
 ## 4. Найденные проблемы и точки роста
 
-### P1 — исправить до следующего стабильного релиза
+### P1 — реализовано в подготовке релиза 0.5.1
 
-#### P1.1. R8 не может корректно разобрать часть Kotlin metadata
+#### P1.1. Kotlin metadata при R8 minification
 
-В логе последнего CI run при release/minification повторяется сообщение:
+Причина установлена: Kotlin Gradle Plugin 2.4.21 генерирует Kotlin metadata, для корректной обработки которого требуется R8 9.1.29 или новее. Вместо отключения minification или добавления широких keep rules проект использует документированный AGP R8 override в `settings.gradle.kts` и закрепляет `com.android.tools:r8:9.1.29`. AGP 8.13.2, Kotlin 2.4.21 и Gradle 8.13 оставлены без случайного обновления всей сборочной цепочки.
 
-    An error occurred when parsing kotlin metadata.
-    This normally happens when using a newer version of kotlin than
-    the kotlin version released when this version of R8 was created.
-    Unexpected error during rewriting of Kotlin metadata...
+В Android CI release AAB собирается с plain console log. Шаг проверяет известные строки Kotlin metadata warning и завершает job ошибкой, если предупреждение снова появляется. Отсутствие warning требуется подтвердить запуском CI на итоговом commit; CI нельзя считать зелёным до прохождения этого guard.
 
-Сообщения появляются для многих классов приложения, в том числе GameEngine, GameNavigationController, GameSessionController, репозиториев и renderer-компонентов. Несмотря на них, bundleRelease завершается успешно.
+#### P1.2. Tutorial restart
 
-Это не подтверждённый runtime-дефект, но его нельзя игнорировать перед Google Play: release build использует R8, а предупреждения касаются преобразования Kotlin metadata.
+В `GameNavigationController.handleGameTap` действие Restart для `PAUSED` теперь различает challenge, tutorial и campaign. Tutorial запускается через `session.startTutorialPractice()`, поэтому повторно создаётся учебная цепочка с учебными зарядами бустеров и не затрагивается campaign save.
 
-**Что сделать:**
-1. Зафиксировать точные версии Kotlin Gradle Plugin, AGP, Gradle и встроенного R8 из CI-лога.
-2. Сверить их с официальной матрицей совместимости Kotlin/R8/AGP.
-3. Обновить совместимый набор версий либо выбрать поддерживаемую версию Kotlin — не обновлять один компонент наугад.
-4. Снова выполнить ./gradlew clean bundleRelease, проверить отсутствие предупреждений metadata и установить minified release APK/AAB на тестовое устройство.
-5. Проверить сохранение/восстановление, достижение экранов, локализацию и работу классов/enum/data-классов после R8.
+Добавлен Robolectric regression test: открыть tutorial, начать practice, поставить на паузу и перезапустить. Тест проверяет, что экран остаётся GAME, режим остаётся tutorial, партия снова содержит девять учебных шаров, учебный inventory восстановлен, а campaign save не появляется.
 
-Критерий закрытия: release minification проходит без metadata warnings, приложение запускается, основные сценарии работают на minified сборке.
+#### P1.3. SonarQube CI и Quality Gate
 
-#### P1.2. Перезапуск приостановленной тренировки запускает кампанию
+Gradle task генерирует JaCoCo XML и HTML из JVM/Robolectric unit tests. SonarScanner импортирует JaCoCo, JUnit и Android Lint reports. В root Sonar configuration включено `sonar.qualitygate.wait=true` с timeout 600 секунд: pipeline ждёт server-side Quality Gate и возвращает ошибку при его нарушении.
 
-В game/ui/GameNavigationController.kt, ветка обработки кнопки Restart для состояния PAUSED, сейчас различает только challenge и обычную игру:
+Для push и same-repository pull request секрет `SONAR_TOKEN` обязателен: его отсутствие завершает trusted build ошибкой. Для PR из внешнего fork анализ явно пропускается, поскольку GitHub не передаёт repository secrets в такой workflow; остальные build/test/lint/release проверки продолжают выполняться. Для SonarQube Cloud требуется корректная organization variable, а сам Quality Gate должен быть настроен в Sonar project UI.
 
-    if (engine.isChallenge) {
-        session.startChallenge(requireNotNull(engine.challengeDefinition).id)
-    } else {
-        session.startNewGame()
-    }
+**Что ещё требует внешнего подтверждения:** новый CI run должен пройти R8 guard, а SonarQube должен принять analysis и вернуть зелёный Quality Gate с действующим secret/project configuration.
 
-Для tutorial/practice нет отдельной ветки. Поэтому после запуска тренировки, паузы и нажатия Restart пользователь попадает в новую кампанию, а не получает повторную тренировочную цепочку. В обработчиках победы/поражения tutorial уже учитывается отдельно — поведение паузы должно быть согласовано с ними.
-
-**Что сделать:**
-- добавить ветвь engine.isTutorial -> session.startTutorialPractice();
-- покрыть сценарий тестом на навигацию: tutorial → pause → restart → tutorial снова активен, кампания/сохранение/звёзды не изменены;
-- аналогично проверить restart challenge и обычной кампании.
-
-Критерий закрытия: каждый тип сессии перезапускается в своём режиме и не загрязняет прогресс других режимов.
-
-#### P1.3. SonarQube: подключение IDE ещё не является CI Quality Gate
-
-В репозитории присутствует .sonarlint/connectedMode.json. Это конфигурация connected mode для SonarLint. В актуальном .github/workflows/android-ci.yml не обнаружен шаг SonarQube Scanner/SonarCloud analysis, генерация отчёта покрытия или передача такого отчёта серверу. По одному JSON-файлу нельзя подтвердить состояние проекта на стороне SonarQube, но автоматическая проверка качества и coverage в текущем workflow не прослеживается.
-
-**Что сделать:**
-1. Подключить JaCoCo или совместимый Gradle coverage plugin и генерировать XML-отчёт для unit tests.
-2. Начать с domain и data: это наиболее детерминированные слои и там покрытие легче всего интерпретировать.
-3. Добавить Sonar Scanner step в GitHub Actions после unit tests; передавать coverage XML по явно настроенному пути.
-4. Секрет токена хранить в GitHub Actions Secrets, не в файле проекта.
-5. Включить Quality Gate для PR в dev/main и настроить правила на **new code**, чтобы не блокировать развитие из-за старого техдолга.
-6. Проверить, что Sonar видит Kotlin production sources, test sources и отчёт именно текущего commit.
-
-Не следует ставить произвольную цель вроде 90% общего покрытия без анализа рисков. Лучше установить измеримый baseline для нового кода, затем повышать его. Для игрового движка приоритетнее покрыть ветвления столкновений, вставки, каскадов, границы уровней, сохранение/миграцию и режимы tutorial/challenge.
+ затем повышать его. Для игрового движка приоритетнее покрыть ветвления столкновений, вставки, каскадов, границы уровней, сохранение/миграцию и режимы tutorial/challenge.
 
 ### P2 — следующий технический этап
 
@@ -345,15 +312,15 @@ CI уже проверяет Android API 23/29/36 на эмуляторах. С�
 
 ## 7. Рекомендуемый план работ
 
-### Этап A — Release hardening
+### Этап A — Release hardening (P1 реализованы в 0.5.1)
 
-1. Устранить/объяснить R8 Kotlin metadata warnings и проверить minified release.
-2. Исправить tutorial restart и добавить regression test.
-3. Настроить coverage XML и CI SonarQube Quality Gate.
-4. Закрыть явные lint предупреждения: plural resources, monochrome icon, click accessibility; обоснованно решить вопрос orientation.
-5. Повторить полный CI на новом commit и сохранить артефакты APK/AAB.
+1. R8 9.1.29 override и CI metadata-warning guard добавлены; требуется зелёный итоговый release build.
+2. Tutorial restart исправлен и защищён regression test.
+3. JaCoCo XML и обязательный SonarQube Quality Gate добавлены для trusted CI событий; требуется настроенный секрет и серверный gate.
+4. Остаточные lint предупреждения (plural resources, monochrome icon, click accessibility) остаются отдельной задачей P3.
+5. После итогового CI сохранить APK/AAB и вручную проверить minified release на устройстве.
 
-**Готово, когда:** pipeline автоматически проверяет build, unit tests, lint, coverage и Quality Gate; release bundle без подозрительных R8 metadata warnings; известные сценарии режимов покрыты тестами.
+**Готово, когда:** итоговый pipeline проходит build, unit tests, lint, coverage, Sonar Quality Gate и R8 warning guard; пользовательские сценарии остаются изолированными.
 
 ### Этап B — Производительность и границы ответственности
 

@@ -4,7 +4,7 @@ Marble Frog — офлайн-игра в жанре marble shooter для Androi
 
 ## Текущая версия
 
-**0.5.0** (versionCode 5, targetSdk 36, minSdk 23). Дальнейшая разработка и техническое укрепление ведутся в ветке dev; main сохраняет стабильную линию.
+**0.5.1** (versionCode 6, targetSdk 36, minSdk 23). Релизная линия готовится в ветке dev; main остаётся стабильной до отдельного merge релиза.
 
 ## Возможности
 
@@ -125,7 +125,8 @@ domain не зависит от Android. data владеет SharedPreferences. 
 - docs/PROJECT_AUDIT.md — актуальный технический и продуктовый аудит, риски, оптимизации и приоритетный план развития.
 - docs/RELEASE_CHECKLIST.md — оставшиеся ручные и Play Console проверки.
 - docs/PRIVACY_POLICY.md — политика конфиденциальности.
+- AGENTS.md и вложенные agent guides — обязательные правила работы с кодом и тестами.
 
 ## CI и приватность
 
-GitHub Actions собирает debug APK, запускает unit-тесты и Android lint, формирует unsigned release AAB, проверяет Gradle Wrapper на Windows и выполняет UI instrumentation на API 23/29/36. Автоматический SonarQube Quality Gate с отчётом покрытия пока не включён — см. docs/PROJECT_AUDIT.md. Приложение не запрашивает доступ к интернету; сохранения остаются локальными. См. docs/PRIVACY_POLICY.md.
+GitHub Actions собирает debug APK и unsigned release AAB, запускает unit- и UI instrumentation-тесты (API 23/29/36), Android lint и проверку Gradle Wrapper на Windows. Для push и pull request из этого же репозитория CI генерирует JaCoCo XML и запускает SonarQube; pipeline ожидает Quality Gate и завершается ошибкой при его нарушении. Для анализа необходим GitHub secret `SONAR_TOKEN` и настройки проекта (см. docs/SONARQUBE.md). Внешние fork PR не получают секреты GitHub, поэтому проходят остальные CI-проверки без Sonar analysis. Приложение не запрашивает доступ к интернету; сохранения остаются локальными. См. docs/PRIVACY_POLICY.md.

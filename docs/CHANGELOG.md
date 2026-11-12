@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased — dev branch
+## 0.5.1 — 2026-11-12
+
+- R8 обновлён до 9.1.29 через официальный AGP R8 override для Kotlin 2.4.21; CI проверяет release minification и отклоняет Kotlin metadata warnings.
+- Исправлен Restart приостановленной tutorial-партии: перезапуск остаётся в practice и восстанавливает учебную цепочку и заряды бустеров.
+- Добавлен Robolectric regression test полного сценария tutorial → pause → restart.
+- SonarQube CI обязателен для push и same-repository PR: формируется JaCoCo XML, отправляется анализ и проверяется server-side Quality Gate.
+- Добавлены инструкции для AI-агентов и GitHub Copilot в AGENTS.md и .github/.
 
 - Цепочка на новом уровне теперь входит по одной сфере из начала дорожки; отрицательный progress корректно отображается и сохраняется до входа на экран.
 - Вставка шара получила отдельную impact-анимацию: обе стороны змейки плавно расходятся, входящий шар занимает промежуток; матч и каскады разрешаются после посадки.

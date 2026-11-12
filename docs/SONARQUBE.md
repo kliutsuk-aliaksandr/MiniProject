@@ -25,7 +25,9 @@ In **Repository Settings → Secrets and variables → Actions**, add:
 - Repository variable `SONAR_HOST_URL`: the URL of the connected SonarQube Server or Cloud instance (optional; default is SonarQube Cloud).
 - Repository variable `SONAR_PROJECT_KEY`: the exact key of the existing project (optional; default is `kliutsuk-aliaksandr_MiniProject`).
 
-The Android CI always generates and uploads the unit-test coverage report. When `SONAR_TOKEN` is present, the workflow switches to JDK 21 and runs the `sonar` task. Without that secret, only the scanner step is skipped; build, tests, lint and the coverage artifact still run.
+The Android CI generates and uploads the unit-test JaCoCo XML/HTML report on every run. For pushes and pull requests opened from the same repository, `SONAR_TOKEN` is mandatory: the workflow fails early if the secret is missing, then runs the `sonar` task. The scanner is configured with `sonar.qualitygate.wait=true`, so Gradle waits for the server-side Quality Gate and fails if it is not green. External fork pull requests are the only exception: GitHub does not expose repository secrets to them, so Sonar analysis is explicitly skipped for those PRs while build, tests, lint, coverage and release minification still run.
+
+For SonarQube Cloud, also set the repository variable `SONAR_ORGANIZATION` to the organization key. For SonarQube Server, use the server URL and the configured project key.
 
 The scanner imports JaCoCo XML, JUnit XML and Android Lint results. The `jacocoDebugUnitTestReport` task runs the JVM/Robolectric tests and produces an explicit XML file at `app/build/reports/jacoco/debugUnitTest/report.xml` plus an HTML report in the same directory. The root Sonar task depends on that report task.
 
