@@ -15,6 +15,11 @@ sonar {
         property("sonar.coverage.jacoco.xmlReportPaths", "app/build/reports/jacoco/debugUnitTest/report.xml")
         property("sonar.androidLint.reportPaths", "app/build/reports/lint-results-debug.xml")
         property("sonar.sourceEncoding", "UTF-8")
+        property("sonar.qualitygate.wait", "true")
+        property("sonar.qualitygate.timeout", "600")
+        System.getenv("SONAR_ORGANIZATION")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { property("sonar.organization", it) }
     }
 }
 

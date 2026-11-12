@@ -421,10 +421,10 @@ internal class GameNavigationController(
                     session.playClick()
                 }
                 inButton(target, 515f, 575f) -> {
-                    if (engine.isChallenge) {
-                        session.startChallenge(requireNotNull(engine.challengeDefinition).id)
-                    } else {
-                        session.startNewGame()
+                    when {
+                        engine.isChallenge -> session.startChallenge(requireNotNull(engine.challengeDefinition).id)
+                        engine.isTutorial -> session.startTutorialPractice()
+                        else -> session.startNewGame()
                     }
                     screen = GameScreen.GAME
                 }
