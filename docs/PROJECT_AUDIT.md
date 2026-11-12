@@ -15,7 +15,7 @@ Marble Frog уже вышла за рамки минимального игро�
 
 Архитектура заметно улучшена: игровая модель не зависит от Android SDK, данные отделены от домена, рендеринг разделён на компоненты, а GameView стал тонким Android-адаптером. Набор автоматических проверок уже полезен: **79 JVM/unit-тестов в 13 файлах** и три инструментальных UI-сценария, которые CI запускает на Android API 23, 29 и 36.
 
-Следующий наиболее выгодный этап — не добавление большого количества новых механик, а **проверка на реальных устройствах и постепенное выполнение P2/P3 улучшений**. Три исходных P1-задачи реализованы в коде 0.5.1: R8 закреплён на совместимой версии 9.1.29, tutorial restart исправлен и защищён regression test, SonarQube CI формирует coverage и ждёт Quality Gate. Подтверждение release guard и Sonar Quality Gate зависит от нового CI run и наличия GitHub secret `SONAR_TOKEN`; физическое тестирование ещё не подтверждено.
+Следующий наиболее выгодный этап — не добавление большого количества новых механик, а **проверка на реальных устройствах и постепенное выполнение P2/P3 улучшений**. Три исходных P1-задачи реализованы в коде 0.5.1: R8 закреплён на совместимой версии 9.1.29, tutorial restart исправлен и защищён regression test, JaCoCo XML/HTML генерируется в CI и сохраняется как artifact. Облачный анализатор удалён из pipeline, поскольку бесплатный тариф проверяет только default branch; физическое тестирование ещё не подтверждено.
 
 ### Главные выводы
 
@@ -23,7 +23,7 @@ Marble Frog уже вышла за рамки минимального игро�
 |---|---|---|
 | P1 | Release / R8 | Реализовано: R8 9.1.29 override и CI guard для metadata warnings; требуется успешный minified release run |
 | P1 | Поведение | Реализовано: tutorial restart сохраняет режим и покрыт navigation regression test |
-| P1 | Качество кода | Реализовано: JaCoCo XML + Sonar analysis / Quality Gate для trusted CI событий; нужен secret и зелёный серверный gate |
+| P1 | Качество кода | Реализовано: JaCoCo XML/HTML из JVM/Robolectric-тестов сохраняется как CI artifact; облачный Quality Gate не используется |
 | P2 | Производительность | Убрать чтение/пересчёт прогресса и создание лишних snapshot-объектов из горячего render path |
 | P2 | UX / батарея | Не удерживать экран включённым во всех разделах приложения |
 | P2 | Архитектура | Разделить обязанности Session и Navigation controllers, унифицировать геометрию Canvas-кнопок |
@@ -37,7 +37,7 @@ Marble Frog уже вышла за рамки минимального игро�
 - исходники Kotlin в app/src/main/java, включая domain, data, render, ui и audio;
 - unit-тесты, Android instrumentation tests и конфигурация тестовой среды;
 - AndroidManifest.xml, ресурсы RU/EN, Gradle-конфигурация и ProGuard/R8-настройки;
-- GitHub Actions workflows, настройки SonarLint и последние результаты CI;
+- GitHub Actions workflows и последние результаты CI;
 - актуальные документы в docs/ и соответствие описания реализации исходному коду.
 
 Последний запуск [Android CI — run 43065432273](https://github.com/kliutsuk-aliaksandr/MiniProject/actions/runs/43065432273) проверял именно commit 37f26a7 ветки dev и завершился успешно. Все пять jobs прошли:
@@ -93,16 +93,13 @@ GameSaveCodec отклоняет повреждённую цепочку цел�
 
 Добавлен Robolectric regression test: открыть tutorial, начать practice, поставить на паузу и перезапустить. Тест проверяет, что экран остаётся GAME, режим остаётся tutorial, партия снова содержит девять учебных шаров, учебный inventory восстановлен, а campaign save не появляется.
 
-#### P1.3. SonarQube CI и Quality Gate
+#### P1.3. JaCoCo coverage report в CI
 
-Gradle task генерирует JaCoCo XML и HTML из JVM/Robolectric unit tests. SonarScanner импортирует JaCoCo, JUnit и Android Lint reports. В root Sonar configuration включено `sonar.qualitygate.wait=true` с timeout 600 секунд: pipeline ждёт server-side Quality Gate и возвращает ошибку при его нарушении.
+Gradle task `jacocoDebugUnitTestReport` генерирует XML и HTML отчёты покрытия для JVM/Robolectric unit tests. GitHub Actions публикует их в artifact `miniproject-unit-test-coverage`; Android instrumentation jobs отдельно сохраняют результаты UI-тестов для API 23/29/36. Android Lint и release minification проверяются отдельными CI шагами.
 
-Для push и same-repository pull request секрет `SONAR_TOKEN` обязателен: его отсутствие завершает trusted build ошибкой. Для PR из внешнего fork анализ явно пропускается, поскольку GitHub не передаёт repository secrets в такой workflow; остальные build/test/lint/release проверки продолжают выполняться. Для SonarQube Cloud по умолчанию используются organization и project key из существующего `.sonarlint/connectedMode.json`; organization можно переопределить через repository variable. Сам Quality Gate должен быть настроен в Sonar project UI.
+Облачный анализатор и обязательный server-side Quality Gate из проекта удалены: бесплатный тариф анализирует только default branch и не даёт полезной проверки feature/PR веток. Отчёт JaCoCo остаётся доступным без внешнего сервиса и не блокирует сборку собственным порогом.
 
-**Что ещё требует внешнего подтверждения:** новый CI run должен пройти R8 guard, а SonarQube должен принять analysis и вернуть зелёный Quality Gate с действующим secret/project configuration.
-
- затем повышать его. Для игрового движка приоритетнее покрыть ветвления столкновений, вставки, каскадов, границы уровней, сохранение/миграцию и режимы tutorial/challenge.
-
+**Рекомендация:** использовать JaCoCo как диагностический инструмент и расширять unit-тесты для ветвлений столкновений, вставки, каскадов, границ уровней, сохранения/миграции и режимов tutorial/challenge.
 ### P2 — следующий технический этап
 
 #### P2.1. Слишком много работы выполняется при построении render state
@@ -316,11 +313,11 @@ CI уже проверяет Android API 23/29/36 на эмуляторах. С�
 
 1. R8 9.1.29 override и CI metadata-warning guard добавлены; требуется зелёный итоговый release build.
 2. Tutorial restart исправлен и защищён regression test.
-3. JaCoCo XML и обязательный SonarQube Quality Gate добавлены для trusted CI событий; требуется настроенный секрет и серверный gate.
+3. JaCoCo XML/HTML генерируется в CI и публикуется artifact; облачный анализатор не используется.
 4. Остаточные lint предупреждения (plural resources, monochrome icon, click accessibility) остаются отдельной задачей P3.
 5. После итогового CI сохранить APK/AAB и вручную проверить minified release на устройстве.
 
-**Готово, когда:** итоговый pipeline проходит build, unit tests, lint, coverage, Sonar Quality Gate и R8 warning guard; пользовательские сценарии остаются изолированными.
+**Готово, когда:** итоговый pipeline проходит build, unit tests, lint, coverage и R8 warning guard; пользовательские сценарии остаются изолированными.
 
 ### Этап B — Производительность и границы ответственности
 
