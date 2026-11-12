@@ -34,12 +34,10 @@ internal class GameplayRenderer(resources: GameRenderResources) : GameCanvasRend
                 tr(state, R.string.practice_footer),
                 11f, Color.rgb(255, 223, 122), 210f, 675f
             )
-        } else {
-            centeredText(
-                canvas,
-                tr(state, R.string.aim_fire_hint),
-                11f, MUTED, 210f, 880f
-            )
+        }
+
+        if (state.startCountdownNumber != null || state.showStartPrompt) {
+            overlayRenderer.drawStartSequenceOverlay(canvas, state)
         }
 
         when (engine.status) {

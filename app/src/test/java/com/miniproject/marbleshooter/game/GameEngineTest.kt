@@ -43,6 +43,46 @@ class GameEngineTest {
     }
 
     @Test
+    fun allThirtyCampaignLevelsHaveDifferentDeterministicRoutes() {
+        val routes = (1..LevelCatalog.MAX_LEVELS).map(LevelCatalog::routeForLevel)
+        assertEquals(LevelCatalog.MAX_LEVELS, routes.distinct().size)
+        routes.forEach { route ->
+            assertTrue(route.size >= 10)
+            route.forEach { point ->
+                assertTrue(point.x in 0f..GameEngine.WORLD_WIDTH)
+                assertTrue(point.y in 0f..GameEngine.WORLD_HEIGHT)
+            }
+        }
+        assertEquals(routes[0], LevelCatalog.routeForLevel(1))
+        assertEquals(routes[9], LevelCatalog.routeForLevel(10))
+    }
+
+    @Test
+    fun selectingDifferentLevelsRebuildsTheActiveRouteGeometry() {
+        val engine = GameEngine(Random(405))
+        val firstRoute = engine.routePoints
+        engine.startLevel(2)
+        assertNotEquals(firstRoute, engine.routePoints)
+        assertEquals(LevelCatalog.routeForLevel(2), engine.routePoints)
+        assertEquals(2, engine.levelDefinition.id)
+    }
+
+    @Test
+    fun fastRolloutAcceleratesTheEnteringChainThenReturnsToNormalSpeed() {
+        val engine = GameEngine(Random(406))
+        val initial = engine.balls.first().progress
+        engine.startFastChainRollout(durationSeconds = 1.5f, speedMultiplier = 2.5f)
+        engine.update(0.05f)
+        assertEquals(engine.chainSpeed * 2.5f * 0.05f, engine.balls.first().progress - initial, 0.01f)
+        assertTrue(engine.isFastRolloutActive)
+        repeat(32) { engine.update(0.05f) }
+        assertFalse(engine.isFastRolloutActive)
+        val normalStart = engine.balls.first().progress
+        engine.update(0.05f)
+        assertEquals(engine.chainSpeed * 0.05f, engine.balls.first().progress - normalStart, 0.01f)
+    }
+
+    @Test
     fun routePositionStaysInsideWorldBounds() {
         val engine = GameEngine(Random(3))
 

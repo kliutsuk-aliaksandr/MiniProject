@@ -2,7 +2,7 @@ package com.miniproject.marbleshooter.game.domain.model
 
 import kotlin.math.sqrt
 
-/** Position/vector in the 420x900 logical game coordinate system. */
+/** Position/vector in the 420x980 logical game coordinate system. */
 data class Vec2(val x: Float, val y: Float) {
     operator fun plus(other: Vec2) = Vec2(x + other.x, y + other.y)
     operator fun minus(other: Vec2) = Vec2(x - other.x, y - other.y)

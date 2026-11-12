@@ -43,7 +43,7 @@ class GameEngine(private val random: Random = Random.Default) {
 
     companion object {
         const val WORLD_WIDTH = 420f
-        const val WORLD_HEIGHT = 900f
+        const val WORLD_HEIGHT = 980f
         const val BALL_RADIUS = 16f
         const val BALL_SPACING = BALL_RADIUS * 2f
         const val SHOOTER_X = 210f
@@ -53,13 +53,15 @@ class GameEngine(private val random: Random = Random.Default) {
     }
 
     private var definition: LevelDefinition = LevelCatalog.definition(1)
-    private var routePointsCache: List<Vec2> = LevelCatalog.route(definition.trackId)
+    private var routePointsCache: List<Vec2> = LevelCatalog.routeForLevel(definition.id)
     private var routeLengthCache: Float = calculateRouteLength(routePointsCache)
     private var obstaclesCache: List<TrackObstacle> = buildObstacles(definition, routeLengthCache)
     private var retraction: Retraction? = null
     private var insertionAnimation: InsertionAnimation? = null
     private var activeChallenge: ChallengeDefinition? = null
     private var challengeRemainingSeconds = 0f
+    private var fastRolloutRemainingSeconds = 0f
+    private var fastRolloutMultiplier = 1f
     private var slowTimer = 0f
     private var reverseTimer = 0f
     private val pendingEvents = mutableListOf<GameEvent>()
@@ -96,6 +98,7 @@ class GameEngine(private val random: Random = Random.Default) {
     val isChallenge: Boolean get() = activeChallenge != null
     val challengeDefinition: ChallengeDefinition? get() = activeChallenge
     val challengeTimeRemaining: Float get() = challengeRemainingSeconds
+    val isFastRolloutActive: Boolean get() = fastRolloutRemainingSeconds > 0f
 
     /** Immutable definition for the active campaign or practice level. */
     val levelDefinition: LevelDefinition get() = definition
@@ -195,6 +198,8 @@ class GameEngine(private val random: Random = Random.Default) {
         insertionAnimation = null
         slowTimer = 0f
         reverseTimer = 0f
+        fastRolloutRemainingSeconds = 0f
+        fastRolloutMultiplier = 1f
         level = 1
         status = GameStatus.RUNNING
         val tutorialColors = listOf(0, 1, 2, 2, 1, 3, 0, 3, 1)
@@ -211,7 +216,7 @@ class GameEngine(private val random: Random = Random.Default) {
     /** Refreshes route-derived caches for a newly selected definition. */
     private fun setDefinition(newDefinition: LevelDefinition) {
         definition = newDefinition
-        routePointsCache = LevelCatalog.route(newDefinition.trackId)
+        routePointsCache = LevelCatalog.routeForLevel(newDefinition.id)
         routeLengthCache = calculateRouteLength(routePointsCache)
         obstaclesCache = buildObstacles(newDefinition, routeLengthCache)
     }
@@ -234,6 +239,8 @@ class GameEngine(private val random: Random = Random.Default) {
         insertionAnimation = null
         slowTimer = 0f
         reverseTimer = 0f
+        fastRolloutRemainingSeconds = 0f
+        fastRolloutMultiplier = 1f
         status = GameStatus.RUNNING
         var previous = -1
         var repeatCount = 0
@@ -350,11 +357,21 @@ class GameEngine(private val random: Random = Random.Default) {
         return true
     }
 
+    /** Temporarily accelerates the entering chain after the start countdown. */
+    fun startFastChainRollout(durationSeconds: Float = 1.5f, speedMultiplier: Float = 2.5f) {
+        require(durationSeconds.isFinite() && durationSeconds > 0f)
+        require(speedMultiplier.isFinite() && speedMultiplier >= 1f)
+        fastRolloutRemainingSeconds = durationSeconds
+        fastRolloutMultiplier = speedMultiplier
+    }
+
     /** Advances simulation by at most 50 ms; callers may use a fixed smaller step. */
     fun update(deltaSeconds: Float) {
         if (status != GameStatus.RUNNING) return
         val delta = deltaSeconds.coerceIn(0f, 0.05f)
         if (delta <= 0f) return
+        val rolloutMultiplier = if (fastRolloutRemainingSeconds > 0f) fastRolloutMultiplier else 1f
+        fastRolloutRemainingSeconds = (fastRolloutRemainingSeconds - delta).coerceAtLeast(0f)
 
         if (activeChallenge?.timeLimitSeconds != null) {
             challengeRemainingSeconds = (challengeRemainingSeconds - delta).coerceAtLeast(0f)
@@ -386,7 +403,7 @@ class GameEngine(private val random: Random = Random.Default) {
         val movementDirection = if (reverseTimer > 0f) -0.65f else 1f
         val obstacleMultiplier = obstacleSpeedMultiplier(headProgress)
         val slowMultiplier = if (slowTimer > 0f) 0.34f else 1f
-        val movement = chainSpeed * obstacleMultiplier * slowMultiplier * movementDirection * delta
+        val movement = chainSpeed * obstacleMultiplier * slowMultiplier * movementDirection * rolloutMultiplier * delta
         mutableBalls.forEach { ball ->
             // Negative progress is intentional while the tail is still entering from
             // before the route start. Clamping here would stack the marbles at the gate.
