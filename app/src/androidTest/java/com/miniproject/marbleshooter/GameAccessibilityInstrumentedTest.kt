@@ -2,6 +2,7 @@ package com.miniproject.marbleshooter
 
 import android.content.Context
 import android.graphics.Rect
+import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityNodeInfo
@@ -144,13 +145,11 @@ class GameAccessibilityInstrumentedTest {
             // Open the offline challenge list, start a challenge, pause and return to its list.
             tapAccessibilityTarget(device, scenario, 11)
             assertTargetText(scenario, 131, "Challenge: PRECISION")
-            scenario.onActivity { activity ->
-                click(accessibilityProvider(gameView(activity)), 131)
-            }
+            // Use real coordinate taps for both gameplay actions. Direct provider actions
+            // are covered separately by accessibilityActionsNavigateSettingsTutorialBoostersAndPauseFlow.
+            tapAccessibilityTarget(device, scenario, 131)
             assertTargetText(scenario, 51, "Pause")
-            scenario.onActivity { activity ->
-                click(accessibilityProvider(gameView(activity)), 51)
-            }
+            tapAccessibilityTarget(device, scenario, 51)
             assertTargetText(scenario, 72, "CHALLENGES")
             scenario.onActivity { activity ->
                 click(accessibilityProvider(gameView(activity)), 72)
@@ -173,12 +172,27 @@ class GameAccessibilityInstrumentedTest {
         targetId: Int,
         expectedText: String
     ) {
-        scenario.onActivity { activity ->
-            assertEquals(
-                expectedText,
-                node(accessibilityProvider(gameView(activity)), targetId).text.toString()
-            )
-        }
+        // API 23 UiAutomator may keep the main Looper non-idle while Google Play
+        // services retry optional OCR downloads. Wait for the requested state, not
+        // global idleness, and keep the wait bounded so the test fails diagnostically.
+        val deadline = SystemClock.uptimeMillis() + ACCESSIBILITY_STATE_TIMEOUT_MS
+        var actualText: String? = null
+        do {
+            scenario.onActivity { activity ->
+                actualText = accessibilityProvider(gameView(activity))
+                    .createAccessibilityNodeInfo(targetId)
+                    ?.text
+                    ?.toString()
+            }
+            if (actualText == expectedText) return
+            SystemClock.sleep(ACCESSIBILITY_STATE_POLL_INTERVAL_MS)
+        } while (SystemClock.uptimeMillis() < deadline)
+
+        assertEquals(
+            "Accessibility target $targetId did not reach the expected state",
+            expectedText,
+            actualText
+        )
     }
 
     /**
@@ -188,8 +202,7 @@ class GameAccessibilityInstrumentedTest {
     private fun tapAccessibilityTarget(
         device: UiDevice,
         scenario: ActivityScenario<MainActivity>,
-        targetId: Int,
-        awaitIdle: Boolean = true
+        targetId: Int
     ) {
         var screenX = 0
         var screenY = 0
@@ -218,7 +231,6 @@ class GameAccessibilityInstrumentedTest {
             "UIAutomator must inject tap for accessibility target $targetId at ($screenX, $screenY)",
             device.click(screenX, screenY)
         )
-        if (awaitIdle) InstrumentationRegistry.getInstrumentation().waitForIdleSync()
     }
 
     private fun clearGamePreferences() {
@@ -256,5 +268,10 @@ class GameAccessibilityInstrumentedTest {
             "Accessibility node $id must handle ACTION_CLICK",
             provider.performAction(id, AccessibilityNodeInfo.ACTION_CLICK, null)
         )
+    }
+
+    private companion object {
+        const val ACCESSIBILITY_STATE_TIMEOUT_MS = 5_000L
+        const val ACCESSIBILITY_STATE_POLL_INTERVAL_MS = 50L
     }
 }
