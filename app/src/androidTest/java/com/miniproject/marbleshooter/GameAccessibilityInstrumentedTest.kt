@@ -149,11 +149,14 @@ class GameAccessibilityInstrumentedTest {
             // are covered separately by accessibilityActionsNavigateSettingsTutorialBoostersAndPauseFlow.
             tapAccessibilityTarget(device, scenario, 131)
             assertTargetText(scenario, 51, "Pause")
-            tapAccessibilityTarget(device, scenario, 51)
-            assertTargetText(scenario, 72, "CHALLENGES")
+            // The Pause action itself is covered through the virtual accessibility node.
+            // Use a real coordinate tap for the lower in-game menu action so Android's
+            // immersive-mode system overlay cannot consume a top-edge test tap on API 23.
             scenario.onActivity { activity ->
-                click(accessibilityProvider(gameView(activity)), 72)
+                click(accessibilityProvider(gameView(activity)), 51)
             }
+            assertTargetText(scenario, 72, "CHALLENGES")
+            tapAccessibilityTarget(device, scenario, 72)
             assertTargetText(scenario, 140, "Main menu")
             tapAccessibilityTarget(device, scenario, 140)
             assertTargetText(scenario, 4, "Tutorial")
