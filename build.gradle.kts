@@ -9,11 +9,6 @@ sonar {
         property("sonar.projectKey", System.getenv("SONAR_PROJECT_KEY") ?: "kliutsuk-aliaksandr_MiniProject")
         property("sonar.projectName", "MiniProject")
         property("sonar.host.url", System.getenv("SONAR_HOST_URL") ?: "https://sonarcloud.io")
-        // Android Gradle Plugin source sets are discovered automatically by SonarScanner.
-        // Do not set sonar.sources/sonar.tests here: doing so duplicates app module roots.
-        property("sonar.junit.reportPaths", "app/build/test-results/testDebugUnitTest")
-        property("sonar.coverage.jacoco.xmlReportPaths", "app/build/reports/jacoco/debugUnitTest/report.xml")
-        property("sonar.androidLint.reportPaths", "app/build/reports/lint-results-debug.xml")
         property("sonar.sourceEncoding", "UTF-8")
         property("sonar.qualitygate.wait", "true")
         property("sonar.qualitygate.timeout", "600")
@@ -24,6 +19,18 @@ sonar {
     }
 }
 
+// Report paths are module-relative. Keeping them on the Android subproject lets
+// Sonar match JaCoCo/Lint file paths against the Android variant's own source roots.
+subprojects {
+    sonar {
+        properties {
+            property("sonar.junit.reportPaths", "build/test-results/testDebugUnitTest")
+            property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/jacoco/debugUnitTest/report.xml")
+            property("sonar.androidLint.reportPaths", "build/reports/lint-results-debug.xml")
+        }
+    }
+}
+
 tasks.named("sonar") {
-    dependsOn(":app:jacocoDebugUnitTestReport")
+    dependsOn(":app:jacocoDebugUnitTestReport", ":app:lintDebug")
 }
