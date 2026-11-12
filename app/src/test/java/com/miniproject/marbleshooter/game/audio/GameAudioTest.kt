@@ -52,7 +52,7 @@ class GameAudioTest {
             tones.map { it.type() }
         )
         assertEquals(
-            listOf(45L, 95L, 180L, 160L, 30L).map(Duration::ofMillis),
+            listOf(45L, 95L, 180L, 160L, 30L).map { Duration.ofMillis(it) },
             tones.map { it.duration() }
         )
 
