@@ -19,6 +19,30 @@ import org.robolectric.annotation.Config
 class GameNavigationControllerTest {
 
     @Test
+    fun selectingChallengeStartsRunningGameplay() {
+        val context = freshContext()
+        val session = GameSessionController(context) { }
+        val navigation = GameNavigationController(session, GameTextResources(context))
+
+        try {
+            // Menu -> level map -> challenges -> first challenge.
+            navigation.handleTap(Vec2(210f, 535f))
+            assertEquals(GameScreen.LEVEL_MAP, navigation.screen)
+            navigation.handleTap(Vec2(210f, 645f))
+            assertEquals(GameScreen.CHALLENGES, navigation.screen)
+            navigation.handleTap(Vec2(210f, 270f))
+
+            assertEquals(GameScreen.GAME, navigation.screen)
+            assertEquals(GameStatus.RUNNING, session.engine.status)
+            assertTrue("Selected challenge must stay isolated from campaign mode", session.engine.isChallenge)
+            assertEquals(1, requireNotNull(session.engine.challengeDefinition).id)
+        } finally {
+            session.disposeGame(GameScreen.MENU)
+            clearProgress(context)
+        }
+    }
+
+    @Test
     fun restartingPausedTutorialStartsTutorialPracticeAgain() {
         val context = freshContext()
         val session = GameSessionController(context) { }
