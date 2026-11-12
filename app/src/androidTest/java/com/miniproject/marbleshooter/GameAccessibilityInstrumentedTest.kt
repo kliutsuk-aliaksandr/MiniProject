@@ -148,6 +148,15 @@ class GameAccessibilityInstrumentedTest {
             // Use real coordinate taps for both gameplay actions. Direct provider actions
             // are covered separately by accessibilityActionsNavigateSettingsTutorialBoostersAndPauseFlow.
             tapAccessibilityTarget(device, scenario, 131)
+            // API 23 occasionally consumes the first coordinate tap while immersive
+            // mode settles. Retry exactly once only if the app is still on the challenge
+            // list; the expected gameplay node is checked before continuing.
+            if (!targetHasText(scenario, 51, "Pause")) {
+                SystemClock.sleep(IMMERSIVE_TAP_RETRY_DELAY_MS)
+                if (!targetHasText(scenario, 51, "Pause")) {
+                    tapAccessibilityTarget(device, scenario, 131)
+                }
+            }
             assertTargetText(scenario, 51, "Pause")
             // The Pause action itself is covered through the virtual accessibility node.
             // Use a real coordinate tap for the lower in-game menu action so Android's
@@ -168,6 +177,19 @@ class GameAccessibilityInstrumentedTest {
             tapAccessibilityTarget(device, scenario, 20)
             assertTargetText(scenario, 3, "Level map")
         }
+    }
+
+    private fun targetHasText(
+        scenario: ActivityScenario<MainActivity>,
+        targetId: Int,
+        expectedText: String
+    ): Boolean {
+        var actualText: String? = null
+        scenario.onActivity { activity ->
+            actualText = accessibilityProvider(gameView(activity))
+                .createAccessibilityNodeInfo(targetId)?.text?.toString()
+        }
+        return actualText == expectedText
     }
 
     private fun assertTargetText(
@@ -282,5 +304,6 @@ class GameAccessibilityInstrumentedTest {
     private companion object {
         const val ACCESSIBILITY_STATE_TIMEOUT_MS = 5_000L
         const val ACCESSIBILITY_STATE_POLL_INTERVAL_MS = 50L
+        const val IMMERSIVE_TAP_RETRY_DELAY_MS = 250L
     }
 }
