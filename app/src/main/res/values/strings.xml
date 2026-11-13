@@ -142,6 +142,7 @@
     <string name="challenge_complete">ИСПЫТАНИЕ ПРОЙДЕНО!</string>
     <string name="challenge_failed">ИСПЫТАНИЕ ПРОВАЛЕНО</string>
     <string name="challenge_result_timed">Выстрелы: %1$d / %2$d • Осталось: %3$d с</string>
+    <string name="challenge_result_cascade_timed">Каскады %1$d/%2$d • Выстр. %3$d/%4$d • %5$d с</string>
     <string name="challenge_result_shots">Выстрелы: %1$d / %2$d</string>
     <string name="challenge_retry">ПОВТОРИТЬ</string>
     <string name="challenge_list">К ИСПЫТАНИЯМ</string>
