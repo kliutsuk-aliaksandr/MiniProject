@@ -23,14 +23,27 @@ internal class HudRenderer(resources: GameRenderResources) : GameCanvasRendererB
             textPaint.textSize = 27f
             textPaint.color = Color.WHITE
             canvas.drawText(engine.score.toString(), 32f, 98f, textPaint)
-            textPaint.textSize = if (engine.isChallenge) 9f else 10f
+            textPaint.textSize = if (engine.isChallenge && requireNotNull(engine.challengeDefinition).minimumCascades > 0) 8f else if (engine.isChallenge) 9f else 10f
             textPaint.color = MUTED
             if (engine.isChallenge) {
                 val challenge = requireNotNull(engine.challengeDefinition)
-                val hud = if (challenge.timeLimitSeconds == null) {
-                    tr(state, R.string.challenge_hud_shots, engine.shotsFired, challenge.maxShots)
-                } else {
-                    tr(
+                val hud = when {
+                    challenge.minimumCascades > 0 -> tr(
+                        state,
+                        R.string.challenge_hud_cascade_timed,
+                        engine.challengeCascadesCompleted,
+                        challenge.minimumCascades,
+                        engine.shotsFired,
+                        challenge.maxShots,
+                        engine.challengeTimeRemaining.toInt()
+                    )
+                    challenge.timeLimitSeconds == null -> tr(
+                        state,
+                        R.string.challenge_hud_shots,
+                        engine.shotsFired,
+                        challenge.maxShots
+                    )
+                    else -> tr(
                         state,
                         R.string.challenge_hud_timed,
                         engine.shotsFired,
