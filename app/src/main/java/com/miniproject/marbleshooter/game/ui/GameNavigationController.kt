@@ -132,13 +132,13 @@ internal class GameNavigationController(
             }
             GameScreen.CHALLENGES -> {
                 ChallengeCatalog.all.forEachIndexed { index, challenge ->
-                    val top = 205f + index * 145f
+                    val top = 190f + index * 130f
                     add(
                         130 + challenge.id,
                         localized(R.string.a11y_challenge, localized(challengeTitleResource(challenge.id))),
-                        24f, top, 396f, top + 130f
+                        24f, top, 396f, top + 122f
                     ) {
-                        handleChallengesTap(Vec2(210f, top + 65f))
+                        handleChallengesTap(Vec2(210f, top + 61f))
                     }
                 }
                 add(140, localized(R.string.a11y_main_menu), 78f, 750f, 342f, 810f) {
@@ -335,8 +335,8 @@ internal class GameNavigationController(
             return
         }
         for (challenge in ChallengeCatalog.all) {
-            val top = 205f + (challenge.id - 1) * 145f
-            if (target.x in 24f..396f && target.y in top..(top + 130f)) {
+            val top = 190f + (challenge.id - 1) * 130f
+            if (target.x in 24f..396f && target.y in top..(top + 122f)) {
                 if (session.startChallenge(challenge.id)) screen = GameScreen.GAME
                 return
             }
@@ -346,7 +346,8 @@ internal class GameNavigationController(
     private fun challengeTitleResource(id: Int): Int = when (id) {
         1 -> R.string.challenge_precision_title
         2 -> R.string.challenge_speed_title
-        else -> R.string.challenge_expert_title
+        3 -> R.string.challenge_expert_title
+        else -> R.string.challenge_cascade_title
     }
 
     private fun handleTutorialTap(target: Vec2) {
