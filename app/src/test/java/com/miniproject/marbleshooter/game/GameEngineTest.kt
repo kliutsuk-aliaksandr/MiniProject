@@ -460,16 +460,20 @@ class GameEngineTest {
     }
 
     @Test
-    fun challengeCatalogProvidesThreeOfflineChallengesWithValidLimits() {
-        assertEquals(3, ChallengeCatalog.all.size)
+    fun challengeCatalogProvidesFourOfflineChallengesWithValidLimits() {
+        assertEquals(4, ChallengeCatalog.all.size)
         ChallengeCatalog.all.forEach { challenge ->
             assertTrue(challenge.levelId in 1..LevelCatalog.MAX_LEVELS)
             assertTrue(challenge.maxShots > 0)
             assertTrue(challenge.timeLimitSeconds == null || challenge.timeLimitSeconds > 0f)
+            assertTrue(challenge.minimumCascades >= 0)
         }
         assertEquals(18, ChallengeCatalog.find(1)?.maxShots)
         assertEquals(25f, ChallengeCatalog.find(2)?.timeLimitSeconds ?: 0f, 0.001f)
         assertEquals(45f, ChallengeCatalog.find(3)?.timeLimitSeconds ?: 0f, 0.001f)
+        assertEquals(1, ChallengeCatalog.find(4)?.minimumCascades)
+        assertEquals(34, ChallengeCatalog.find(4)?.maxShots)
+        assertEquals(55f, ChallengeCatalog.find(4)?.timeLimitSeconds ?: 0f, 0.001f)
         assertEquals(null, ChallengeCatalog.find(99))
     }
 
@@ -522,6 +526,42 @@ class GameEngineTest {
         assertEquals(3, result.stars)
         assertTrue(events.none { it is DomainGameEvent.LevelCompleted })
         assertFalse(engine.startNextLevel())
+    }
+
+    @Test
+    fun cascadeMasterChallengeWinsOnlyAfterARealCascade() {
+        val engine = GameEngine(Random(49))
+        assertTrue(engine.startChallenge(4))
+        engine.drainEvents()
+        setChain(engine, listOf(0, 0, 1, 1, 0, 0))
+
+        engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
+        repeat(17) { engine.update(0.05f) }
+
+        assertEquals(1, engine.challengeCascadesCompleted)
+        assertEquals(GameStatus.WON, engine.status)
+        val result = engine.drainEvents()
+            .filterIsInstance<DomainGameEvent.ChallengeCompleted>()
+            .single()
+        assertEquals(4, result.challengeId)
+        assertTrue(result.stars in 1..3)
+    }
+
+    @Test
+    fun cascadeMasterChallengeFailsWhenTheChainClearsWithoutACascade() {
+        val engine = GameEngine(Random(50))
+        assertTrue(engine.startChallenge(4))
+        engine.drainEvents()
+        engine.mutableBalls.clear()
+
+        engine.update(0.01f)
+
+        assertEquals(0, engine.challengeCascadesCompleted)
+        assertEquals(GameStatus.LOST, engine.status)
+        val events = engine.drainEvents()
+        assertTrue(events.any { it == DomainGameEvent.GameLost })
+        assertTrue(events.none { it is DomainGameEvent.ChallengeCompleted })
+        assertTrue(events.none { it is DomainGameEvent.LevelCompleted })
     }
 
     @Test
