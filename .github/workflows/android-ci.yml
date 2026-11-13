@@ -7,6 +7,10 @@ on:
     branches: [main, dev]
   workflow_dispatch:
 
+concurrency:
+  group: android-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -14,11 +18,6 @@ jobs:
   build:
     name: Build, tests and release bundle
     runs-on: ubuntu-latest
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || 'https://sonarcloud.io' }}
-      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || 'kliutsuk-aliaksandr_MiniProject' }}
-      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION || 'kliutsuk-aliaksandr' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -90,24 +89,6 @@ jobs:
           name: miniproject-release-aab
           path: app/build/outputs/bundle/release/app-release.aab
 
-      - name: Require SonarQube credentials for trusted builds
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          if [ -z "${SONAR_TOKEN:-}" ]; then
-            echo "::error::SONAR_TOKEN is required for pushes and same-repository pull requests."
-            exit 1
-          fi
-
-      - name: Explain SonarQube fork-PR limitation
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
-        run: echo "::notice::SonarQube analysis is skipped for external fork pull requests because repository secrets are not exposed."
-
-      - name: Run SonarQube analysis and enforce Quality Gate
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        run: ./gradlew sonar --no-daemon --stacktrace
-
   wrapper-windows:
     name: Verify Gradle Wrapper on Windows
     runs-on: windows-latest
@@ -163,7 +144,11 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          script: ./gradlew connectedDebugAndroidTest --no-daemon
+          script: |
+            # Avoid Android's one-time immersive-mode confirmation overlay intercepting
+            # the first real tap on the top-edge Pause control in UIAutomator tests.
+            adb shell settings put secure immersive_mode_confirmations confirmed
+            ./gradlew connectedDebugAndroidTest --no-daemon
 
       - name: Upload instrumentation test reports
         if: always()

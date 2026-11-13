@@ -2,6 +2,7 @@ package com.miniproject.marbleshooter
 
 import android.content.Context
 import android.graphics.Rect
+import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityNodeInfo
@@ -141,20 +142,27 @@ class GameAccessibilityInstrumentedTest {
             tapAccessibilityTarget(device, scenario, 3)
             assertTargetText(scenario, 101, "Level 1")
 
-            // Open the offline challenge list, start a challenge, pause and return to its list.
+            // Open the offline challenge list with a real coordinate tap.
             tapAccessibilityTarget(device, scenario, 11)
             assertTargetText(scenario, 131, "Challenge: PRECISION")
+
+            // Start the challenge and pause it synchronously in one main-thread turn.
+            // On API 23 the emulator can advance the entering chain while instrumentation
+            // polls for accessibility state; the chain may reach LOST before the test
+            // observes Pause. Resolve node 51 immediately after selecting node 131.
             scenario.onActivity { activity ->
-                click(accessibilityProvider(gameView(activity)), 131)
+                val provider = accessibilityProvider(gameView(activity))
+                click(provider, 131)
+                assertEquals("Pause", node(provider, 51).text.toString())
+                click(provider, 51)
+                assertEquals("CHALLENGES", node(provider, 72).text.toString())
             }
-            assertTargetText(scenario, 51, "Pause")
-            scenario.onActivity { activity ->
-                click(accessibilityProvider(gameView(activity)), 51)
-            }
+
+            // Keep a real coordinate tap on the lower CHALLENGES action while paused.
+            // This avoids Android 6's immersive-mode top-edge overlay and exercises touch
+            // dispatch without leaving the challenge running during instrumentation waits.
             assertTargetText(scenario, 72, "CHALLENGES")
-            scenario.onActivity { activity ->
-                click(accessibilityProvider(gameView(activity)), 72)
-            }
+            tapAccessibilityTarget(device, scenario, 72)
             assertTargetText(scenario, 140, "Main menu")
             tapAccessibilityTarget(device, scenario, 140)
             assertTargetText(scenario, 4, "Tutorial")
@@ -173,12 +181,33 @@ class GameAccessibilityInstrumentedTest {
         targetId: Int,
         expectedText: String
     ) {
-        scenario.onActivity { activity ->
-            assertEquals(
-                expectedText,
-                node(accessibilityProvider(gameView(activity)), targetId).text.toString()
-            )
-        }
+        // API 23 UiAutomator may keep the main Looper non-idle while Google Play
+        // services retry optional OCR downloads. Wait for the requested state, not
+        // global idleness, and keep the wait bounded so the test fails diagnostically.
+        val deadline = SystemClock.uptimeMillis() + ACCESSIBILITY_STATE_TIMEOUT_MS
+        var actualText: String? = null
+        var visibleTargets = ""
+        do {
+            scenario.onActivity { activity ->
+                val provider = accessibilityProvider(gameView(activity))
+                actualText = provider.createAccessibilityNodeInfo(targetId)?.text?.toString()
+                if (actualText == null) {
+                    visibleTargets = listOf(3, 4, 5, 6, 11, 51, 70, 72, 80, 81, 82, 90, 91, 92, 131, 140)
+                        .mapNotNull { id ->
+                            provider.createAccessibilityNodeInfo(id)?.text?.toString()?.let { "$id=$it" }
+                        }
+                        .joinToString()
+                }
+            }
+            if (actualText == expectedText) return
+            SystemClock.sleep(ACCESSIBILITY_STATE_POLL_INTERVAL_MS)
+        } while (SystemClock.uptimeMillis() < deadline)
+
+        assertEquals(
+            "Accessibility target $targetId did not reach the expected state. Visible targets: $visibleTargets",
+            expectedText,
+            actualText
+        )
     }
 
     /**
@@ -188,8 +217,7 @@ class GameAccessibilityInstrumentedTest {
     private fun tapAccessibilityTarget(
         device: UiDevice,
         scenario: ActivityScenario<MainActivity>,
-        targetId: Int,
-        awaitIdle: Boolean = true
+        targetId: Int
     ) {
         var screenX = 0
         var screenY = 0
@@ -218,7 +246,6 @@ class GameAccessibilityInstrumentedTest {
             "UIAutomator must inject tap for accessibility target $targetId at ($screenX, $screenY)",
             device.click(screenX, screenY)
         )
-        if (awaitIdle) InstrumentationRegistry.getInstrumentation().waitForIdleSync()
     }
 
     private fun clearGamePreferences() {
@@ -226,6 +253,10 @@ class GameAccessibilityInstrumentedTest {
         context.getSharedPreferences("mini_project", Context.MODE_PRIVATE)
             .edit()
             .clear()
+            // Accessibility tests exercise navigation and touch dispatch, not platform audio.
+            // API 23 emulator images can crash mediaserver while ToneGenerator is active.
+            .putBoolean("sound_enabled", false)
+            .putBoolean("vibration_enabled", false)
             .commit()
         context.getSharedPreferences("offline_challenge_progress", Context.MODE_PRIVATE)
             .edit()
@@ -252,5 +283,10 @@ class GameAccessibilityInstrumentedTest {
             "Accessibility node $id must handle ACTION_CLICK",
             provider.performAction(id, AccessibilityNodeInfo.ACTION_CLICK, null)
         )
+    }
+
+    private companion object {
+        const val ACCESSIBILITY_STATE_TIMEOUT_MS = 5_000L
+        const val ACCESSIBILITY_STATE_POLL_INTERVAL_MS = 50L
     }
 }

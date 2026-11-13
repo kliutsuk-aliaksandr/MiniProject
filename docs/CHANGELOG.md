@@ -5,7 +5,7 @@
 - R8 обновлён до 9.1.29 через официальный AGP R8 override для Kotlin 2.4.21; CI проверяет release minification и отклоняет Kotlin metadata warnings.
 - Исправлен Restart приостановленной tutorial-партии: перезапуск остаётся в practice и восстанавливает учебную цепочку и заряды бустеров.
 - Добавлен Robolectric regression test полного сценария tutorial → pause → restart.
-- SonarQube CI обязателен для push и same-repository PR: формируется JaCoCo XML, отправляется анализ и проверяется server-side Quality Gate.
+- CI генерирует JaCoCo XML/HTML из JVM/Robolectric-тестов и публикует отчёт покрытия как artifact; облачный Quality Gate не используется.
 - Добавлены инструкции для AI-агентов и GitHub Copilot в AGENTS.md и .github/.
 
 - Цепочка на новом уровне теперь входит по одной сфере из начала дорожки; отрицательный progress корректно отображается и сохраняется до входа на экран.

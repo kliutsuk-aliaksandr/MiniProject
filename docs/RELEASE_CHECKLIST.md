@@ -10,15 +10,14 @@
 - [x] R8 minification для release с отдельным R8 9.1.29 override под Kotlin 2.4.21.
 - [x] CI проверяет release bundle на Kotlin metadata warnings и отклоняет такой warning.
 - [x] Tutorial restart сохраняет tutorial practice; regression test покрывает pause → restart.
-- [x] CI генерирует JaCoCo XML и выполняет SonarQube analysis с ожиданием Quality Gate.
+- [x] CI генерирует JaCoCo XML/HTML и сохраняет отчёт покрытия как artifact.
 - [x] CI: debug APK, JVM tests, Android lint и unsigned release AAB.
 - [x] Публичный адрес поддержки указан в privacy materials: alex.kliutsuk@gmail.com.
 
-## Конфигурация CI перед выпуском
+## CI перед выпуском
 
-- [ ] Убедиться, что GitHub Actions secret `SONAR_TOKEN` настроен и имеет право отправлять анализ.
-- [ ] Проверить `SONAR_HOST_URL`, `SONAR_PROJECT_KEY` и для SonarQube Cloud — `SONAR_ORGANIZATION` в repository variables.
-- [ ] Убедиться, что Quality Gate настроен на сервере для проекта и применяется к текущему commit.
+- [ ] Убедиться, что последний GitHub Actions run завершился успешно: build, unit tests, lint, release AAB, Windows Wrapper и instrumentation API 23/29/36.
+- [ ] При необходимости скачать artifact `miniproject-unit-test-coverage` и проверить JaCoCo XML/HTML отчёты.
 
 ## Требует ручных действий разработчика / Play Console
 

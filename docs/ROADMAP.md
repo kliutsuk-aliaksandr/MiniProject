@@ -47,7 +47,7 @@
 
 - [x] Обновить R8 до 9.1.29 через официальный AGP override для Kotlin 2.4.21; CI проверяет minified release на metadata warnings.
 - [x] Исправить перезапуск tutorial после паузы; добавить regression test навигационного сценария.
-- [x] Формировать JaCoCo XML/HTML, запускать SonarQube на trusted CI событиях и ждать server-side Quality Gate.
+- [x] Формировать JaCoCo XML/HTML и публиковать отчёт покрытия как CI artifact.
 - [x] Установить versionName 0.5.1 и versionCode 6.
 - [x] Добавить root/nested AGENTS.md и GitHub Copilot instructions.
 
