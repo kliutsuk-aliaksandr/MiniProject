@@ -142,6 +142,7 @@
     <string name="challenge_complete">CHALLENGE CLEARED!</string>
     <string name="challenge_failed">CHALLENGE FAILED</string>
     <string name="challenge_result_timed">Shots: %1$d / %2$d • Time left: %3$d s</string>
+    <string name="challenge_result_cascade_timed">Cascades %1$d/%2$d • Shots %3$d/%4$d • %5$d s</string>
     <string name="challenge_result_shots">Shots: %1$d / %2$d</string>
     <string name="challenge_retry">RETRY</string>
     <string name="challenge_list">CHALLENGES</string>
