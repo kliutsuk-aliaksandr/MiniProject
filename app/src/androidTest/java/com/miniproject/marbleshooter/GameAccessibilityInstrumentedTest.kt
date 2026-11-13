@@ -133,8 +133,16 @@ class GameAccessibilityInstrumentedTest {
             assertTargetText(scenario, 35, "Back")
             tapAccessibilityTarget(device, scenario, 35)
             assertTargetText(scenario, 6, "Achievements and statistics")
-            tapAccessibilityTarget(device, scenario, 6)
-            assertTargetText(scenario, 120, "Main menu")
+            // API 23 occasionally drops the first injected tap after returning from
+            // Settings. Keep this as a real coordinate interaction, but retry only
+            // when the expected destination node did not appear.
+            tapAccessibilityTargetAndWaitFor(
+                device,
+                scenario,
+                targetId = 6,
+                expectedTargetId = 120,
+                expectedText = "Main menu"
+            )
             tapAccessibilityTarget(device, scenario, 120)
             assertTargetText(scenario, 3, "Level map")
 
@@ -209,6 +217,34 @@ class GameAccessibilityInstrumentedTest {
             expectedText,
             actualText
         )
+    }
+
+    /**
+     * Injects a real coordinate tap and waits for the destination virtual node.
+     * API 23 can occasionally drop one UiDevice tap; retry only if navigation did not
+     * happen, so an already-completed transition is never activated twice.
+     */
+    private fun tapAccessibilityTargetAndWaitFor(
+        device: UiDevice,
+        scenario: ActivityScenario<MainActivity>,
+        targetId: Int,
+        expectedTargetId: Int,
+        expectedText: String
+    ) {
+        repeat(2) {
+            tapAccessibilityTarget(device, scenario, targetId)
+            val deadline = SystemClock.uptimeMillis() + 900L
+            do {
+                var actualText: String? = null
+                scenario.onActivity { activity ->
+                    actualText = accessibilityProvider(gameView(activity))
+                        .createAccessibilityNodeInfo(expectedTargetId)?.text?.toString()
+                }
+                if (actualText == expectedText) return
+                SystemClock.sleep(50L)
+            } while (SystemClock.uptimeMillis() < deadline)
+        }
+        assertTargetText(scenario, expectedTargetId, expectedText)
     }
 
     /**
