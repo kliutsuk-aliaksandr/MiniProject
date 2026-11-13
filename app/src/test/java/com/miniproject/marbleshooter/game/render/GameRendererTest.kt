@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import com.miniproject.marbleshooter.game.domain.GameEngine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -45,6 +46,33 @@ class GameRendererTest {
         }
     }
     
+    @Test
+    fun drawsCascadeChallengeHudWithoutFormattingErrors() {
+        val bitmap = Bitmap.createBitmap(420, 980, Bitmap.Config.ARGB_8888)
+        try {
+            val engine = GameEngine()
+            assertTrue(engine.startChallenge(4))
+            val renderer = GameRenderer(RuntimeEnvironment.getApplication())
+            renderer.draw(
+                Canvas(bitmap),
+                engine,
+                GameRenderState(
+                    screen = GameScreen.GAME,
+                    language = "en",
+                    bestScore = 0,
+                    savedGameAvailable = false,
+                    soundEnabled = false,
+                    vibrationEnabled = false,
+                    tutorialPage = 0,
+                    unlockedLevel = 1,
+                    starsByLevel = emptyMap()
+                )
+            )
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
     @Test
     fun rebuildsCachedPathWhenChangingLevelsWithinTheSameTrackFamily() {
         val context = RuntimeEnvironment.getApplication()
