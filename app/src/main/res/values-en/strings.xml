@@ -133,6 +133,8 @@
     <string name="challenge_speed_body">Clear the chain before the timer and shot limit run out.</string>
     <string name="challenge_expert_title">EXPERT</string>
     <string name="challenge_expert_body">A tougher chain, more colors and tighter limits.</string>
+    <string name="challenge_cascade_title">CASCADE MASTER</string>
+    <string name="challenge_cascade_body">Clear the chain and trigger at least one cascade before time runs out.</string>
     <string name="challenge_shot_limit">SHOTS: %1$d</string>
     <string name="challenge_time_shot_limit">TIME: %1$d S • SHOTS: %2$d</string>
     <string name="challenge_no_record">NOT CLEARED YET</string>
@@ -146,6 +148,7 @@
     <string name="challenge_pause_subtitle">Challenge paused</string>
     <string name="challenge_hud_shots">SHOTS %1$d/%2$d</string>
     <string name="challenge_hud_timed">%1$d/%2$d SHOTS • %3$d S</string>
+    <string name="challenge_hud_cascade_timed">CASCADE %1$d/%2$d • SHOTS %3$d/%4$d • %5$d S</string>
     <string name="a11y_challenges">Offline challenges</string>
     <string name="a11y_challenge">Challenge: %1$s</string>
     <string name="a11y_retry_challenge">Retry challenge</string>
