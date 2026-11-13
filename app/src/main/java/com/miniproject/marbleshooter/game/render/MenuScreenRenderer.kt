@@ -99,19 +99,19 @@ internal class MenuScreenRenderer(resources: GameRenderResources) : GameCanvasRe
         centeredText(canvas, tr(state, R.string.challenge_start_hint), 12f, MUTED, 210f, 162f)
 
         ChallengeCatalog.all.forEachIndexed { index, challenge ->
-            val top = 205f + index * 145f
-            val bottom = top + 130f
+            val top = 190f + index * 130f
+            val bottom = top + 122f
             val bestStars = state.challengeStarsById[challenge.id] ?: 0
             drawPanel(canvas, RectF(24f, top, 396f, bottom), 18f, Color.argb(180, 15, 26, 47))
             centeredText(
                 canvas,
                 tr(state, challengeTitleResource(challenge.id)),
-                16f, Color.WHITE, 210f, top + 27f
+                16f, Color.WHITE, 210f, top + 23f
             )
             drawParagraph(
                 canvas,
                 tr(state, challengeDescriptionResource(challenge.id)),
-                11f, MUTED, RectF(42f, top + 39f, 378f, top + 77f)
+                11f, MUTED, RectF(42f, top + 34f, 378f, top + 69f)
             )
             val limit = if (challenge.timeLimitSeconds == null) {
                 tr(state, R.string.challenge_shot_limit, challenge.maxShots)
@@ -123,12 +123,12 @@ internal class MenuScreenRenderer(resources: GameRenderResources) : GameCanvasRe
                     challenge.maxShots
                 )
             }
-            centeredText(canvas, limit, 11f, Color.rgb(111, 228, 164), 210f, top + 94f)
+            centeredText(canvas, limit, 10f, Color.rgb(111, 228, 164), 210f, top + 83f)
             centeredText(
                 canvas,
                 if (bestStars == 0) tr(state, R.string.challenge_no_record)
                 else tr(state, R.string.challenge_best_stars, starsLine(bestStars)),
-                11f, Color.rgb(255, 209, 88), 210f, top + 116f
+                10f, Color.rgb(255, 209, 88), 210f, top + 107f
             )
         }
         button(canvas, 78f, 750f, 342f, 810f, tr(state, R.string.main_menu), GREEN)
@@ -137,13 +137,15 @@ internal class MenuScreenRenderer(resources: GameRenderResources) : GameCanvasRe
     private fun challengeTitleResource(id: Int): Int = when (id) {
         1 -> R.string.challenge_precision_title
         2 -> R.string.challenge_speed_title
-        else -> R.string.challenge_expert_title
+        3 -> R.string.challenge_expert_title
+        else -> R.string.challenge_cascade_title
     }
 
     private fun challengeDescriptionResource(id: Int): Int = when (id) {
         1 -> R.string.challenge_precision_body
         2 -> R.string.challenge_speed_body
-        else -> R.string.challenge_expert_body
+        3 -> R.string.challenge_expert_body
+        else -> R.string.challenge_cascade_body
     }
 
     private fun drawTrackLegend(canvas: Canvas, state: GameRenderState) {
