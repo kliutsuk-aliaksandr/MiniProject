@@ -74,6 +74,29 @@ class GameNavigationControllerTest {
     }
 
     @Test
+    fun selectingAchievementsFromMenuOpensAchievementsAndExposesReturnAction() {
+        val context = freshContext()
+        val session = GameSessionController(context) { }
+        val navigation = GameNavigationController(session, GameTextResources(context))
+
+        try {
+            val achievementsTarget = navigation.accessibilityTargets(1f, 0f, 0f)
+                .single { it.id == 6 }
+            assertEquals("Achievements and statistics", achievementsTarget.label)
+
+            navigation.handleTap(Vec2(210f, 739f))
+
+            assertEquals(GameScreen.ACHIEVEMENTS, navigation.screen)
+            val returnTarget = navigation.accessibilityTargets(1f, 0f, 0f)
+                .single { it.id == 120 }
+            assertEquals("Main menu", returnTarget.label)
+        } finally {
+            session.disposeGame(GameScreen.MENU)
+            clearProgress(context)
+        }
+    }
+
+    @Test
     fun restartingPausedTutorialStartsTutorialPracticeAgain() {
         val context = freshContext()
         val session = GameSessionController(context) { }
