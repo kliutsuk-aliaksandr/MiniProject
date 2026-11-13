@@ -82,14 +82,14 @@ class GameNavigationControllerTest {
         try {
             val achievementsTarget = navigation.accessibilityTargets(1f, 0f, 0f)
                 .single { it.id == 6 }
-            assertEquals("Achievements and statistics", achievementsTarget.label)
+            assertEquals("Достижения и статистика", achievementsTarget.label)
 
             navigation.handleTap(Vec2(210f, 739f))
 
             assertEquals(GameScreen.ACHIEVEMENTS, navigation.screen)
             val returnTarget = navigation.accessibilityTargets(1f, 0f, 0f)
                 .single { it.id == 120 }
-            assertEquals("Main menu", returnTarget.label)
+            assertEquals("В главное меню", returnTarget.label)
         } finally {
             session.disposeGame(GameScreen.MENU)
             clearProgress(context)
