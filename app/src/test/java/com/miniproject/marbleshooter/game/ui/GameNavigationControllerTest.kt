@@ -30,12 +30,43 @@ class GameNavigationControllerTest {
             assertEquals(GameScreen.LEVEL_MAP, navigation.screen)
             navigation.handleTap(Vec2(210f, 645f))
             assertEquals(GameScreen.CHALLENGES, navigation.screen)
-            navigation.handleTap(Vec2(210f, 270f))
+            navigation.handleTap(Vec2(210f, 251f))
 
             assertEquals(GameScreen.GAME, navigation.screen)
             assertEquals(GameStatus.RUNNING, session.engine.status)
             assertTrue("Selected challenge must stay isolated from campaign mode", session.engine.isChallenge)
             assertEquals(1, requireNotNull(session.engine.challengeDefinition).id)
+        } finally {
+            session.disposeGame(GameScreen.MENU)
+            clearProgress(context)
+        }
+    }
+
+    @Test
+    fun fourthChallengeIsAvailableThroughTouchAndAccessibilityTargets() {
+        val context = freshContext()
+        val session = GameSessionController(context) { }
+        val navigation = GameNavigationController(session, GameTextResources(context))
+
+        try {
+            navigation.handleTap(Vec2(210f, 535f))
+            navigation.handleTap(Vec2(210f, 645f))
+            assertEquals(GameScreen.CHALLENGES, navigation.screen)
+
+            val cascadeTarget = navigation.accessibilityTargets(1f, 0f, 0f)
+                .single { it.id == 134 }
+            assertTrue(cascadeTarget.label.contains("CASCADE", ignoreCase = true) ||
+                cascadeTarget.label.contains("КАСКАД", ignoreCase = true))
+            assertEquals(580, cascadeTarget.bounds.top)
+            assertEquals(702, cascadeTarget.bounds.bottom)
+
+            navigation.handleTap(Vec2(210f, 641f))
+
+            assertEquals(GameScreen.GAME, navigation.screen)
+            assertEquals(4, requireNotNull(session.engine.challengeDefinition).id)
+            assertEquals(1, requireNotNull(session.engine.challengeDefinition).minimumCascades)
+            assertEquals(GameStatus.RUNNING, session.engine.status)
+            assertFalse(session.hasSavedGame)
         } finally {
             session.disposeGame(GameScreen.MENU)
             clearProgress(context)
