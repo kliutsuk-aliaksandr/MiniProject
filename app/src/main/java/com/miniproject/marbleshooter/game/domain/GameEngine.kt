@@ -60,6 +60,7 @@ class GameEngine(private val random: Random = Random.Default) {
     private var insertionAnimation: InsertionAnimation? = null
     private var activeChallenge: ChallengeDefinition? = null
     private var challengeRemainingSeconds = 0f
+    private var completedChallengeCascades = 0
     private var fastRolloutRemainingSeconds = 0f
     private var fastRolloutMultiplier = 1f
     private var slowTimer = 0f
@@ -98,6 +99,7 @@ class GameEngine(private val random: Random = Random.Default) {
     val isChallenge: Boolean get() = activeChallenge != null
     val challengeDefinition: ChallengeDefinition? get() = activeChallenge
     val challengeTimeRemaining: Float get() = challengeRemainingSeconds
+    val challengeCascadesCompleted: Int get() = completedChallengeCascades
     val isFastRolloutActive: Boolean get() = fastRolloutRemainingSeconds > 0f
 
     /** Immutable definition for the active campaign or practice level. */
@@ -176,6 +178,7 @@ class GameEngine(private val random: Random = Random.Default) {
     fun startTutorial() {
         activeChallenge = null
         challengeRemainingSeconds = 0f
+        completedChallengeCascades = 0
         score = 0
         shotsFired = 0
         lastStars = 0
@@ -231,6 +234,7 @@ class GameEngine(private val random: Random = Random.Default) {
     private fun startLevelInternal(levelId: Int) {
         setDefinition(LevelCatalog.definition(levelId))
         lastStars = 0
+        completedChallengeCascades = 0
         level = definition.id
         mutableBalls.clear()
         mutableProjectiles.clear()
@@ -439,12 +443,16 @@ class GameEngine(private val random: Random = Random.Default) {
     }
 
     private fun completeLevel() {
-        if (status == GameStatus.WON) return
+        if (status == GameStatus.WON || status == GameStatus.LOST) return
+        val challenge = activeChallenge
+        if (challenge != null && completedChallengeCascades < challenge.minimumCascades) {
+            loseRound()
+            return
+        }
         status = GameStatus.WON
         retraction = null
         insertionAnimation = null
         mutableProjectiles.clear()
-        val challenge = activeChallenge
         if (challenge != null) {
             val shotStars = when {
                 shotsFired <= challenge.maxShots * 0.55f -> 3
@@ -558,6 +566,7 @@ class GameEngine(private val random: Random = Random.Default) {
         isTutorial = false
         activeChallenge = null
         challengeRemainingSeconds = 0f
+        completedChallengeCascades = 0
         status = if (state.isPaused) GameStatus.PAUSED else GameStatus.RUNNING
         return true
     }
@@ -686,7 +695,7 @@ class GameEngine(private val random: Random = Random.Default) {
         }
     }
 
-    private fun resolveMatchAt(probe: Int) {
+    private fun resolveMatchAt(probe: Int, isCascade: Boolean = false) {
         if (probe !in mutableBalls.indices || retraction != null || insertionAnimation != null) return
         val color = mutableBalls[probe].colorIndex
         var start = probe
@@ -694,6 +703,7 @@ class GameEngine(private val random: Random = Random.Default) {
         while (start > 0 && mutableBalls[start - 1].colorIndex == color) start--
         while (end < mutableBalls.lastIndex && mutableBalls[end + 1].colorIndex == color) end++
         if (end - start + 1 < 3) return
+        if (isCascade && activeChallenge != null) completedChallengeCascades++
         removeRange(start, end, pointsPerBall = 10 * level, allowCascade = true)
     }
 
@@ -721,17 +731,23 @@ class GameEngine(private val random: Random = Random.Default) {
         val hasFront = start > 0
         val hasRear = start < mutableBalls.size
         if (hasFront && hasRear) {
-            val retreat = count * BALL_SPACING
-            val moves = mutableBalls.take(start).map { ball ->
-                RetractionMove(ball, ball.progress, ball.progress - retreat)
+            // Close the gap only when the marbles on its two sides can form a cascade.
+            // Different colors stay separated and continue moving with the chain.
+            val neighboringColorsMatch =
+                mutableBalls[start - 1].colorIndex == mutableBalls[start].colorIndex
+            if (neighboringColorsMatch) {
+                val retreat = count * BALL_SPACING
+                val moves = mutableBalls.take(start).map { ball ->
+                    RetractionMove(ball, ball.progress, ball.progress - retreat)
+                }
+                retraction = Retraction(
+                    moves = moves,
+                    duration = (retreat / 320f).coerceIn(0.22f, 0.55f),
+                    cascadeProbe = (start - 1).coerceAtLeast(0)
+                )
             }
-            retraction = Retraction(
-                moves = moves,
-                duration = (retreat / 320f).coerceIn(0.22f, 0.55f),
-                cascadeProbe = (start - 1).coerceAtLeast(0)
-            )
         } else if (allowCascade) {
-            resolveMatchAt((start - 1).coerceAtLeast(0))
+            resolveMatchAt((start - 1).coerceAtLeast(0), isCascade = true)
         }
     }
 
@@ -747,7 +763,7 @@ class GameEngine(private val random: Random = Random.Default) {
             for (move in animation.moves) move.ball.progress = move.target
             val cascade = animation.cascadeProbe
             retraction = null
-            resolveMatchAt(cascade)
+            resolveMatchAt(cascade, isCascade = true)
         }
     }
 

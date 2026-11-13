@@ -133,8 +133,16 @@ class GameAccessibilityInstrumentedTest {
             assertTargetText(scenario, 35, "Back")
             tapAccessibilityTarget(device, scenario, 35)
             assertTargetText(scenario, 6, "Achievements and statistics")
-            tapAccessibilityTarget(device, scenario, 6)
-            assertTargetText(scenario, 120, "Main menu")
+            // API 23 occasionally drops the first injected tap after returning from
+            // Settings. Keep this as a real coordinate interaction, but retry only
+            // when the expected destination node did not appear.
+            tapAccessibilityTargetAndWaitFor(
+                device,
+                scenario,
+                targetId = 6,
+                expectedTargetId = 120,
+                expectedText = "Main menu"
+            )
             tapAccessibilityTarget(device, scenario, 120)
             assertTargetText(scenario, 3, "Level map")
 
@@ -145,6 +153,7 @@ class GameAccessibilityInstrumentedTest {
             // Open the offline challenge list with a real coordinate tap.
             tapAccessibilityTarget(device, scenario, 11)
             assertTargetText(scenario, 131, "Challenge: PRECISION")
+            assertTargetText(scenario, 134, "Challenge: CASCADE MASTER")
 
             // Start the challenge and pause it synchronously in one main-thread turn.
             // On API 23 the emulator can advance the entering chain while instrumentation
@@ -192,7 +201,7 @@ class GameAccessibilityInstrumentedTest {
                 val provider = accessibilityProvider(gameView(activity))
                 actualText = provider.createAccessibilityNodeInfo(targetId)?.text?.toString()
                 if (actualText == null) {
-                    visibleTargets = listOf(3, 4, 5, 6, 11, 51, 70, 72, 80, 81, 82, 90, 91, 92, 131, 140)
+                    visibleTargets = listOf(3, 4, 5, 6, 11, 51, 70, 72, 80, 81, 82, 90, 91, 92, 131, 134, 140)
                         .mapNotNull { id ->
                             provider.createAccessibilityNodeInfo(id)?.text?.toString()?.let { "$id=$it" }
                         }
@@ -208,6 +217,34 @@ class GameAccessibilityInstrumentedTest {
             expectedText,
             actualText
         )
+    }
+
+    /**
+     * Injects a real coordinate tap and waits for the destination virtual node.
+     * API 23 can occasionally drop one UiDevice tap; retry only if navigation did not
+     * happen, so an already-completed transition is never activated twice.
+     */
+    private fun tapAccessibilityTargetAndWaitFor(
+        device: UiDevice,
+        scenario: ActivityScenario<MainActivity>,
+        targetId: Int,
+        expectedTargetId: Int,
+        expectedText: String
+    ) {
+        repeat(2) {
+            tapAccessibilityTarget(device, scenario, targetId)
+            val deadline = SystemClock.uptimeMillis() + 900L
+            do {
+                var actualText: String? = null
+                scenario.onActivity { activity ->
+                    actualText = accessibilityProvider(gameView(activity))
+                        .createAccessibilityNodeInfo(expectedTargetId)?.text?.toString()
+                }
+                if (actualText == expectedText) return
+                SystemClock.sleep(50L)
+            } while (SystemClock.uptimeMillis() < deadline)
+        }
+        assertTargetText(scenario, expectedTargetId, expectedText)
     }
 
     /**

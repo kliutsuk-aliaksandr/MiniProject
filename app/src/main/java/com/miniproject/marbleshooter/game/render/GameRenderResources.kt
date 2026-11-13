@@ -9,7 +9,6 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
 import com.miniproject.marbleshooter.game.domain.GameEngine
-import com.miniproject.marbleshooter.game.domain.TrackId
 import com.miniproject.marbleshooter.game.domain.model.Vec2
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -42,7 +41,7 @@ internal class GameRenderResources(internal val textResources: GameTextResources
         typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
     }
     internal val trackPath = Path()
-    internal var cachedTrack: TrackId? = null
+    internal var cachedLevelId: Int? = null
 
     internal companion object {
         val GREEN = Color.rgb(66, 194, 130)
@@ -63,9 +62,9 @@ internal abstract class GameCanvasRendererBase(
     protected val strokePaint get() = drawing.strokePaint
     protected val textPaint get() = drawing.textPaint
     protected val trackPath get() = drawing.trackPath
-    protected var cachedTrack: TrackId?
-        get() = drawing.cachedTrack
-        set(value) { drawing.cachedTrack = value }
+    protected var cachedLevelId: Int?
+        get() = drawing.cachedLevelId
+        set(value) { drawing.cachedLevelId = value }
     protected val GREEN get() = GameRenderResources.GREEN
     protected val BLUE get() = GameRenderResources.BLUE
     protected val PURPLE get() = GameRenderResources.PURPLE

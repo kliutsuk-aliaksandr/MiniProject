@@ -169,28 +169,32 @@ class GameEngineTest {
         assertEquals(30, engine.score)
         assertEquals(listOf(0, 0, 2), engine.balls.map { it.colorIndex })
         assertEquals(3, engine.drainEvents().filterIsInstance<DomainGameEvent.MatchCleared>().single().count)
-        assertEquals(listOf(720f, 688f, 656f), engine.saveState().balls.map { it.progress })
+        assertEquals(listOf(816f, 784f, 656f), engine.saveState().balls.map { it.progress })
     }
 
     @Test
-    fun matchRetractsFrogSideBallsWhileFarSideBallsStayStill() {
+    fun matchDoesNotRetractWhenColorsBesideClearedGroupDiffer() {
         val engine = GameEngine(Random(211))
         setChain(engine, listOf(0, 0, 1, 1, 2))
         engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
         repeat(5) { engine.update(0.05f) }
 
-        val frontStart = engine.balls.take(2).map { it.progress }
-        val rearStart = engine.balls.last().progress
+        assertEquals(listOf(0, 0, 2), engine.balls.map { it.colorIndex })
+        assertFalse(engine.isAnimatingRetraction)
+        val positionsAfterMatch = engine.balls.map { it.progress }
+        val gapAfterMatch = positionsAfterMatch[1] - positionsAfterMatch[2]
+
         repeat(2) { engine.update(0.05f) }
 
-        assertTrue(engine.balls[0].progress < frontStart[0])
-        assertTrue(engine.balls[1].progress < frontStart[1])
-        assertEquals(rearStart, engine.balls.last().progress, 0.001f)
-
-        repeat(4) { engine.update(0.05f) }
-        assertEquals(rearStart + GameEngine.BALL_SPACING * 2, engine.balls[0].progress, 0.01f)
-        assertEquals(rearStart + GameEngine.BALL_SPACING, engine.balls[1].progress, 0.01f)
-        assertEquals(rearStart, engine.balls.last().progress, 0.01f)
+        assertTrue(engine.balls.zip(positionsAfterMatch).all { (ball, previous) ->
+            ball.progress > previous
+        })
+        assertEquals(
+            gapAfterMatch,
+            engine.balls[1].progress - engine.balls[2].progress,
+            0.001f
+        )
+        assertFalse(engine.isAnimatingRetraction)
     }
 
     @Test
@@ -228,6 +232,7 @@ class GameEngineTest {
         assertEquals(4, engine.ballCount)
         assertEquals(30, engine.score)
         assertEquals(GameStatus.RUNNING, engine.status)
+        assertTrue(engine.isAnimatingRetraction)
 
         repeat(12) { engine.update(0.05f) }
 
@@ -305,6 +310,10 @@ class GameEngineTest {
             LevelCatalog.route(track).map { point -> point.x to point.y }
         }
         assertEquals(4, routes.distinct().size)
+        val levelRoutes = (1..LevelCatalog.MAX_LEVELS).map { levelId ->
+            LevelCatalog.routeForLevel(levelId).map { point -> point.x to point.y }
+        }
+        assertEquals(LevelCatalog.MAX_LEVELS, levelRoutes.distinct().size)
         assertEquals(TrackId.DOUBLE_LOOP, LevelCatalog.definition(9).trackId)
         assertEquals(TrackId.SWITCHBACK, LevelCatalog.definition(16).trackId)
         assertEquals(TrackId.SPIRAL, LevelCatalog.definition(23).trackId)
@@ -451,16 +460,20 @@ class GameEngineTest {
     }
 
     @Test
-    fun challengeCatalogProvidesThreeOfflineChallengesWithValidLimits() {
-        assertEquals(3, ChallengeCatalog.all.size)
+    fun challengeCatalogProvidesFourOfflineChallengesWithValidLimits() {
+        assertEquals(4, ChallengeCatalog.all.size)
         ChallengeCatalog.all.forEach { challenge ->
             assertTrue(challenge.levelId in 1..LevelCatalog.MAX_LEVELS)
             assertTrue(challenge.maxShots > 0)
             assertTrue(challenge.timeLimitSeconds == null || challenge.timeLimitSeconds > 0f)
+            assertTrue(challenge.minimumCascades >= 0)
         }
         assertEquals(18, ChallengeCatalog.find(1)?.maxShots)
         assertEquals(25f, ChallengeCatalog.find(2)?.timeLimitSeconds ?: 0f, 0.001f)
         assertEquals(45f, ChallengeCatalog.find(3)?.timeLimitSeconds ?: 0f, 0.001f)
+        assertEquals(1, ChallengeCatalog.find(4)?.minimumCascades)
+        assertEquals(34, ChallengeCatalog.find(4)?.maxShots)
+        assertEquals(55f, ChallengeCatalog.find(4)?.timeLimitSeconds ?: 0f, 0.001f)
         assertEquals(null, ChallengeCatalog.find(99))
     }
 
@@ -513,6 +526,42 @@ class GameEngineTest {
         assertEquals(3, result.stars)
         assertTrue(events.none { it is DomainGameEvent.LevelCompleted })
         assertFalse(engine.startNextLevel())
+    }
+
+    @Test
+    fun cascadeMasterChallengeWinsOnlyAfterARealCascade() {
+        val engine = GameEngine(Random(49))
+        assertTrue(engine.startChallenge(4))
+        engine.drainEvents()
+        setChain(engine, listOf(0, 0, 1, 1, 0, 0))
+
+        engine.insertBallAt(hitIndex = 2, colorIndex = 1, insertInFront = false)
+        repeat(17) { engine.update(0.05f) }
+
+        assertEquals(1, engine.challengeCascadesCompleted)
+        assertEquals(GameStatus.WON, engine.status)
+        val result = engine.drainEvents()
+            .filterIsInstance<DomainGameEvent.ChallengeCompleted>()
+            .single()
+        assertEquals(4, result.challengeId)
+        assertTrue(result.stars in 1..3)
+    }
+
+    @Test
+    fun cascadeMasterChallengeFailsWhenTheChainClearsWithoutACascade() {
+        val engine = GameEngine(Random(50))
+        assertTrue(engine.startChallenge(4))
+        engine.drainEvents()
+        engine.mutableBalls.clear()
+
+        engine.update(0.01f)
+
+        assertEquals(0, engine.challengeCascadesCompleted)
+        assertEquals(GameStatus.LOST, engine.status)
+        val events = engine.drainEvents()
+        assertTrue(events.any { it == DomainGameEvent.GameLost })
+        assertTrue(events.none { it is DomainGameEvent.ChallengeCompleted })
+        assertTrue(events.none { it is DomainGameEvent.LevelCompleted })
     }
 
     @Test

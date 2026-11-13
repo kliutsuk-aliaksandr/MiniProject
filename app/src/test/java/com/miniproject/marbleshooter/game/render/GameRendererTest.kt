@@ -3,6 +3,9 @@ package com.miniproject.marbleshooter.game.render
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import com.miniproject.marbleshooter.game.domain.GameEngine
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -38,6 +41,62 @@ class GameRendererTest {
                     )
                 )
             }
+        } finally {
+            bitmap.recycle()
+        }
+    }
+    
+    @Test
+    fun drawsCascadeChallengeHudWithoutFormattingErrors() {
+        val bitmap = Bitmap.createBitmap(420, 980, Bitmap.Config.ARGB_8888)
+        try {
+            val engine = GameEngine()
+            assertTrue(engine.startChallenge(4))
+            val renderer = GameRenderer(RuntimeEnvironment.getApplication())
+            renderer.draw(
+                Canvas(bitmap),
+                engine,
+                GameRenderState(
+                    screen = GameScreen.GAME,
+                    language = "en",
+                    bestScore = 0,
+                    savedGameAvailable = false,
+                    soundEnabled = false,
+                    vibrationEnabled = false,
+                    tutorialPage = 0,
+                    unlockedLevel = 1,
+                    starsByLevel = emptyMap()
+                )
+            )
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    @Test
+    fun rebuildsCachedPathWhenChangingLevelsWithinTheSameTrackFamily() {
+        val context = RuntimeEnvironment.getApplication()
+        val resources = GameRenderResources(GameTextResources(context))
+        val trackRenderer = TrackRenderer(resources)
+        val engine = GameEngine()
+        val firstTrackFamily = engine.levelDefinition.trackId
+        val bitmap = Bitmap.createBitmap(420, 980, Bitmap.Config.ARGB_8888)
+
+        try {
+            trackRenderer.drawTrack(Canvas(bitmap), engine)
+            assertEquals(1, resources.cachedLevelId)
+            val firstRoutePath = resources.trackPath.approximate(0.5f)
+
+            engine.startLevel(2)
+            assertEquals(firstTrackFamily, engine.levelDefinition.trackId)
+            trackRenderer.drawTrack(Canvas(bitmap), engine)
+
+            assertEquals(2, resources.cachedLevelId)
+            val secondRoutePath = resources.trackPath.approximate(0.5f)
+            assertFalse(
+                "Changing levels within one track family must rebuild the level-specific Path",
+                firstRoutePath.contentEquals(secondRoutePath)
+            )
         } finally {
             bitmap.recycle()
         }

@@ -61,14 +61,19 @@ class ChallengeProgressRepositoryTest {
     fun challengeProgressPersistsAcrossRepositoryInstancesAndCanReset() {
         val first = freshRepository()
         first.recordCompletion(3, stars = 3, shots = 27, remainingSeconds = 45f)
+        first.recordCompletion(4, stars = 2, shots = 20, remainingSeconds = 18f)
 
         val restored = ChallengeProgressRepository(context())
         assertEquals(3, restored.bestStars(3))
         assertEquals(27, restored.bestShots(3))
         assertEquals(45f, restored.bestRemainingSeconds(3) ?: 0f, 0.001f)
+        assertEquals(2, restored.bestStars(4))
+        assertEquals(20, restored.bestShots(4))
+        assertEquals(18f, restored.bestRemainingSeconds(4) ?: 0f, 0.001f)
 
         restored.reset()
         assertEquals(0, restored.bestStars(3))
+        assertEquals(4, restored.bestStarsByChallenge.size)
         assertTrue(restored.bestStarsByChallenge.values.all { it == 0 })
     }
 
