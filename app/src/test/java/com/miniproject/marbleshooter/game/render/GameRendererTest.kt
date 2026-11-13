@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import com.miniproject.marbleshooter.game.domain.GameEngine
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -46,33 +46,31 @@ class GameRendererTest {
     }
     
     @Test
-    fun redrawsRouteWhenChangingLevelsWithinTheSameTrackFamily() {
+    fun rebuildsCachedPathWhenChangingLevelsWithinTheSameTrackFamily() {
         val context = RuntimeEnvironment.getApplication()
         val resources = GameRenderResources(GameTextResources(context))
         val trackRenderer = TrackRenderer(resources)
         val engine = GameEngine()
         val firstTrackFamily = engine.levelDefinition.trackId
-        val firstBitmap = Bitmap.createBitmap(420, 980, Bitmap.Config.ARGB_8888)
-        val secondBitmap = Bitmap.createBitmap(420, 980, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(420, 980, Bitmap.Config.ARGB_8888)
 
         try {
-            trackRenderer.drawTrack(Canvas(firstBitmap), engine)
-            val firstPixels = IntArray(firstBitmap.width * firstBitmap.height)
-            firstBitmap.getPixels(firstPixels, 0, firstBitmap.width, 0, 0, firstBitmap.width, firstBitmap.height)
+            trackRenderer.drawTrack(Canvas(bitmap), engine)
+            assertEquals(1, resources.cachedLevelId)
+            val firstRoutePath = resources.trackPath.approximate(0.5f)
 
             engine.startLevel(2)
             assertEquals(firstTrackFamily, engine.levelDefinition.trackId)
-            trackRenderer.drawTrack(Canvas(secondBitmap), engine)
-            val secondPixels = IntArray(secondBitmap.width * secondBitmap.height)
-            secondBitmap.getPixels(secondPixels, 0, secondBitmap.width, 0, 0, secondBitmap.width, secondBitmap.height)
+            trackRenderer.drawTrack(Canvas(bitmap), engine)
 
-            assertTrue(
-                "Changing levels within one track family must redraw the level-specific route",
-                firstPixels.indices.any { firstPixels[it] != secondPixels[it] }
+            assertEquals(2, resources.cachedLevelId)
+            val secondRoutePath = resources.trackPath.approximate(0.5f)
+            assertFalse(
+                "Changing levels within one track family must rebuild the level-specific Path",
+                firstRoutePath.contentEquals(secondRoutePath)
             )
         } finally {
-            firstBitmap.recycle()
-            secondBitmap.recycle()
+            bitmap.recycle()
         }
     }
 }
