@@ -145,6 +145,7 @@ class GameAccessibilityInstrumentedTest {
             // Open the offline challenge list with a real coordinate tap.
             tapAccessibilityTarget(device, scenario, 11)
             assertTargetText(scenario, 131, "Challenge: PRECISION")
+            assertTargetText(scenario, 134, "Challenge: CASCADE MASTER")
 
             // Start the challenge and pause it synchronously in one main-thread turn.
             // On API 23 the emulator can advance the entering chain while instrumentation
@@ -192,7 +193,7 @@ class GameAccessibilityInstrumentedTest {
                 val provider = accessibilityProvider(gameView(activity))
                 actualText = provider.createAccessibilityNodeInfo(targetId)?.text?.toString()
                 if (actualText == null) {
-                    visibleTargets = listOf(3, 4, 5, 6, 11, 51, 70, 72, 80, 81, 82, 90, 91, 92, 131, 140)
+                    visibleTargets = listOf(3, 4, 5, 6, 11, 51, 70, 72, 80, 81, 82, 90, 91, 92, 131, 134, 140)
                         .mapNotNull { id ->
                             provider.createAccessibilityNodeInfo(id)?.text?.toString()?.let { "$id=$it" }
                         }
