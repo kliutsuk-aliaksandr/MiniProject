@@ -47,7 +47,7 @@ MainActivity
 ### Domain: game/domain
 
 - GameEngine.kt — состояние партии, движение цепочки и снарядов, столкновения, вставка, комбинации, каскады, откат, бустеры, препятствия, счёт, звёзды, snapshot/restore.
-- LevelCatalog.kt — декларативные параметры 30 уровней и четыре полилинии маршрута.
+- LevelCatalog.kt — параметры 30 уровней, четыре семейства маршрутов и отдельная детерминированная полилиния для каждого уровня.
 - domain/model/GameModels.kt — Vec2, Ball, Projectile, статусы, инвентарь бустеров, препятствия, GameSaveState и GameEvent.
 
 Доменный слой не импортирует Android API. GameEngine является владельцем состояния симуляции; UI получает изменения через типизированные GameEvent. Структура цепочки и активных снарядов доступна внешним слоям только через unmodifiable live views; операции изменения коллекций выполняются внутри GameEngine.
@@ -65,7 +65,7 @@ Render слой разделён на четыре роли:
 - GameRenderer — небольшой façade, который рисует общий фон и выбирает слой по GameScreen.
 - MenuScreenRenderer рисует меню, карту уровней, обучение, настройки и privacy screen.
 - GameplayRenderer координирует порядок отрисовки игрового кадра.
-- TrackRenderer рисует cached route geometry и препятствия.
+- TrackRenderer рисует cached route geometry и препятствия; shared Path cache инвалидируется по ID уровня, а не по семейству TrackId, поэтому переход между уровнями всегда перестраивает индивидуальную дорогу.
 - GameEntitiesRenderer рисует цепочку, снаряды и лягушку-пушку.
 - GameEffectsRenderer рисует clearing-ball animation и particle feedback.
 - HudRenderer рисует score/status panel и четыре бустера.
@@ -106,6 +106,8 @@ GameEngine.update() дополнительно ограничивает delta д
 | 9–15 | Double Loop |
 | 16–22 | Switchback |
 | 23–30 | Spiral |
+
+Таблица задаёт семейство/стиль дорожки. Фактическая полилиния уникальна для каждого уровня и детерминирована его ID; поэтому два уровня одного семейства имеют разную геометрию.
 
 LevelCatalog.definition(level) ограничивает ID диапазоном 1–30. При смене уровня, запуске tutorial или успешном restore метод setDefinition пересобирает routePointsCache, routeLengthCache и obstaclesCache. positionOnRoute, столкновения и renderer используют уже рассчитанные данные.
 
