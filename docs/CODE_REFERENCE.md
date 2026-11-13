@@ -7,15 +7,15 @@
 | Файл | Ответственность | Основные точки входа |
 |---|---|---|
 | MainActivity.kt | Activity lifecycle, immersive mode, системная Back-навигация | onCreate, configureImmersiveMode, dispatchBack |
-| game/domain/GameEngine.kt | Чистая Kotlin-симуляция кампании, practice и изолированных time/shot challenges; публичные balls/projectiles — unmodifiable live views | startNewGame, startLevel, startTutorial, startChallenge, update, activateBooster, restoreState |
+| game/domain/GameEngine.kt | Чистая Kotlin-симуляция кампании, practice и изолированных shot/time/cascade challenges; публичные balls/projectiles — unmodifiable live views | startNewGame, startLevel, startTutorial, startChallenge, update, activateBooster, restoreState |
 | game/domain/LevelCatalog.kt | Параметры кампанийных уровней и геометрия дорожек | definition, route |
-| game/domain/ChallengeCatalog.kt | Три неизменяемых offline challenge definitions с shot/time limits | all, find |
+| game/domain/ChallengeCatalog.kt | Четыре неизменяемых offline challenge definitions с shot/time limits и обязательными каскадами | all, find |
 | game/domain/model/GameModels.kt | Модели, статусы, инвентарь, snapshot, события, OfflineStatistics и OfflineAchievement | Vec2, Ball, Projectile, GameSaveState, GameEvent |
 | game/data/GameSaveRepository.kt | Сохранение текущей кампании | save, restore, clear |
 | game/data/GameSaveCodec.kt | Строгая сериализация цепочки | encodeBalls, decodeBalls |
 | game/data/LevelProgressRepository.kt | Открытые уровни, звёзды и рекорд кампании | recordCompletion, updateBestScore |
 | game/data/OfflineProgressRepository.kt | Пожизненная локальная статистика и 8 достижений; отдельно от campaign save | recordShot, recordMatch, recordBooster, recordLevelCompleted, unlockedAchievements |
-| game/data/ChallengeProgressRepository.kt | Локальные лучшие звёзды, число выстрелов и остаток времени для трёх испытаний | recordCompletion, bestStars, bestShots, bestRemainingSeconds |
+| game/data/ChallengeProgressRepository.kt | Локальные лучшие звёзды, число выстрелов и остаток времени для четырёх испытаний | recordCompletion, bestStars, bestShots, bestRemainingSeconds |
 | game/render/GameRenderer.kt | Небольшой Canvas façade: выбор слоя по GameScreen (включая ACHIEVEMENTS/CHALLENGES) | draw |
 | game/render/MenuScreenRenderer.kt | Меню, карта, испытания, обучение, настройки, privacy и Achievements/Statistics | drawMenu, drawLevelMap, drawChallenges, drawTutorial, drawSettings, drawPrivacy, drawAchievements |
 | game/render/GameplayRenderer.kt | Координатор игрового кадра, делегирует специализированным слоям | drawGame |
@@ -105,7 +105,8 @@ UI не должен дублировать игровые правила: он 
 - GameRendererTest.kt: smoke test отрисовки всех верхнеуровневых экранов с общим render resource instance.
 - GameTextResourcesTest.kt: одинаковый набор RU/EN string resource keys и выбор языка игры независимо от device locale.
 - GameSessionControllerTest.kt: настройка вибрации при haptic feedback, исключение tutorial/practice из lifetime statistics и сохранение challenge results отдельно от campaign stats.
-- ChallengeProgressRepositoryTest.kt: best stars/shots/time, validation and local persistence/reset.
+- ChallengeProgressRepositoryTest.kt: best stars/shots/time for all four challenges, validation and local persistence/reset.
+- Cascade Master challenge regression tests: objective validation, cascade detection, failure without a cascade, HUD progress, and touch/accessibility navigation.
 - GameAccessibilityInstrumentedTest.kt: additionally checks challenge list/card, challenge pause and return navigation.
 - OfflineProgressRepositoryTest.kt: counters, best stars/score, unlock criteria, corrupt/invalid inputs, persistence and reset.
 - GameAccessibilityInstrumentedTest.kt: Activity/accessibility tree, provider actions, real UiDevice taps through menu/settings/privacy/map/tutorial/achievements.
