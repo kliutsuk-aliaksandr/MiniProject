@@ -146,20 +146,21 @@ class GameAccessibilityInstrumentedTest {
             tapAccessibilityTarget(device, scenario, 11)
             assertTargetText(scenario, 131, "Challenge: PRECISION")
 
-            // A real UiAutomator tap on this large Canvas card is intermittently lost by
-            // Android 6's input injection. The card's virtual accessibility action uses
-            // the exact same navigation callback and is covered here; coordinate taps on
-            // the map, settings, tutorial and paused-screen controls remain real.
+            // Start the challenge and pause it synchronously in one main-thread turn.
+            // On API 23 the emulator can advance the entering chain while instrumentation
+            // polls for accessibility state; the chain may reach LOST before the test
+            // observes Pause. Resolve node 51 immediately after selecting node 131.
             scenario.onActivity { activity ->
-                click(accessibilityProvider(gameView(activity)), 131)
+                val provider = accessibilityProvider(gameView(activity))
+                click(provider, 131)
+                assertEquals("Pause", node(provider, 51).text.toString())
+                click(provider, 51)
+                assertEquals("CHALLENGES", node(provider, 72).text.toString())
             }
-            assertTargetText(scenario, 51, "Pause")
 
-            // Pause through its accessible control, then use a real coordinate tap on the
-            // lower CHALLENGES action. This avoids Android 6's top-edge immersive overlay.
-            scenario.onActivity { activity ->
-                click(accessibilityProvider(gameView(activity)), 51)
-            }
+            // Keep a real coordinate tap on the lower CHALLENGES action while paused.
+            // This avoids Android 6's immersive-mode top-edge overlay and exercises touch
+            // dispatch without leaving the challenge running during instrumentation waits.
             assertTargetText(scenario, 72, "CHALLENGES")
             tapAccessibilityTarget(device, scenario, 72)
             assertTargetText(scenario, 140, "Main menu")
