@@ -133,6 +133,8 @@
     <string name="challenge_speed_body">Очисти цепочку за ограниченное время и число выстрелов.</string>
     <string name="challenge_expert_title">ЭКСПЕРТ</string>
     <string name="challenge_expert_body">Сложная цепочка, больше цветов и строгие ограничения.</string>
+    <string name="challenge_cascade_title">МАСТЕР КАСКАДОВ</string>
+    <string name="challenge_cascade_body">Очисти цепочку и собери хотя бы один каскад до конца времени.</string>
     <string name="challenge_shot_limit">ВЫСТРЕЛЫ: %1$d</string>
     <string name="challenge_time_shot_limit">ВРЕМЯ: %1$d С • ВЫСТРЕЛЫ: %2$d</string>
     <string name="challenge_no_record">ЕЩЁ НЕ ПРОЙДЕНО</string>
@@ -146,6 +148,7 @@
     <string name="challenge_pause_subtitle">Испытание приостановлено</string>
     <string name="challenge_hud_shots">ВЫСТРЕЛЫ %1$d/%2$d</string>
     <string name="challenge_hud_timed">%1$d/%2$d ВЫСТР. • %3$d С</string>
+    <string name="challenge_hud_cascade_timed">КАСКАД %1$d/%2$d • ВЫСТР. %3$d/%4$d • %5$d С</string>
     <string name="a11y_challenges">Офлайн-испытания</string>
     <string name="a11y_challenge">Испытание: %1$s</string>
     <string name="a11y_retry_challenge">Повторить испытание</string>
