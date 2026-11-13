@@ -11,13 +11,13 @@ import com.miniproject.marbleshooter.game.domain.model.ObstacleType
 /** Draws cached route geometry and the obstacles projected onto that route. */
 internal class TrackRenderer(resources: GameRenderResources) : GameCanvasRendererBase(resources) {
     internal fun drawTrack(canvas: Canvas, engine: GameEngine) {
-            if (cachedTrack != engine.levelDefinition.trackId) {
+            if (cachedLevelId != engine.levelDefinition.id) {
                 trackPath.reset()
                 engine.routePoints.forEachIndexed { index, point ->
                     if (index == 0) trackPath.moveTo(point.x, point.y)
                     else trackPath.lineTo(point.x, point.y)
                 }
-                cachedTrack = engine.levelDefinition.trackId
+                cachedLevelId = engine.levelDefinition.id
             }
             strokePaint.color = Color.rgb(9, 14, 27)
             strokePaint.strokeWidth = 64f
