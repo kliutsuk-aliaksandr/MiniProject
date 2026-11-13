@@ -721,15 +721,21 @@ class GameEngine(private val random: Random = Random.Default) {
         val hasFront = start > 0
         val hasRear = start < mutableBalls.size
         if (hasFront && hasRear) {
-            val retreat = count * BALL_SPACING
-            val moves = mutableBalls.take(start).map { ball ->
-                RetractionMove(ball, ball.progress, ball.progress - retreat)
+            // Close the gap only when the marbles on its two sides can form a cascade.
+            // Different colors stay separated and continue moving with the chain.
+            val neighboringColorsMatch =
+                mutableBalls[start - 1].colorIndex == mutableBalls[start].colorIndex
+            if (neighboringColorsMatch) {
+                val retreat = count * BALL_SPACING
+                val moves = mutableBalls.take(start).map { ball ->
+                    RetractionMove(ball, ball.progress, ball.progress - retreat)
+                }
+                retraction = Retraction(
+                    moves = moves,
+                    duration = (retreat / 320f).coerceIn(0.22f, 0.55f),
+                    cascadeProbe = (start - 1).coerceAtLeast(0)
+                )
             }
-            retraction = Retraction(
-                moves = moves,
-                duration = (retreat / 320f).coerceIn(0.22f, 0.55f),
-                cascadeProbe = (start - 1).coerceAtLeast(0)
-            )
         } else if (allowCascade) {
             resolveMatchAt((start - 1).coerceAtLeast(0))
         }
