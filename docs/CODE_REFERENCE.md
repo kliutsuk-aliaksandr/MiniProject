@@ -80,8 +80,8 @@ UI не должен дублировать игровые правила: он 
 
 ## Добавление уровня
 
-1. При необходимости добавить TrackId и новую полилинию в LevelCatalog.route().
-2. Обновить диапазоны уровней, препятствия и параметры сложности в LevelCatalog.definition().
+1. Обновить LevelCatalog.definition(): диапазон, семейство TrackId, препятствия и параметры сложности.
+2. Проверить индивидуальную геометрию LevelCatalog.routeForLevel(levelId); при необходимости изменить генератор buildUniqueRoute(). TrackId задаёт семейство/стиль, а не общий маршрут для всех уровней.
 3. Добавить проверки маршрута, obstacle positions и progression в GameEngineTest.
 4. Обновить GAME_DESIGN.md и TECHNICAL_DESIGN.md.
 5. Проверить MAX_LEVELS, разблокировку последнего уровня и переходы между группами дорожек.
